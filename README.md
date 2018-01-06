@@ -1,8 +1,8 @@
-# Easy DRL (ezDRL)
+# Light DRL 
 
 ## Install
 
-1. Download this package from `git clone git@github.com:kbehouse/ezDRL.git` or download this zip
+1. Download this package from `git clone git@github.com:lightDRL/lightDRL.git` or download this zip
 
 2. Install python requirements by following command
 
