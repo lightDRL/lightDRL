@@ -85,6 +85,7 @@ class EnvSpace(BaseNamespace):
             self.ep+=1
             self.log()
             self.ep_use_step = 0
+            self.ep_reward = 0
 
 
     def log(self):
