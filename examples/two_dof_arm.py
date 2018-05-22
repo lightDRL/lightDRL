@@ -37,4 +37,4 @@ class TwoDofArm(EnvSpace):
 if __name__ == '__main__':
     for i in range(4):
         c = Client(TwoDofArm, env_name='Env-%d' % i)
-        c.start()
+        # c.start()

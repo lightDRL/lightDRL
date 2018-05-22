@@ -8,6 +8,8 @@ import envs
 import gym
 from config import cfg
 from threading import Thread
+import signal                   # for ctrl+C
+import sys                      # for ctrl+C
 
 TRAIN_MODE = True
 
@@ -98,7 +100,57 @@ class EnvSpace(BaseNamespace):
         # print('set_name  = ', name)
         self.env_name = name
 
-class Gridworld_EX(EnvSpace):
+
+class Client:
+    def __init__(self, target_env_class, env_name=''):
+        # Thread.__init__(self)
+        self.target_env_class = target_env_class
+        self.env_name = env_name
+        self.socketIO = SocketIO('127.0.0.1', 5000)
+        self.socketIO.on('connect', self.on_connect)
+        self.socketIO.on('disconnect', self.on_disconnect)
+        self.socketIO.on('reconnect', self.on_reconnect)
+        self.socketIO.on('session_response', self.on_session_response)
+
+        # for ctrl+C
+        signal.signal(signal.SIGINT, self.signal_handler)
+
+        self.socketIO.emit('session')
+        self.socketIO.wait()
+        
+
+    def signal_handler(self, signal, frame):
+        #print(signal)
+        print('You pressed Ctrl+C!')
+        self.target_env_class.close()
+        self.socketIO.disconnect()
+        
+        sys.exit(0)
+
+    def on_connect(self):
+        print('[I] Client connect')
+
+    def on_reconnect(self):
+        print('[I] Client reconnect')
+
+    def on_disconnect(self):
+        print('[I] Client disconnect')
+
+    def on_session_response(self, new_id):
+        print('[I] Get id = {}'.format(new_id ))
+        new_ns = '/' + str(new_id)  + '/rl_session'
+        self.connect_with_ns(new_ns)
+
+    def connect_with_ns(self,ns):
+        print('defins ns ={}'.format(ns))
+        new_env = self.socketIO.define(self.target_env_class, ns)
+        new_env.set_name(self.env_name)
+        # method_to_call = getattr(new_env, self.env_call_fun)
+        # result = method_to_call()
+
+
+
+class Gridworld_EX(EnvSpace):  # for test
 
     def env_init(self):
         self.EP_MAXSTEP = 1000
@@ -122,46 +174,6 @@ class Gridworld_EX(EnvSpace):
         if done:
             self.state =  self.env.reset()
             self.send_state_get_action(self.state)
-
-
-
-class Client(Thread):
-    def __init__(self, target_env_class, env_name=''):
-        Thread.__init__(self)
-        self.target_env_class = target_env_class
-        self.env_name = env_name
-        self.socketIO = SocketIO('127.0.0.1', 5000)
-        self.socketIO.on('connect', self.on_connect)
-        self.socketIO.on('disconnect', self.on_disconnect)
-        self.socketIO.on('reconnect', self.on_reconnect)
-        self.socketIO.on('session_response', self.on_session_response)
-        # self.socketIO.emit('session')
-        # self.socketIO.wait()
-    
-    def run(self):
-        self.socketIO.emit('session')
-        self.socketIO.wait()
-
-    def on_connect(self):
-        print('client say connect')
-
-    def on_reconnect(self):
-        print('client say connect')
-
-    def on_disconnect(self):
-        print('disconnect')
-
-    def on_session_response(self, new_id):
-        print('Get id = {}'.format(new_id ))
-        new_ns = '/' + str(new_id)  + '/rl_session'
-        self.connect_with_ns(new_ns)
-
-    def connect_with_ns(self,ns):
-        print('defins ns ={}'.format(ns))
-        new_env = self.socketIO.define(self.target_env_class, ns)
-        new_env.set_name(self.env_name)
-        # method_to_call = getattr(new_env, self.env_call_fun)
-        # result = method_to_call()
 
 if __name__ == '__main__':
     # Client(EnvSpace) 

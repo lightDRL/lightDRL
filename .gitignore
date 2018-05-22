@@ -4,7 +4,7 @@
 train/
 backup/
 data_pool/
-
+test/
 
 # other
 .ipynb_checkpoints/

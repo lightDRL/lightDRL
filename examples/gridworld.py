@@ -39,7 +39,11 @@ class Gridworld_EX(EnvSpace):
             self.state =  self.env.reset()
             self.send_state_get_action(self.state)
 
+    def close(self):
+        print('ininin  grid close')
+
+
 if __name__ == '__main__':
     c = Client(Gridworld_EX,'Main-Env')
-    c.start()
+
         
