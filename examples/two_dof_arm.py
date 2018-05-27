@@ -22,6 +22,7 @@ class TwoDofArm(EnvSpace):
 
     def on_predict_response(self, action):
         next_state, reward, done, _ = self.env.step(action)
+        # print(next_state)
         done = True if self.ep_use_step >= self.EP_MAXSTEP else done
         self.send_train_get_action(self.state, action, reward, done, next_state)
         self.state = next_state

@@ -1,8 +1,22 @@
 """
+Get code from: https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/blob/master/experiments/Robot_arm/arm_env.py
+
 Environment for Robot Arm.
 You can customize this script in a way you want.
  https://morvanzhou.github.io/tutorials/
 
+
+
+action: 
+    shape: (2,) 
+    data:   [node1 angular v, node2 angular v]
+
+state:
+    shape: (7,) 
+    data:  [sucess grab, arm_point_distance_x, arm_point_distance_y, center_point_distance_x, center_point_distance_y, 
+                0               1                       2                   3                           4
+            which_coord_0, which_coord_1]
+                5               6
 
 Requirement:
 pyglet >= 1.2.4

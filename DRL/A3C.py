@@ -1,11 +1,10 @@
 
 #
+#   Modify from morvan: https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow
 #   Send raw picture to server.py
 #   Get gary image(84x84) from server (use worker)  
 #   Save the gray image(84x84)
 #   
-#   Author:  Kartik, Chen  <kbehouse(at)gmail(dot)com>,
-#      
 
 import tensorflow as tf
 import numpy as np
