@@ -12,7 +12,7 @@ YAMLPatch.add_constructor(u'tag:yaml.org,2002:python/tuple', YAMLPatch.construct
 
 def load_config(f_name = "config/default.yaml"):
     global cfg
-    print("I: Load {}".format(f_name))
+    print("[I] Load {}".format(f_name))
     """ Load File"""
     with open(f_name, 'r') as stream:
         try:
@@ -26,3 +26,12 @@ if len(sys.argv) >= 2 and sys.argv[1].endswith('.yaml'):
     load_config(sys.argv[1])
 else:
     load_config()
+
+
+def set_none_if_not_exist():
+    cfg['RL']['train_run_steps'] = cfg['RL']['train_run_steps'] if 'train_run_steps' in cfg['RL'] else None
+
+
+set_none_if_not_exist()
+# train_run_steps = cfg['RL']['train_run_steps'] if 'train_run_steps' in cfg['RL'] else None
+print("cfg['RL']['train_run_steps'] = ", cfg['RL']['train_run_steps'])

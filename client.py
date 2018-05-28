@@ -61,8 +61,22 @@ class EnvSpace(BaseNamespace):
             self.state_buf.append(state)
             self.action_buf.append(action)
             self.reward_buf.append(reward)
-            if self.frame_count >= cfg['RL']['train_run_steps'] or done:
 
+            send_train = False
+            if cfg['RL']['train_if_down']:
+                if done and cfg['RL']['train_run_steps'] == None:
+                    send_train = True
+                elif done and self.frame_count >= cfg['RL']['train_run_steps']:
+                    send_train = True
+                else:
+                    send_train = False
+            elif self.frame_count >= cfg['RL']['train_run_steps']:
+                # NOT train_if_down and step_count >= train_run_steps
+                send_train = True
+            else:
+                send_train = False
+            
+            if send_train:
                 # print('I: send for train state_buf.shape={}, type(state_buf)={}, state_buf={}'.format(np.shape(self.state_buf), type(self.state_buf),self.state_buf))
                 # print('I: send for train action_buf.shape={}, type(action_buf)={}, action_buf={}'.format(np.shape(self.action_buf), type(self.action_buf), self.action_buf))
                 # print('I: send for train reward_buf.shape={}, type(reward_buf)={}, reward_buf={}'.format(np.shape(self.reward_buf), type(self.reward_buf), self.reward_buf))
@@ -178,3 +192,22 @@ class Gridworld_EX(EnvSpace):  # for test
 if __name__ == '__main__':
     # Client(EnvSpace) 
     Client(Gridworld_EX)
+
+
+    # train_multi_steps: yes      # sub choose, train_if_down, train_run_steps, 
+    # train_if_down: yes   
+    # train_run_steps
+    # done
+    # if train_multi_steps:
+    #     if cfg[train_if_down]:
+    #         if done and train_run_steps == None:
+    #             send train
+    #         elif done and step_count >= train_run_steps:
+    #             send train
+    #         else:
+    #             get predict
+    #     elif step_count >= train_run_steps:
+    #         # NOT train_if_down and step_count >= train_run_steps
+            
+    #     else:
+    #         # get predict

@@ -7,8 +7,10 @@ import cv2
 from config import cfg
 from DRL.Base import RL, DRL
 from DRL.A3C import A3C
+from DRL.DDPG import DDPG
 from DRL.TD import SARSA, QLearning
 
+import tensorflow as tf
 #------ Dynamic Namespce Predict -------#
 class Worker(Namespace):
     def __init__(self,ns, client_id, sess = None, main_net = None ):
@@ -23,7 +25,12 @@ class Worker(Namespace):
         if issubclass(method_class, DRL):
             '''Use DRL'''
             self.sess = sess
-            self.RL = method_class(self.sess, self.client_id, main_net)
+            print('use ', client_id, ' for tf variable_scope')
+            with tf.variable_scope(client_id): 
+                if cfg['RL']['method']=='A3C':  # for multiple worker
+                    self.RL = method_class(self.sess, self.client_id, main_net)
+                else:
+                    self.RL = method_class(self.sess, scope = self.client_id)
         elif issubclass(method_class, RL):
             '''Use RL'''
             self.RL = method_class()

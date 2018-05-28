@@ -29,7 +29,17 @@ python examples/gridworld.py config/gridworld_SARSA.yaml
 
 ## Version Note 
 
-### v0.06 (latest)
+### v0.07 (latest)
+Implementation of DDPG (Deep Deterministic Policy Gradient)
+and add mobile_avoidance example
+
+1. Run mobile_avoidance.py with DDPG
+```
+python server.py               config/mobile_avoidance_DDPG.yaml
+python examples/mobile_avoidance.py config/mobile_avoidance_DDPG.yaml
+```
+
+### v0.06
 Implementation Socket.io which replacing ZMQ   
 (No ZMQ in the framework now)
 Note: Every client use Socket.io link to a new uuid space ->  /[uuid]/

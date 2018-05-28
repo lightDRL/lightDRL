@@ -9,7 +9,7 @@
 import tensorflow as tf
 import numpy as np
 from config import cfg
-from Base import DRL
+from DRL.Base import DRL
 
 
 class A3C(DRL):

@@ -11,6 +11,7 @@ from dashboard import Dashboard
 
 from DRL.Base import RL,DRL
 from DRL.A3C import A3C
+from DRL.DDPG import DDPG
 from DRL.TD import SARSA, QLearning
 
 if issubclass(globals()[cfg['RL']['method'] ], DRL): 
@@ -27,6 +28,7 @@ class SocketServer(Namespace):
         super(SocketServer, self).__init__(namespace=namespace)
         self.socketio = sock
         self.init_method()
+        print('[I] Server is ready!')
 
     #------- for connect and get id------#
     def on_connect(self):
@@ -38,8 +40,10 @@ class SocketServer(Namespace):
         ns = '/' + new_id + '/rl_session' 
 
         print('Build server RL Session socket withs ns: {}'.format(ns))
-        if self.use_DRL:
-            self.socketio.on_namespace(Worker(ns, new_id, self.sess, self.main_net) )
+        if self.use_DRL and cfg['RL']['method']=='A3C':
+            self.socketio.on_namespace(Worker(ns, new_id, self.sess, self.dnn_main_net) )
+        elif self.use_DRL :
+            self.socketio.on_namespace(Worker(ns, new_id, self.sess) )
         else:
             self.socketio.on_namespace(Worker(ns, new_id) )
         
@@ -47,13 +51,17 @@ class SocketServer(Namespace):
     
             
     def init_method(self):
-        print('I: Use {} Method'.format(cfg['RL']['method']))
+        print('[I] Use {} Method'.format(cfg['RL']['method']))
         method_class = globals()[cfg['RL']['method'] ]
         # DL Init
         if issubclass(method_class, DRL): 
             self.sess = tf.Session()
             method = cfg['RL']['method']
-            self.main_net = method_class(self.sess, cfg[method]['main_net_scope'])  
+            if method == 'A3C':
+                self.dnn_main_net = method_class(self.sess, cfg[method]['dnn_scope'])  
+            # else:
+            #     self.dnn_main_net = method_class(self.sess)
+        
         elif issubclass(method_class, RL):
             pass
         else:
@@ -63,7 +71,8 @@ class SocketServer(Namespace):
 
         # print('self.use_DRL = {}'.format(self.use_DRL))
         # DL Init 2
-        if self.use_DRL:
+        # if self.use_DRL and method == 'A3C':
+        if method == 'A3C':
             # COORD = tf.train.Coordinator()
             self.sess.run(tf.global_variables_initializer())
             self.check_output_graph()
