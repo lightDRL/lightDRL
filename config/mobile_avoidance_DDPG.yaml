@@ -21,10 +21,12 @@ DDPG:
     lr_actor: 0.001  # learning rate for actor (1e-4)
     lr_critic: 0.002  # learning rate for critic
     exp_decay: 0.01
-    memory_capacity: 10000
+    memory_capacity: 300
     batch_size: 32
 
 log:
     output_tf: yes
     output_tf_dir: './log'
+    model_save_cycle: 3
+    gpu_memory: 0.3
     

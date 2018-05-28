@@ -34,16 +34,21 @@ class SocketServer(Namespace):
     def on_connect(self):
         print('Server in on_connect()')
 
-    def on_session(self):
+    def on_session(self, *data):
         print('Server in on_session()')
+        print('data = ', data)
+        # print('data_2 = ', data_2)
+        prj_name = data[0]
+
         new_id = shortuuid.uuid()
         ns = '/' + new_id + '/rl_session' 
 
+        tf_new_graph, tf_new_sess = self.create_new_tf_graph_sess()
         print('Build server RL Session socket withs ns: {}'.format(ns))
         if self.use_DRL and cfg['RL']['method']=='A3C':
-            self.socketio.on_namespace(Worker(ns, new_id, self.sess, self.dnn_main_net) )
+            self.socketio.on_namespace(Worker(ns, new_id, tf_new_sess, self.dnn_main_net) )
         elif self.use_DRL :
-            self.socketio.on_namespace(Worker(ns, new_id, self.sess) )
+            self.socketio.on_namespace(Worker(ns, new_id, graph = tf_new_graph, sess = tf_new_sess, project_name=prj_name) )
         else:
             self.socketio.on_namespace(Worker(ns, new_id) )
         
@@ -53,7 +58,10 @@ class SocketServer(Namespace):
     def init_method(self):
         print('[I] Use {} Method'.format(cfg['RL']['method']))
         method_class = globals()[cfg['RL']['method'] ]
-        # DL Init
+        self.use_DRL = True if issubclass(method_class, DRL) else False
+
+        # A3C Init
+        
         if issubclass(method_class, DRL): 
             self.sess = tf.Session()
             method = cfg['RL']['method']
@@ -66,9 +74,8 @@ class SocketServer(Namespace):
             pass
         else:
             print('E: Worker::__init__() say error method name={}'.format(cfg['RL']['method'] ))
-
-        self.use_DRL = True if issubclass(method_class, DRL) else False
-
+       
+    
         # print('self.use_DRL = {}'.format(self.use_DRL))
         # DL Init 2
         # if self.use_DRL and method == 'A3C':
@@ -76,7 +83,8 @@ class SocketServer(Namespace):
             # COORD = tf.train.Coordinator()
             self.sess.run(tf.global_variables_initializer())
             self.check_output_graph()
-
+        
+        
     def check_output_graph(self):
         if 'log' in cfg and cfg['log']['output_tf']:
             import os, shutil
@@ -84,6 +92,15 @@ class SocketServer(Namespace):
             if os.path.exists(log_dir):
                 shutil.rmtree(log_dir)
             tf.summary.FileWriter(log_dir, self.sess.graph)
+
+    def create_new_tf_graph_sess(self):
+        tf_new_graph = tf.Graph()
+
+        config = tf.ConfigProto()
+        config.gpu_options.per_process_gpu_memory_fraction = cfg['log']['gpu_memory']
+        print('config = ', config)
+        tf_new_sess = tf.Session(config=config, graph=tf_new_graph)
+        return tf_new_graph, tf_new_sess
 
 
 #------ check data_pool/ exist -------#

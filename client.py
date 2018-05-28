@@ -116,10 +116,10 @@ class EnvSpace(BaseNamespace):
 
 
 class Client:
-    def __init__(self, target_env_class, env_name=''):
+    def __init__(self, target_env_class, project_name=None):
         # Thread.__init__(self)
         self.target_env_class = target_env_class
-        self.env_name = env_name
+        self.env_name = project_name
         self.socketIO = SocketIO('127.0.0.1', 5000)
         self.socketIO.on('connect', self.on_connect)
         self.socketIO.on('disconnect', self.on_disconnect)
@@ -129,7 +129,7 @@ class Client:
         # for ctrl+C
         signal.signal(signal.SIGINT, self.signal_handler)
 
-        self.socketIO.emit('session')
+        self.socketIO.emit('session', project_name, "arg2")
         self.socketIO.wait()
         
 

@@ -13,11 +13,10 @@ from DRL.TD import SARSA, QLearning
 import tensorflow as tf
 #------ Dynamic Namespce Predict -------#
 class Worker(Namespace):
-    def __init__(self,ns, client_id, sess = None, main_net = None ):
+    def __init__(self,ns, client_id, graph = None, sess = None, main_net = None, project_name = None ):
         super(Worker, self).__init__(ns)
         self.client_id = client_id
-
-        
+        self.graph = graph
         # RL or DRL Init
         self.nA = cfg['RL']['action_num']
         method_class = globals()[cfg['RL']['method'] ]
@@ -26,11 +25,14 @@ class Worker(Namespace):
             '''Use DRL'''
             self.sess = sess
             print('use ', client_id, ' for tf variable_scope')
-            with tf.variable_scope(client_id): 
+            # with tf.variable_scope(client_id): 
+            with self.graph.as_default():
                 if cfg['RL']['method']=='A3C':  # for multiple worker
                     self.RL = method_class(self.sess, self.client_id, main_net)
                 else:
-                    self.RL = method_class(self.sess, scope = self.client_id)
+                    self.RL = method_class(self.sess, scope = self.client_id, project_name=project_name)
+                    
+                self.RL.init_or_restore_model(self.sess)    # init or check model
         elif issubclass(method_class, RL):
             '''Use RL'''
             self.RL = method_class()
@@ -40,13 +42,12 @@ class Worker(Namespace):
 
         print("{}'s Worker Ready!".format(self.client_id))
 
+   
+
 
     def on_connect(self):
         print('{} Worker Connect'.format(self.client_id))
-        self.data_dir = 'data_pool/{}/'.format(self.client_id)
-        if not os.path.isdir(self.data_dir):
-            os.mkdir(self.data_dir)
-
+        
         self.state_count = 0
 
     def on_disconnect(self):
@@ -69,6 +70,8 @@ class Worker(Namespace):
             action = action.tolist() if type(action) == np.ndarray else action
 
             emit('predict_response', action)
+        
+        
 
     def predict(self, state):
         # print("I: predict() state.shape: {}, type(state)= {} ".format(np.shape(state), type(state)) )
@@ -90,7 +93,8 @@ class Worker(Namespace):
         actions = np.array(actions) if type(actions) == list else actions
         next_state = np.array(next_state) if type(next_state) == list else next_state
 
-        self.RL.train(states, actions, rewards, next_state, done)
+        with self.graph.as_default():
+            self.RL.train(states, actions, rewards, next_state, done)
         
     def save_data(self, data):
         state = data['state']

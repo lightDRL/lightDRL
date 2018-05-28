@@ -13,9 +13,11 @@ from Base import DRL
 
 
 class DDPG(DRL):
-    def __init__(self, sess, scope = ''):
-        super(DRL, self).read_config()
-    
+    def __init__(self, sess, scope = '', project_name=None):
+        super(DDPG, self).drl_init(sess, project_name)
+        super(DDPG, self).read_config()
+        
+        print('------------sess = ----->', sess)
         self.a_bound = self.a_bound[1]
         self.memory_capacity = cfg['DDPG']['memory_capacity']
         self.batch_size = cfg['DDPG']['batch_size']
@@ -25,7 +27,7 @@ class DDPG(DRL):
 
         self.memory = np.zeros((self.memory_capacity, self.s_dim * 2 + self.a_dim + 1), dtype=np.float32)
         self.pointer = 0
-        self.sess = sess
+        # self.sess = sess
 
         self.S = tf.placeholder(tf.float32, [None, self.s_dim], 's')
         self.S_ = tf.placeholder(tf.float32, [None, self.s_dim], 's_')
@@ -33,8 +35,8 @@ class DDPG(DRL):
         self.a = self._build_a(self.S)
 
         q = self._build_c(self.S, self.a, )
-        a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope +'/actor')
-        c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope +'/critic')
+        a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope= 'actor')   #scope +'/actor')
+        c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope= 'critic') # scope +'/critic')
         ema = tf.train.ExponentialMovingAverage(decay=1 - self.exp_decay)          # soft replacement
 
         def ema_getter(getter, name, *args, **kwargs):
@@ -52,14 +54,13 @@ class DDPG(DRL):
             td_error = tf.losses.mean_squared_error(labels=q_target, predictions=q)
             self.ctrain = tf.train.AdamOptimizer(self.lr_critic).minimize(td_error, var_list=c_params)
 
-        self.sess.run(tf.global_variables_initializer())
+        # self.sess.run(tf.global_variables_initializer())
         # self.sess.run(tf.local_variables_initializer())
 
     def choose_action(self, s):
         return self.sess.run(self.a, {self.S: s[np.newaxis, :]})[0]
 
     def train(self,  s, a, r, s_, done):
-    # def learn(self):
         self.store_transition(s, a, r , s_)
         if self.pointer <= self.memory_capacity:
             return 
@@ -74,6 +75,10 @@ class DDPG(DRL):
 
         self.sess.run(self.atrain, {self.S: bs})
         self.sess.run(self.ctrain, {self.S: bs, self.a: ba, self.R: br, self.S_: bs_})
+
+        super(DDPG, self).train(s, a, r, s_, done)
+
+       
 
     def _build_net(self):
         pass
@@ -103,14 +108,8 @@ class DDPG(DRL):
 
             net = tf.nn.relu(tf.matmul(s_n1, w1_s) + tf.matmul(a, w1_a) + b1)
             return tf.layers.dense(net, 1, trainable=trainable)  # Q(s,a)
-    def save(self):
-        saver = tf.train.Saver()
-        saver.save(self.sess, './params', write_meta_graph=False)
+   
 
-    def restore(self):
-        saver = tf.train.Saver()
-        saver.restore(self.sess, './params')
-    
 
 if __name__ == '__main__':
     sess = tf.Session()

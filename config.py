@@ -1,6 +1,8 @@
 import yaml
 import sys
 
+DATA_POOL = 'data_pool/'
+
 cfg = []
 
 """ For loader tuple"""
