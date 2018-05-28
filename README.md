@@ -15,16 +15,12 @@ sudo pip install -r requirements.txt
 
 ## Run
 
-1. Run the Server 
+Test example which you want to play, for example, mobile_avoidance
 
 ```
-python server.py config/gridworld_SARSA.yaml
-```
-
-2. Run the two_dof_arm (You could update this to your need) 
-
-```
-python examples/gridworld.py config/gridworld_SARSA.yaml
+cd examples/mobile_avoidance
+python ../../server.py
+python mobile_avoidance.py DDPG.yaml
 ```
 
 ## Version Note 

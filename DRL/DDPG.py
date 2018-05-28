@@ -8,7 +8,6 @@ import numpy as np
 import time
 import sys, os
 sys.path.append(os.path.abspath(os.path.dirname(__file__)+'/../'))
-# from config import cfg
 from Base import DRL
 
 

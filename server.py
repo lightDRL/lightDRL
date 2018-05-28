@@ -14,15 +14,18 @@ from DRL.Base import RL,DRL
 from DRL.A3C import A3C
 from DRL.DDPG import DDPG
 from DRL.TD import SARSA, QLearning
-
-# if issubclass(globals()[cfg['RL']['method'] ], DRL): 
 import tensorflow as tf
 #-------set log level--------#
 # import logging
 # log = logging.getLogger('werkzeug')
 # log.setLevel(logging.ERROR)
 
-DATA_POOL = 'data_pool/'
+# default dir is same path as server.py
+DATA_POOL = os.path.abspath(os.path.dirname(__file__) + '/data_pool/')
+#------ check data_pool/ exist -------#
+if not os.path.isdir(DATA_POOL):
+    os.mkdir(DATA_POOL)
+
 #------ Dynamic Namespce Predict -------#
 class SocketServer(Namespace):
     def __init__(self, namespace = '/',  sock = None):
@@ -130,9 +133,7 @@ class SocketServer(Namespace):
         return model_log_dir
 
 
-#------ check data_pool/ exist -------#
-if not os.path.isdir(DATA_POOL):
-    os.mkdir(DATA_POOL)
+
     
 
 if __name__ == '__main__':

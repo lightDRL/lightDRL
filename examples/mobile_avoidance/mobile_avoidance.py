@@ -1,14 +1,14 @@
-# Run with A3C
-#   python server.py               config/two_dof_arm_A3C.yaml
-#   python examples/two_dof_arm.py config/two_dof_arm_A3C.yaml
+# Run with DDPG
+#   python ../../server.py
+#   python mobile_avoidance.py DDPG.yaml
 #   
 # Author:  allengun2000  <https://github.com/allengun2000/>
 #          
 
 import sys, os
-sys.path.append(os.path.abspath(os.path.dirname(__file__)+'/../'))
+sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
 from client import Client, EnvSpace
-from envs.car_env import CarEnv
+from car_env import CarEnv
 import time
 from config import cfg
 import numpy as np
@@ -42,7 +42,5 @@ class MobileAvoidance(EnvSpace):
             self.state =  self.env.reset()
             self.send_state_get_action(self.state)
 
-
 if __name__ == '__main__':
     c = Client(MobileAvoidance, project_name='mobile_avoidance')
-        # c.start()

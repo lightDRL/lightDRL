@@ -22,6 +22,7 @@ class EnvSpace(BaseNamespace):
         self.action_buf = []
         # print('EnvSpace say connect')
         self.start_time = time.time()
+        self.ep_s_time = time.time()
         self.ep = 0
         self.ep_use_step = 0
         self.ep_reward = 0
@@ -102,17 +103,25 @@ class EnvSpace(BaseNamespace):
             self.log()
             self.ep_use_step = 0
             self.ep_reward = 0
+            self.ep_s_time = time.time()  # update episode start time
 
 
     def log(self):
         use_secs = time.time() - self.start_time
         time_str = '%3dh%3dm%3ds' % (use_secs/3600, (use_secs%3600)/60, use_secs % 60 )
         # print('%s -> EP:%4d, STEP:%3d, r: %4.2f, t:%s' % (self.client.client_id,  self.ep,  self.ep_use_step, self.reward, time_str))
-        print('(%s) EP:%5d, STEP:%4d, r: %7.2f, t:%s' % ( self.env_name, self.ep,  self.ep_use_step, self.ep_reward, time_str))
+        print('(%s) EP:%5d, STEP:%4d, r: %7.2f, ep_t:%s, all_t:%s' % \
+            ( self.env_name, self.ep,  self.ep_use_step, self.ep_reward, self.time_str(self.ep_s_time, True), self.time_str(self.start_time)))
 
     def set_name(self,name):
         # print('set_name  = ', name)
         self.env_name = name
+
+    def time_str(self, start_time, min=False):
+        use_secs = time.time() - start_time
+        if min:
+            return '%3dm%2ds' % (use_secs/60, use_secs % 60 )
+        return  '%3dh%2dm%2ds' % (use_secs/3600, (use_secs%3600)/60, use_secs % 60 )
 
 
 class Client:
