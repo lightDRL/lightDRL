@@ -2,7 +2,7 @@
 #   python server.py               config/two_dof_arm_A3C.yaml
 #   python examples/two_dof_arm.py config/two_dof_arm_A3C.yaml
 #   
-# Author:  allengun2000  
+# Author:  allengun2000  <https://github.com/allengun2000/>
 #          
 
 import sys, os
