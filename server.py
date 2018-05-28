@@ -21,7 +21,7 @@ import tensorflow as tf
 # log.setLevel(logging.ERROR)
 
 # default dir is same path as server.py
-DATA_POOL = os.path.abspath(os.path.dirname(__file__) + '/data_pool/')
+DATA_POOL = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data_pool')
 #------ check data_pool/ exist -------#
 if not os.path.isdir(DATA_POOL):
     os.mkdir(DATA_POOL)
@@ -67,41 +67,9 @@ class SocketServer(Namespace):
         # else:
         #     self.socketio.on_namespace(Worker(ns, new_uuid) )
         
-    
-
         emit('session_response', new_uuid)
     
-    '''    
-    def init_method(self):
-        # print('[I] Use {} Method'.format(cfg['RL']['method']))
-        
-        method_class = globals()[cfg['RL']['method'] ]
-        self.use_DRL = True if issubclass(method_class, DRL) else False
-
-        # A3C Init
-        
-        if issubclass(method_class, DRL): 
-            self.sess = tf.Session()
-            method = cfg['RL']['method']
-            if method == 'A3C':
-                self.dnn_main_net = method_class(self.sess, cfg[method]['dnn_scope'])  
-            # else:
-            #     self.dnn_main_net = method_class(self.sess)
-        
-        elif issubclass(method_class, RL):
-            pass
-        else:
-            print('E: Worker::__init__() say error method name={}'.format(cfg['RL']['method'] ))
-        
-    
-        # print('self.use_DRL = {}'.format(self.use_DRL))
-        # DL Init 2
-        # if self.use_DRL and method == 'A3C':
-        if method == 'A3C':
-            # COORD = tf.train.Coordinator()
-            self.sess.run(tf.global_variables_initializer())
-            # self.check_output_graph()
-    '''    
+  
         
     # def check_output_graph(self):
     #     if 'misc' in cfg and cfg['misc']['output_tf']:
