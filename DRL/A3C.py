@@ -8,12 +8,11 @@
 
 import tensorflow as tf
 import numpy as np
-from config import cfg
 from DRL.Base import DRL
 
 
 class A3C(DRL):
-    def __init__(self, sess, scope, globalAC=None):
+    def __init__(self,cfg, model_log_dir, sess, scope, globalAC=None):
         self.sess = sess
         self.OPT_A = tf.train.RMSPropOptimizer(cfg['A3C']['LR_A'], name='RMSPropA')
         self.OPT_C = tf.train.RMSPropOptimizer(cfg['A3C']['LR_C'], name='RMSPropC')

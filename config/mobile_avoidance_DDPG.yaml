@@ -24,9 +24,9 @@ DDPG:
     memory_capacity: 300
     batch_size: 32
 
-log:
+misc:
     output_tf: yes
     output_tf_dir: './log'
     model_save_cycle: 3
-    gpu_memory: 0.3
+    gpu_memory_ratio: 0.3
     

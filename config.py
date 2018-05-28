@@ -36,4 +36,5 @@ def set_none_if_not_exist():
 
 set_none_if_not_exist()
 # train_run_steps = cfg['RL']['train_run_steps'] if 'train_run_steps' in cfg['RL'] else None
-print("cfg['RL']['train_run_steps'] = ", cfg['RL']['train_run_steps'])
+# print("cfg['RL']['train_run_steps'] = ", cfg['RL']['train_run_steps'])
+

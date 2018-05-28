@@ -8,10 +8,9 @@ import pandas as pd
 from Base import RL
 import six
 from abc import ABCMeta,abstractmethod
-from config import cfg
 
 class TD(RL):
-    def __init__(self):
+    def __init__(self, cfg):
         self.actions = list(range(cfg['RL']['action_num']))
         m = cfg['RL']['method']
         self.lr      = cfg[m]['LR']

@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 
 
-from config import cfg
+# from config import cfg
 from DRL.Base import RL, DRL
 from DRL.A3C import A3C
 from DRL.DDPG import DDPG
@@ -13,7 +13,7 @@ from DRL.TD import SARSA, QLearning
 import tensorflow as tf
 #------ Dynamic Namespce Predict -------#
 class Worker(Namespace):
-    def __init__(self,ns, client_id, graph = None, sess = None, main_net = None, project_name = None ):
+    def __init__(self,ns, client_id, cfg, model_log_dir = None, graph = None, sess = None, main_net = None  ):
         super(Worker, self).__init__(ns)
         self.client_id = client_id
         self.graph = graph
@@ -30,7 +30,7 @@ class Worker(Namespace):
                 if cfg['RL']['method']=='A3C':  # for multiple worker
                     self.RL = method_class(self.sess, self.client_id, main_net)
                 else:
-                    self.RL = method_class(self.sess, scope = self.client_id, project_name=project_name)
+                    self.RL = method_class(cfg, model_log_dir, self.sess )
                     
                 self.RL.init_or_restore_model(self.sess)    # init or check model
         elif issubclass(method_class, RL):

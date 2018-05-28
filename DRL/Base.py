@@ -7,17 +7,21 @@
 import six
 from abc import ABCMeta,abstractmethod
 import numpy as np
-from config import cfg, DATA_POOL
 import tensorflow as tf
 import os 
 
 @six.add_metaclass(ABCMeta)
 class RL(object):
 
-    def rl_init(self):
+    def rl_init(self, cfg, model_log_dir):
         self.ep = 0         # episode
+        self.model_log_dir = model_log_dir
+        # self.cfg = cfg
+        self.set_rl_basic_from_config(cfg)
 
-    def read_config(self):
+        print('rl_init() model_log_dir = ' + self.model_log_dir)
+        
+    def set_rl_basic_from_config(self, cfg):
         self.a_dim = np.squeeze(cfg['RL']['action_num']) 
         self.s_dim = np.squeeze(cfg['RL']['state_shape'])
         if not cfg['RL']['action_discrete']:    
@@ -25,6 +29,8 @@ class RL(object):
 
         self.r_dicount = self.reward_discount = cfg['RL']['reward_discount']
 
+        
+        self.model_save_cycle = cfg['misc']['model_save_cycle'] if ('misc' in cfg) and ('model_save_cycle' in cfg['misc']) else None
 
     @abstractmethod
     def choose_action(self, state):
@@ -47,27 +53,15 @@ class DRL(RL):
     def train(self,  s, a, r, s_, done):
         self.train_times+=1
         
-        if done:
+        if done and self.model_save_cycle!=None:
             self.ep +=1
-            if self.ep % cfg['log']['model_save_cycle'] ==0:
+            if self.ep % self.model_save_cycle ==0:
                 self.save_model(self.model_log_dir, self.ep)
 
 
-    def drl_init(self, sess, project_name = None):
-        super(DRL, self).rl_init()
+    def drl_init(self, sess):
         self.train_times = 0
         self.sess = sess
-        self.create_model_log_dir(project_name)
-
-    
-    def create_model_log_dir(self, project_name):
-        # self.model_log_dir = '{}/{}/'.format(DATA_POOL, project_name)   if project_name != None else None
-        self.model_log_dir = os.path.join(DATA_POOL, project_name) if project_name != None else None
-        print('self.model_log_dir = ', self.model_log_dir)
-        if self.model_log_dir !=None:
-            if not os.path.isdir(self.model_log_dir):
-                os.mkdir(self.model_log_dir)
-
 
     def save_model(self, save_model_dir, g_step):
         saver = tf.train.Saver()

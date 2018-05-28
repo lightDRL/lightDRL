@@ -129,7 +129,7 @@ class Client:
         # for ctrl+C
         signal.signal(signal.SIGINT, self.signal_handler)
 
-        self.socketIO.emit('session', project_name, "arg2")
+        self.socketIO.emit('session', project_name, cfg)
         self.socketIO.wait()
         
 

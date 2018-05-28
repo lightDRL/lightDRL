@@ -8,16 +8,17 @@ import numpy as np
 import time
 import sys, os
 sys.path.append(os.path.abspath(os.path.dirname(__file__)+'/../'))
-from config import cfg
+# from config import cfg
 from Base import DRL
 
 
 class DDPG(DRL):
-    def __init__(self, sess, scope = '', project_name=None):
-        super(DDPG, self).drl_init(sess, project_name)
-        super(DDPG, self).read_config()
+    def __init__(self, cfg, model_log_dir, sess):
+        super(DDPG, self).rl_init(cfg, model_log_dir)
+        super(DDPG, self).drl_init(sess)
         
-        print('------------sess = ----->', sess)
+        print('DDPG() model_log_dir = ' + self.model_log_dir)
+
         self.a_bound = self.a_bound[1]
         self.memory_capacity = cfg['DDPG']['memory_capacity']
         self.batch_size = cfg['DDPG']['batch_size']
