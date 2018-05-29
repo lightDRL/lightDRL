@@ -67,8 +67,6 @@ class SocketServer(Namespace):
         # else:
         #     self.socketio.on_namespace(Worker(ns, new_uuid) )
         
-    
-
         emit('session_response', new_uuid)
     
     '''    

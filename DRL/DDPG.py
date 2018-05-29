@@ -8,7 +8,7 @@ import numpy as np
 import time
 import sys, os
 sys.path.append(os.path.abspath(os.path.dirname(__file__)+'/../'))
-from Base import DRL
+from DRL.Base import DRL
 
 
 class DDPG(DRL):

@@ -5,7 +5,7 @@ https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/blob/master
 
 import numpy as np
 import pandas as pd
-from Base import RL
+from DRL.Base import RL
 import six
 from abc import ABCMeta,abstractmethod
 
