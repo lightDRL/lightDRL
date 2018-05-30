@@ -28,7 +28,6 @@ class DDPG(DRL):
         self.exp_decay = cfg['DDPG']['exp_decay']
         
 
-        # self.memory = np.zeros((self.memory_capacity, self.s_dim * 2 + self.a_dim + 1), dtype=np.float32)
         self.memory = deque()
         self.pointer = 0
         # self.sess = sess
@@ -64,7 +63,7 @@ class DDPG(DRL):
     def choose_action(self, s):
         if self.action_discrete:
             probs =  self.sess.run(self.a, {self.S: s[np.newaxis, :]})
-            print('probs', probs)
+            # print('probs', probs)
             action = np.random.choice(range(probs.shape[1]), p=probs.ravel())
             return action
         else:
@@ -75,20 +74,17 @@ class DDPG(DRL):
             a = self.onehot(a)
 
         if self.reward_reverse_norm and len(r) > 1:
-            r = self.reverse_and_norm_rewards(r, self.r_discount)
-        # print('a', a, 'a_onehost', a_onehot)
+            # r = self.reverse_and_norm_rewards(r, self.r_discount)
+            r = self.reverse_add_rewards(r, self.r_discount)
+
+
         self.store_transition(s, a, r , s_)
-        # print('r = ', r )
-        # if self.pointer <= self.memory_capacity:
-        #     return 
         if len(self.memory) < self.memory_capacity:
             return
          
         bt = random.sample(self.memory,self.batch_size)
         bt = np.array(bt)
-        print('bt.shape = ' + str(bt.shape))
-        # indices = np.random.choice(self.memory_capacity, size=self.batch_size)
-        # bt = self.memory[indices, :]
+        # print('bt.shape = ' + str(bt.shape))
         bs = bt[:, :self.s_dim]
         ba = bt[:, self.s_dim: self.s_dim + self.a_dim]
         br = bt[:, -self.s_dim - 1: -self.s_dim]
@@ -98,46 +94,27 @@ class DDPG(DRL):
         self.sess.run(self.ctrain, {self.S: bs, self.a: ba, self.R: br, self.S_: bs_})
 
         super(DDPG, self).train(s, a, r, s_, done)
-        print('train model finish, self.train_times =' + str(self.train_times))
-        self.pointer = self.pointer *0.5 
-
-    def _build_net(self):
-        pass
+        # print('train model finish, self.train_times =' + str(self.train_times))
 
     def store_transition(self, s, a, r, s_):
-        print('start-------in store_transition--------')
+        # print('start-------in store_transition--------')
         # print('s.shape', s.shape)
         # print('r.shape', r.shape)
         # r = r[:, np.newaxis]
-        # print('s.shape={} -> {}'.format(s.shape, s  ))
-        # print('a.shape={} -> {}'.format(a.shape, a  ))
-        # print('r.shape={} -> {}'.format(r.shape, r  ))
-        # print('s_.shape={} -> {}'.format(s_.shape, s_  ))
+        if type(r) == list or type(r) == np.ndarray:      #mulitple step restore
+            r = np.array(r)
+            r = r[:, np.newaxis]  if len(r.shape) <= 1 else r
+            transition = np.hstack((s, a, r, s_))
+            for d in transition:
+                self.memory.append(d)
+        else:
+            transition = np.hstack((s, a, r, s_))
+            self.memory.append(transition)
 
-        transition = np.hstack((s, a, r, s_))
-        # print('transition.shape', transition.shape)
         
-        
-        self.memory.append(transition)
         while len(self.memory) > self.memory_capacity:
 			self.memory.popleft()
 
-        print('len(memory) = ' + str( len(self.memory))  )
-        
-        # index = self.pointer % self.memory_capacity  # replace the old memory with new memory
-        # data_len = len(s) if (index+len(s)) < self.memory_capacity else self.memory_capacity - index
-        # print('self.memory.shape = ' + str(self.memory.shape))
-        # print('transition.shape = ' + str(transition.shape))
-        # print('index' , index)
-        # print('index = ' + str(index))
-        # print('data_len = ' + str(data_len))
-        # transition = transition[:data_len, :]
-        # print('new transition.shape', transition.shape)
-        # self.memory[index: index+data_len, :] = transition
-        # self.pointer += data_len
-        # print('self.memory.shape = ' + str(np.array(self.memory)))
-        print('end-------in store_transition--------')
-        print()
 
     def _build_a(self, s, reuse=None, custom_getter=None):
         trainable = True if reuse is None else False
@@ -164,7 +141,9 @@ class DDPG(DRL):
             net = tf.nn.relu(tf.matmul(s_n1, w1_s) + tf.matmul(a, w1_a) + b1)
             return tf.layers.dense(net, 1, trainable=trainable)  # Q(s,a)
    
-
+    # override
+    def _build_net(self):
+        pass
 
 if __name__ == '__main__':
     sess = tf.Session()

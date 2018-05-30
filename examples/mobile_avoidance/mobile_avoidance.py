@@ -10,7 +10,7 @@ sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'
 from client import Client, EnvSpace
 from car_env import CarEnv
 import time
-from config import cfg
+from config import cfg, get_yaml_name
 import numpy as np
 
 TRAIN_MODE = True
@@ -43,4 +43,4 @@ class MobileAvoidance(EnvSpace):
             self.send_state_get_action(self.state)
 
 if __name__ == '__main__':
-    c = Client(MobileAvoidance, project_name='mobile_avoidance-'+cfg['RL']['method'])
+    c = Client(MobileAvoidance, project_name='mobile_avoidance-'+get_yaml_name())

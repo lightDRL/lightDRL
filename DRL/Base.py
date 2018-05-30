@@ -59,6 +59,7 @@ class DRL(RL):
             self.ep +=1
             if self.ep % self.model_save_cycle ==0:
                 self.save_model(self.model_log_dir, self.ep)
+            print('----------------EP=%d--------' % self.ep)
 
 
     def drl_init(self, sess):
@@ -103,8 +104,8 @@ class DRL(RL):
         return  np.eye(self.a_dim)[argmax_ary]
 
     def reverse_and_norm_rewards(self, ep_rs, r_dicount = 0.9):
-        print('reverse_and_norm_rewards -> ep_rs = ' + str(ep_rs))
-        # print('len(self.ep_rs)',len(self.ep_rs) )
+        print('reverse_and_norm_rewards ep_rs -> len = {}, {}'.format(len(ep_rs), ep_rs))
+
         # discount episode rewards
         discounted_ep_rs = np.zeros_like(ep_rs)
         running_add = 0
@@ -118,6 +119,18 @@ class DRL(RL):
         # discounted_ep_rs -= np.mean(discounted_ep_rs)
         # discounted_ep_rs /= np.std(discounted_ep_rs)
         print('reverse_and_norm_rewards -> discounted_ep_rs = ' + str(discounted_ep_rs))
+        return discounted_ep_rs
+
+    def reverse_add_rewards(self, ep_rs, r_dicount = 0.9):
+        print('reverse_and_norm_rewards ep_rs -> len = {}, {}'.format(len(ep_rs), ep_rs))
+        # discount episode rewards
+        discounted_ep_rs = np.zeros_like(ep_rs)
+        running_add = 0
+        for t in reversed(range(0, len(ep_rs))):
+            running_add = running_add * r_dicount + ep_rs[t]
+            discounted_ep_rs[t] = running_add
+            
+        print('reverse_add_rewards -> discounted_ep_rs = ' + str(discounted_ep_rs))
         return discounted_ep_rs
         
 

@@ -35,6 +35,14 @@ def set_none_if_not_exist():
     cfg['RL']['reward_reverse_norm'] = cfg['RL']['reward_reverse_norm'] if 'reward_reverse_norm' in cfg['RL'] else None
 
 
+def get_yaml_name():
+    from os.path import basename, splitext
+    f_name = basename(sys.argv[1])
+    f_name = splitext(f_name)[0]
+    print('f_name = ' , f_name)
+    return f_name
+
+
 
 set_none_if_not_exist()
 # train_run_steps = cfg['RL']['train_run_steps'] if 'train_run_steps' in cfg['RL'] else None

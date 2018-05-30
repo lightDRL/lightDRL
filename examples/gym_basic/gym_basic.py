@@ -1,8 +1,8 @@
 # Run with DDPG
 #   python ../../server.py
-#   python mobile_avoidance.py DDPG.yaml
+#   python gym_basic.py DDPG.yaml
 #   
-# Author:  allengun2000  <https://github.com/allengun2000/>
+# Author:  kbehouse  <https://github.com/kbehouse/>
 #          
 
 import sys, os
@@ -10,7 +10,7 @@ sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'
 from client import Client, EnvSpace
 import gym
 import time
-from config import cfg
+from config import cfg, get_yaml_name
 import numpy as np
 
 TRAIN_MODE = True
@@ -19,30 +19,11 @@ RENDER = True
 
 ENV_NAME = 'CartPole-v0' 
 
-
-# print('type(env.action_space.n) = ' + str(type(env.action_space)))
-# print(env.action_space.n)
-# print(env.action_space)
-# print(env.observation_space.shape)
-# print(env.observation_space.high)
-# print(env.observation_space.low)
-
-# exit()
 class GymBasic(EnvSpace):
     def env_init(self):
         self.env = gym.make(ENV_NAME)
         self.state = self.env.reset()
         self.send_state_get_action(self.state)
-
-    # override set_cfg()
-    # def set_cfg(self):
-    #     print('in GymBasic set_cfg()')
-    #     self.cfg = cfg
-    #     env = self.env.unwrapped
-    #     self.cfg['RL']['action_num'] = env.action_space.n
-    #     self.cfg['RL']['action_discrete'] = True if type(env.action_space) == gym.spaces.discrete.Discrete else False
-    #     self.cfg['RL']['state_shape'] = env.observation_space.shape
-        # print("cfg['RL']" , cfg['RL'])
 
     def on_predict_response(self, action):
         # self.var = self.var * 0.9995 if self.ep_use_step > cfg['DDPG']['memory_capacity'] else self.var
@@ -63,12 +44,12 @@ def modify_cfg():
     env = gym.make(ENV_NAME)
     # env.seed(1)     # reproducible, general Policy gradient has high variance
     env = env.unwrapped
-    print('type(env.action_space.n) = ' + str(type(env.action_space)))
-    print(env.action_space.n)
-    print(env.action_space)
-    print(env.observation_space.shape)
-    print(env.observation_space.high)
-    print(env.observation_space.low)
+    # print('type(env.action_space.n) = ' + str(type(env.action_space)))
+    # print(env.action_space.n)
+    # print(env.action_space)
+    # print(env.observation_space.shape)
+    # print(env.observation_space.high)
+    # print(env.observation_space.low)
     cfg['RL']['action_num'] = env.action_space.n
     cfg['RL']['action_discrete'] = True if type(env.action_space) == gym.spaces.discrete.Discrete else False
     cfg['RL']['state_shape'] = env.observation_space.shape
@@ -76,4 +57,4 @@ def modify_cfg():
     return cfg
 
 if __name__ == '__main__':
-    c = Client(GymBasic, project_name='gym-'+ ENV_NAME + '-' + cfg['RL']['method'], i_cfg = modify_cfg(), retrain_model= True)
+    c = Client(GymBasic, project_name='gym-'+ ENV_NAME + '-' + get_yaml_name(), i_cfg = modify_cfg(), retrain_model= True)

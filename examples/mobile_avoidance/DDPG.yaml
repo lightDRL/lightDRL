@@ -28,6 +28,6 @@ DDPG:
 misc:
     output_tf: yes
     output_tf_dir: './log'
-    model_save_cycle: 3
+    model_save_cycle: 30
     gpu_memory_ratio: 0.3
     
