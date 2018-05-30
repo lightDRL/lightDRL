@@ -39,11 +39,11 @@ class SocketServer(Namespace):
         print('[I] In Server\'s on_connect()')
 
     def on_session(self, *data):
-        print('Server in on_session()')
-        print('data = ', data)
-        # print('data_2 = ', data_2)
+        print('[I] Server in on_session()')
+
         prj_name = data[0]
         cfg = data[1]
+        retrain_model = data[2]
 
         # get method class
         method_class = globals()[cfg['RL']['method'] ]
@@ -55,7 +55,7 @@ class SocketServer(Namespace):
         # create tf graph & tf session
         tf_new_graph, tf_new_sess = self.create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'])
         # create logdir and save cfg
-        model_log_dir = self.create_model_log_dir(prj_name)
+        model_log_dir = self.create_model_log_dir(prj_name, recreate_dir = retrain_model)
         with open(os.path.join(model_log_dir, 'config.yaml') , 'w') as outfile:
             yaml.dump(cfg, outfile, default_flow_style=False)
         
@@ -89,15 +89,23 @@ class SocketServer(Namespace):
 
         return tf_new_graph, tf_new_sess
 
-    def create_model_log_dir(self, project_name):
+    def create_model_log_dir(self, project_name, recreate_dir = False):
         # self.model_log_dir = '{}/{}/'.format(DATA_POOL, project_name)   if project_name != None else None
         model_log_dir = os.path.join(DATA_POOL, project_name) if project_name != None else None
         
         if model_log_dir !=None:
             if not os.path.isdir(model_log_dir):
                 os.mkdir(model_log_dir)
+                print('[I] create model_log_dir:' + model_log_dir)
+            else:
+                if recreate_dir:
+                    from shutil import rmtree
+                    rmtree(model_log_dir)
+                    os.mkdir(model_log_dir)
+                    print('[I] REcreate model_log_dir:' + model_log_dir)
 
-        print('[I] model_log_dir:' + model_log_dir)
+
+        
         return model_log_dir
 
 

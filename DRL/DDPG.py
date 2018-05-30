@@ -9,7 +9,8 @@ import time
 import sys, os
 sys.path.append(os.path.abspath(os.path.dirname(__file__)+'/../'))
 from Base import DRL
-
+from collections import deque 
+import random
 
 class DDPG(DRL):
     def __init__(self, cfg, model_log_dir, sess):
@@ -18,14 +19,17 @@ class DDPG(DRL):
         
         print('DDPG() model_log_dir = ' + self.model_log_dir)
 
-        self.a_bound = self.a_bound[1]
+        if not self.action_discrete:
+            self.a_bound = self.a_bound[1]
         self.memory_capacity = cfg['DDPG']['memory_capacity']
         self.batch_size = cfg['DDPG']['batch_size']
         self.lr_actor = cfg['DDPG']['lr_actor']
         self.lr_critic = cfg['DDPG']['lr_critic']
         self.exp_decay = cfg['DDPG']['exp_decay']
+        
 
-        self.memory = np.zeros((self.memory_capacity, self.s_dim * 2 + self.a_dim + 1), dtype=np.float32)
+        # self.memory = np.zeros((self.memory_capacity, self.s_dim * 2 + self.a_dim + 1), dtype=np.float32)
+        self.memory = deque()
         self.pointer = 0
         # self.sess = sess
 
@@ -50,7 +54,7 @@ class DDPG(DRL):
         self.atrain = tf.train.AdamOptimizer(self.lr_actor).minimize(a_loss, var_list=a_params)
 
         with tf.control_dependencies(target_update):    # soft replacement happened at here
-            q_target = self.R + self.r_dicount * q_
+            q_target = self.R + self.r_discount * q_
             td_error = tf.losses.mean_squared_error(labels=q_target, predictions=q)
             self.ctrain = tf.train.AdamOptimizer(self.lr_critic).minimize(td_error, var_list=c_params)
 
@@ -58,16 +62,33 @@ class DDPG(DRL):
         # self.sess.run(tf.local_variables_initializer())
 
     def choose_action(self, s):
-        return self.sess.run(self.a, {self.S: s[np.newaxis, :]})[0]
+        if self.action_discrete:
+            probs =  self.sess.run(self.a, {self.S: s[np.newaxis, :]})
+            print('probs', probs)
+            action = np.random.choice(range(probs.shape[1]), p=probs.ravel())
+            return action
+        else:
+            return self.sess.run(self.a, {self.S: s[np.newaxis, :]})[0]
 
     def train(self,  s, a, r, s_, done):
+        if self.action_discrete:
+            a = self.onehot(a)
+
+        if self.reward_reverse_norm and len(r) > 1:
+            r = self.reverse_and_norm_rewards(r, self.r_discount)
+        # print('a', a, 'a_onehost', a_onehot)
         self.store_transition(s, a, r , s_)
-        if self.pointer <= self.memory_capacity:
-            return 
-
-
-        indices = np.random.choice(self.memory_capacity, size=self.batch_size)
-        bt = self.memory[indices, :]
+        # print('r = ', r )
+        # if self.pointer <= self.memory_capacity:
+        #     return 
+        if len(self.memory) < self.memory_capacity:
+            return
+         
+        bt = random.sample(self.memory,self.batch_size)
+        bt = np.array(bt)
+        print('bt.shape = ' + str(bt.shape))
+        # indices = np.random.choice(self.memory_capacity, size=self.batch_size)
+        # bt = self.memory[indices, :]
         bs = bt[:, :self.s_dim]
         ba = bt[:, self.s_dim: self.s_dim + self.a_dim]
         br = bt[:, -self.s_dim - 1: -self.s_dim]
@@ -77,25 +98,59 @@ class DDPG(DRL):
         self.sess.run(self.ctrain, {self.S: bs, self.a: ba, self.R: br, self.S_: bs_})
 
         super(DDPG, self).train(s, a, r, s_, done)
-
-       
+        print('train model finish, self.train_times =' + str(self.train_times))
+        self.pointer = self.pointer *0.5 
 
     def _build_net(self):
         pass
 
     def store_transition(self, s, a, r, s_):
+        print('start-------in store_transition--------')
+        # print('s.shape', s.shape)
+        # print('r.shape', r.shape)
+        # r = r[:, np.newaxis]
+        # print('s.shape={} -> {}'.format(s.shape, s  ))
+        # print('a.shape={} -> {}'.format(a.shape, a  ))
+        # print('r.shape={} -> {}'.format(r.shape, r  ))
+        # print('s_.shape={} -> {}'.format(s_.shape, s_  ))
+
         transition = np.hstack((s, a, r, s_))
-        index = self.pointer % self.memory_capacity  # replace the old memory with new memory
-        self.memory[index, :] = transition
-        self.pointer += 1
+        # print('transition.shape', transition.shape)
+        
+        
+        self.memory.append(transition)
+        while len(self.memory) > self.memory_capacity:
+			self.memory.popleft()
+
+        print('len(memory) = ' + str( len(self.memory))  )
+        
+        # index = self.pointer % self.memory_capacity  # replace the old memory with new memory
+        # data_len = len(s) if (index+len(s)) < self.memory_capacity else self.memory_capacity - index
+        # print('self.memory.shape = ' + str(self.memory.shape))
+        # print('transition.shape = ' + str(transition.shape))
+        # print('index' , index)
+        # print('index = ' + str(index))
+        # print('data_len = ' + str(data_len))
+        # transition = transition[:data_len, :]
+        # print('new transition.shape', transition.shape)
+        # self.memory[index: index+data_len, :] = transition
+        # self.pointer += data_len
+        # print('self.memory.shape = ' + str(np.array(self.memory)))
+        print('end-------in store_transition--------')
+        print()
 
     def _build_a(self, s, reuse=None, custom_getter=None):
         trainable = True if reuse is None else False
         with tf.variable_scope('actor', reuse=reuse, custom_getter=custom_getter):
             net = tf.layers.dense(s, 300, activation=tf.nn.relu, name='l1', trainable=trainable)
             net = tf.layers.dense(net, 300, activation=tf.nn.relu, name='l2', trainable=trainable)
-            a = tf.layers.dense(net, self.a_dim, activation=tf.nn.tanh, name='a', trainable=trainable)
-            return tf.multiply(a, self.a_bound, name='scaled_a')
+            
+            if self.action_discrete: 
+                a = tf.layers.dense(net, self.a_dim, activation=tf.nn.relu6, name='a', trainable=trainable)
+                return tf.nn.softmax(a, name='a_prob')  # use softmax to convert to probability
+            else:
+                a = tf.layers.dense(net, self.a_dim, activation=tf.nn.tanh, name='a', trainable=trainable)
+                return tf.multiply(a, self.a_bound, name='scaled_a')
 
     def _build_c(self, s, a, reuse=None, custom_getter=None):
         trainable = True if reuse is None else False

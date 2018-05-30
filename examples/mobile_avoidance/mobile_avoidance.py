@@ -36,11 +36,11 @@ class MobileAvoidance(EnvSpace):
         self.state = next_state
     
         # print('self.env_name=',self.env_name)
-        if self.ep>=2 and RENDER:
+        if self.ep>=30 and RENDER:
             self.env.render()   
         if done:
             self.state =  self.env.reset()
             self.send_state_get_action(self.state)
 
 if __name__ == '__main__':
-    c = Client(MobileAvoidance, project_name='mobile_avoidance')
+    c = Client(MobileAvoidance, project_name='mobile_avoidance-'+cfg['RL']['method'])

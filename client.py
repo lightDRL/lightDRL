@@ -4,7 +4,7 @@ import numpy as np
 import json
 # append this repo's root path
 sys.path.append(os.path.abspath(os.path.dirname(__file__)+'/../'))
-import envs
+# import envs
 import gym
 from config import cfg
 from threading import Thread
@@ -15,10 +15,19 @@ TRAIN_MODE = True
 
 #--------------Alread have id, connect again -------------#
 class EnvSpace(BaseNamespace):
+    # def __init__(self):
+    #     super(EnvSpace, self).__init__()
+    #     print('EnvSpce init')
+    #     self.set_cfg()
+
     def on_connect(self):
+        self.env_name =''
+        self.env_init()
+        
         self.frame_count = 0
         self.reward_buf = []
         self.state_buf  = []
+        self.next_state_buf  = []
         self.action_buf = []
         # print('EnvSpace say connect')
         self.start_time = time.time()
@@ -26,8 +35,7 @@ class EnvSpace(BaseNamespace):
         self.ep = 0
         self.ep_use_step = 0
         self.ep_reward = 0
-        self.env_name =''
-        self.env_init()
+        
 
     def on_disconnect(self):
         print('{} env say disconnect'.format(self.env_name))
@@ -62,7 +70,7 @@ class EnvSpace(BaseNamespace):
             self.state_buf.append(state)
             self.action_buf.append(action)
             self.reward_buf.append(reward)
-
+            self.next_state_buf.append(next_state)
             send_train = False
             if cfg['RL']['train_if_down']:
                 if done and cfg['RL']['train_run_steps'] == None:
@@ -87,13 +95,14 @@ class EnvSpace(BaseNamespace):
                         'action': self.action_buf, 
                         'reward': self.reward_buf, 
                         'done':done,
-                        'next_state': next_state}
+                        'next_state': self.next_state_buf}
                 self.emit('train_and_predict',dic)
 
                 self.frame_count = 0
                 self.reward_buf = []
                 self.state_buf  = []
                 self.action_buf = []
+                self.next_state_buf  = []
             else:
                 self.send_state_get_action(state)
 
@@ -123,9 +132,12 @@ class EnvSpace(BaseNamespace):
             return '%3dm%2ds' % (use_secs/60, use_secs % 60 )
         return  '%3dh%2dm%2ds' % (use_secs/3600, (use_secs%3600)/60, use_secs % 60 )
 
+    # def set_cfg(self):
+    #     print('In EnvSpace set_cfg()')
+    #     self.cfg = cfg
 
 class Client:
-    def __init__(self, target_env_class, project_name=None):
+    def __init__(self, target_env_class, project_name=None,i_cfg = None, retrain_model = False):
         # Thread.__init__(self)
         self.target_env_class = target_env_class
         self.env_name = project_name
@@ -138,7 +150,9 @@ class Client:
         # for ctrl+C
         signal.signal(signal.SIGINT, self.signal_handler)
 
-        self.socketIO.emit('session', project_name, cfg)
+        send_cfg = cfg if i_cfg == None else cfg
+        #self.socketIO.emit('session', project_name, cfg)  
+        self.socketIO.emit('session', project_name, send_cfg, retrain_model)  
         self.socketIO.wait()
         
 
@@ -172,7 +186,7 @@ class Client:
         # result = method_to_call()
 
 
-
+'''
 class Gridworld_EX(EnvSpace):  # for test
 
     def env_init(self):
@@ -220,3 +234,4 @@ if __name__ == '__main__':
             
     #     else:
     #         # get predict
+'''

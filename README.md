@@ -18,6 +18,13 @@ sudo pip install -r requirements.txt
 Test example which you want to play, for example, mobile_avoidance
 
 ```
+python server.py
+python examples/mobile_avoidance/mobile_avoidance.py examples/mobile_avoidance/DDPG.yaml
+```
+
+Or you can
+
+```
 cd examples/mobile_avoidance
 python ../../server.py
 python mobile_avoidance.py DDPG.yaml

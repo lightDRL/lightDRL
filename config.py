@@ -32,6 +32,8 @@ else:
 
 def set_none_if_not_exist():
     cfg['RL']['train_run_steps'] = cfg['RL']['train_run_steps'] if 'train_run_steps' in cfg['RL'] else None
+    cfg['RL']['reward_reverse_norm'] = cfg['RL']['reward_reverse_norm'] if 'reward_reverse_norm' in cfg['RL'] else None
+
 
 
 set_none_if_not_exist()
