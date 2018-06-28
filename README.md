@@ -13,27 +13,41 @@ pip install -r requirements.txt
 sudo pip install -r requirements.txt
 ```
 
-## Run
+## Run Standalone
 
-Test example which you want to play, for example, mobile_avoidance
+Test example which you want to play, for example, play gym
 
 ```
-python server.py
-python examples/mobile_avoidance/mobile_avoidance.py examples/mobile_avoidance/DDPG.yaml
+python examples/gym_basic/gym_basic.py examples/gym_basic/DDPG.yaml
 ```
 
 Or you can
 
 ```
-cd examples/mobile_avoidance
+cd examples/gym_basic
+python gym_basic.py DDPG.yaml
+```
+
+
+## Run with Server
+```
+python server.py
+python examples/gym_basic/gym_basic_conn.py examples/gym_basic/DDPG.yaml
+```
+
+Or you can
+
+```
+cd examples/gym_basic
 python ../../server.py
-python mobile_avoidance.py DDPG.yaml
+python gym_basic_conn.py DDPG.yaml
 ```
 
 ## Version Note 
 
 ### v0.10 (latest)
 Change framework
+
 Now, support standalone & server-client version !!
 
 
