@@ -31,9 +31,10 @@ else:
 
 
 def set_none_if_not_exist():
-    cfg['RL']['train_run_steps'] = cfg['RL']['train_run_steps'] if 'train_run_steps' in cfg['RL'] else None
-    cfg['RL']['reward_reverse_norm'] = cfg['RL']['reward_reverse_norm'] if 'reward_reverse_norm' in cfg['RL'] else None
-
+    cfg['RL']['train_multi_steps'] = cfg['RL']['train_multi_steps'] if 'train_multi_steps' in cfg['RL'] else 1
+    cfg['RL']['add_data_steps'] = cfg['RL']['add_data_steps'] if 'add_data_steps' in cfg['RL'] else None
+    cfg['RL']['reward_reverse'] = cfg['RL']['reward_reverse'] if 'reward_reverse' in cfg['RL'] else False
+    
 
 def get_yaml_name():
     from os.path import basename, splitext
@@ -42,9 +43,5 @@ def get_yaml_name():
     print('f_name = ' , f_name)
     return f_name
 
-
-
 set_none_if_not_exist()
-# train_run_steps = cfg['RL']['train_run_steps'] if 'train_run_steps' in cfg['RL'] else None
-# print("cfg['RL']['train_run_steps'] = ", cfg['RL']['train_run_steps'])
 

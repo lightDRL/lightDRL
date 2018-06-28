@@ -7,7 +7,7 @@ import shortuuid
 import yaml
 
 # from config import cfg
-from worker import Worker
+from worker import WorkerConn
 from dashboard import Dashboard
 
 from DRL.Base import RL,DRL
@@ -53,7 +53,7 @@ class SocketServer(Namespace):
         ns = '/' + new_uuid + '/rl_session' 
 
         # create tf graph & tf session
-        tf_new_graph, tf_new_sess = self.create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'])
+        tf_new_graph, tf_new_sess = self.create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'], cfg['misc']['random_seed'])
         # create logdir and save cfg
         model_log_dir = self.create_model_log_dir(prj_name, recreate_dir = retrain_model)
         with open(os.path.join(model_log_dir, 'config.yaml') , 'w') as outfile:
@@ -61,9 +61,9 @@ class SocketServer(Namespace):
         
         print('Build server RL session socket withs ns: {}'.format(ns))
         if self.use_DRL and cfg['RL']['method']=='A3C':
-            self.socketio.on_namespace(Worker(ns, new_uuid, tf_new_sess, None) )
+            self.socketio.on_namespace(WorkerConn(ns, new_uuid, tf_new_sess, None) )
         elif self.use_DRL :
-            self.socketio.on_namespace(Worker(ns, new_uuid, cfg, model_log_dir=model_log_dir, graph = tf_new_graph, sess = tf_new_sess) )
+            self.socketio.on_namespace(WorkerConn(ns, new_uuid, cfg, model_log_dir=model_log_dir, graph = tf_new_graph, sess = tf_new_sess) )
         # else:
         #     self.socketio.on_namespace(Worker(ns, new_uuid) )
         
@@ -79,8 +79,9 @@ class SocketServer(Namespace):
     #             shutil.rmtree(log_dir)
     #         tf.summary.FileWriter(log_dir, self.sess.graph)
 
-    def create_new_tf_graph_sess(self, gpu_memory_ratio = 0.2):
+    def create_new_tf_graph_sess(self, gpu_memory_ratio = 0.2, random_seed=1234):
         tf_new_graph = tf.Graph()
+        tf_new_graph.seed = random_seed
 
         config = tf.ConfigProto()
         config.gpu_options.per_process_gpu_memory_fraction = gpu_memory_ratio
@@ -108,9 +109,6 @@ class SocketServer(Namespace):
         
         return model_log_dir
 
-
-
-    
 
 if __name__ == '__main__':
     #-------Flask Init--------#

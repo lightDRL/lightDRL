@@ -32,7 +32,12 @@ python mobile_avoidance.py DDPG.yaml
 
 ## Version Note 
 
-### v0.07 (latest)
+### v0.10 (latest)
+Change framework
+Now, support standalone & server-client version !!
+
+
+### v0.07
 Implementation of DDPG (Deep Deterministic Policy Gradient)
 and add mobile_avoidance example
 

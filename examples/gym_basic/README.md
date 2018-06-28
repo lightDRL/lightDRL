@@ -1,6 +1,12 @@
 # OpenAI Gym
 
-## Run
+## Run Standalone
+
+```
+python gym_basic_standalone.py DDPG.yaml
+```
+
+## Run with Server
 
 1. Run the Server 
 

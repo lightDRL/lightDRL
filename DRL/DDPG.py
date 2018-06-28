@@ -1,151 +1,307 @@
-
-#
-#   Modify from ?: ?? https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow
-#   
-
+"""
+Deep Deterministic Policy Gradient (DDPG)
+Modify from: https://github.com/liampetti/DDPG/blob/master/ddpg.py
+"""
 import tensorflow as tf
 import numpy as np
-import time
-import sys, os
-sys.path.append(os.path.abspath(os.path.dirname(__file__)+'/../'))
 from Base import DRL
-from collections import deque 
-import random
+# from ReplayMemory import ReplayMemory
+from component.replay_memory import ReplayMemory
+# Network Parameters - Hidden layers
+n_hidden_1 = 400
+n_hidden_2 = 300
+
+# np.random.seed(1234)
+# tf.set_random_seed(1234)
+
+def weight_variable(shape):
+    initial = tf.truncated_normal(shape, stddev=0.01)
+    # initial = tf.constant(0.03, shape=shape)
+    return tf.Variable(initial)
+
+def bias_variable(shape):
+    initial = tf.constant(0.03, shape=shape)
+    return tf.Variable(initial)
+
 
 class DDPG(DRL):
-    def __init__(self, cfg, model_log_dir, sess):
+    def __init__(self, cfg, model_log_dir="", sess = None):
         super(DDPG, self).rl_init(cfg, model_log_dir)
         super(DDPG, self).drl_init(sess)
-        
-        print('DDPG() model_log_dir = ' + self.model_log_dir)
-
-        if not self.action_discrete:
-            self.a_bound = self.a_bound[1]
         self.memory_capacity = cfg['DDPG']['memory_capacity']
+        self.exploration_step = cfg['DDPG']['exploration']
         self.batch_size = cfg['DDPG']['batch_size']
         self.lr_actor = cfg['DDPG']['lr_actor']
         self.lr_critic = cfg['DDPG']['lr_critic']
-        self.exp_decay = cfg['DDPG']['exp_decay']
-        
+        self.tau = cfg['DDPG']['tau']                    
+        self.gamma = cfg['RL']['reward_gamma']
 
-        self.memory = deque()
-        self.pointer = 0
-        # self.sess = sess
+        self.sess = sess
 
-        self.S = tf.placeholder(tf.float32, [None, self.s_dim], 's')
-        self.S_ = tf.placeholder(tf.float32, [None, self.s_dim], 's_')
-        self.R = tf.placeholder(tf.float32, [None, 1], 'r')
-        self.a = self._build_a(self.S)
 
-        q = self._build_c(self.S, self.a, )
-        a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope= 'actor')   #scope +'/actor')
-        c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope= 'critic') # scope +'/critic')
-        ema = tf.train.ExponentialMovingAverage(decay=1 - self.exp_decay)          # soft replacement
+        self.actor = ActorNetwork(sess, self.s_dim, self.a_dim, self.a_bound, self.lr_actor, self.tau)
+        self.critic = CriticNetwork(sess, self.s_dim, self.a_dim,
+                            self.lr_critic, self.tau, self.actor.get_num_trainable_vars())
 
-        def ema_getter(getter, name, *args, **kwargs):
-            return ema.average(getter(name, *args, **kwargs))
+        # noise = Noise(DELTA, SIGMA, OU_A, OU_MU)
+        # reward = Reward(REWARD_FACTOR, GAMMA)
+        # replay memory 
+        assert self.memory_capacity > self.exploration_step, "Replay memory: memory_capacity < exploration_step"
+        self.mem = ReplayMemory(self.memory_capacity)
 
-        target_update = [ema.apply(a_params), ema.apply(c_params)]      # soft update operation
-        a_ = self._build_a(self.S_, reuse=True, custom_getter=ema_getter)   # replaced target parameters
-        q_ = self._build_c(self.S_, a_, reuse=True, custom_getter=ema_getter)
-
-        a_loss = - tf.reduce_mean(q)  # maximize the q
-        self.atrain = tf.train.AdamOptimizer(self.lr_actor).minimize(a_loss, var_list=a_params)
-
-        with tf.control_dependencies(target_update):    # soft replacement happened at here
-            q_target = self.R + self.r_discount * q_
-            td_error = tf.losses.mean_squared_error(labels=q_target, predictions=q)
-            self.ctrain = tf.train.AdamOptimizer(self.lr_critic).minimize(td_error, var_list=c_params)
-
-        # self.sess.run(tf.global_variables_initializer())
-        # self.sess.run(tf.local_variables_initializer())
+        self.sum_q_max = 0
+        self.train_count = 0
 
     def choose_action(self, s):
-        if self.action_discrete:
-            probs =  self.sess.run(self.a, {self.S: s[np.newaxis, :]})
-            # print('probs', probs)
-            action = np.random.choice(range(probs.shape[1]), p=probs.ravel())
-            return action
-        else:
-            return self.sess.run(self.a, {self.S: s[np.newaxis, :]})[0]
-
-    def train(self,  s, a, r, s_, done):
-        if self.action_discrete:
-            a = self.onehot(a)
-
-        if self.reward_reverse_norm and len(r) > 1:
-            # r = self.reverse_and_norm_rewards(r, self.r_discount)
-            r = self.reverse_add_rewards(r, self.r_discount)
+        # out = self.actor.predict(np.reshape(s, (1, self.actor.s_dim)))
+        return self.actor.predict(np.reshape(s, (1, self.actor.s_dim)))
 
 
-        self.store_transition(s, a, r , s_)
-        if len(self.memory) < self.memory_capacity:
-            return
-         
-        bt = random.sample(self.memory,self.batch_size)
-        bt = np.array(bt)
-        # print('bt.shape = ' + str(bt.shape))
-        bs = bt[:, :self.s_dim]
-        ba = bt[:, self.s_dim: self.s_dim + self.a_dim]
-        br = bt[:, -self.s_dim - 1: -self.s_dim]
-        bs_ = bt[:, -self.s_dim:]
+    
+    def add_data(self, s, a, r, d, s_):
+        ''' self, states, actions, rewards, done, next_state''' 
+        self.mem.add(s, a, r, d, s_)
+        # print('self.mem.size()= ' , self.mem.size())
 
-        self.sess.run(self.atrain, {self.S: bs})
-        self.sess.run(self.ctrain, {self.S: bs, self.a: ba, self.R: br, self.S_: bs_})
-
-        super(DDPG, self).train(s, a, r, s_, done)
-        # print('train model finish, self.train_times =' + str(self.train_times))
-
-    def store_transition(self, s, a, r, s_):
-        # print('start-------in store_transition--------')
-        # print('s.shape', s.shape)
-        # print('r.shape', r.shape)
-        # r = r[:, np.newaxis]
-        if type(r) == list or type(r) == np.ndarray:      #mulitple step restore
-            r = np.array(r)
-            r = r[:, np.newaxis]  if len(r.shape) <= 1 else r
-            transition = np.hstack((s, a, r, s_))
-            for d in transition:
-                self.memory.append(d)
-        else:
-            transition = np.hstack((s, a, r, s_))
-            self.memory.append(transition)
-
+    def train(self):
         
-        while len(self.memory) > self.memory_capacity:
-			self.memory.popleft()
+        if self.mem.size() > self.exploration_step : #MINIBATCH_SIZE:
+            # print('in train')
+            s_batch, a_batch, r_batch, d_batch, s2_batch = self.mem.sample_batch(self.batch_size)
 
+            # Calculate targets
+            q_target = self.critic.predict_target(s2_batch, self.actor.predict_target(s2_batch))
 
-    def _build_a(self, s, reuse=None, custom_getter=None):
-        trainable = True if reuse is None else False
-        with tf.variable_scope('actor', reuse=reuse, custom_getter=custom_getter):
-            net = tf.layers.dense(s, 300, activation=tf.nn.relu, name='l1', trainable=trainable)
-            net = tf.layers.dense(net, 300, activation=tf.nn.relu, name='l2', trainable=trainable)
             
-            if self.action_discrete: 
-                a = tf.layers.dense(net, self.a_dim, activation=tf.nn.relu6, name='a', trainable=trainable)
-                return tf.nn.softmax(a, name='a_prob')  # use softmax to convert to probability
-            else:
-                a = tf.layers.dense(net, self.a_dim, activation=tf.nn.tanh, name='a', trainable=trainable)
-                return tf.multiply(a, self.a_bound, name='scaled_a')
+            y_i = []
+            for k in range(self.batch_size):
+                if d_batch[k]:
+                    y_i.append(r_batch[k])
+                else:
+                    y_i.append(r_batch[k] + self.gamma * q_target[k])
 
-    def _build_c(self, s, a, reuse=None, custom_getter=None):
-        trainable = True if reuse is None else False
-        with tf.variable_scope('critic', reuse=reuse, custom_getter=custom_getter):
-            n_l1 = 300
-            s_n1 = tf.layers.dense(s , n_l1, activation=tf.nn.relu, name='l1_s', trainable=trainable)
-            w1_s = tf.get_variable('w1_s', [n_l1, n_l1], trainable=trainable)
-            w1_a = tf.get_variable('w1_a', [self.a_dim, n_l1], trainable=trainable)
-            b1 = tf.get_variable('b1', [1, n_l1], trainable=trainable)
+            
+            # print('shape(s_batch) = ', np.shape(s_batch) )
+            # print('shape(a_batch) = ', np.shape(a_batch) )
+            # print('shape(y_i) = ', np.shape(y_i) )
+            # print(" np.reshape(y_i, (self.batch_size, 1)=",  np.reshape(y_i, (self.batch_size, 1)).shape)
+            
+            # Update the critic given the targets
+            predicted_q_value, _ = self.critic.train(s_batch, a_batch, np.reshape(y_i, (self.batch_size, 1)))
 
-            net = tf.nn.relu(tf.matmul(s_n1, w1_s) + tf.matmul(a, w1_a) + b1)
-            return tf.layers.dense(net, 1, trainable=trainable)  # Q(s,a)
-   
-    # override
+            # print('predicted_q_value=', predicted_q_value)
+            # ep_ave_max_q += np.amax(predicted_q_value)
+
+            # Update the actor policy using the sampled gradient
+            a_outs = self.actor.predict(s_batch)
+            grads = self.critic.action_gradients(s_batch, a_outs)
+            self.actor.train(s_batch, grads[0])
+
+            # Update target networks
+            self.actor.update_target_network()
+            self.critic.update_target_network()
+
+            # return  np.amax(predicted_q_value)
+            self.max_q =  np.amax(predicted_q_value)
+            self.sum_q_max += np.amax(predicted_q_value)
+            self.train_count += 1
+
+     # override
     def _build_net(self):
         pass
 
-if __name__ == '__main__':
-    sess = tf.Session()
+    def get_avg_q(self):
+    
+        return  self.sum_q_max /self.train_count if self.train_count!=0 else 0
+        
+class ActorNetwork(object):
+    """
+    Input to the network is the state, output is the action
+    under a deterministic policy.
+    The output layer activation is a tanh to keep the action
+    between -2 and 2
+    """
 
-    DDPG(sess)
+    def __init__(self, sess, state_dim, action_dim, action_bound, learning_rate, tau):
+        self.sess = sess
+        self.s_dim = state_dim
+        self.a_dim = action_dim
+        self.action_bound = action_bound
+        self.learning_rate = learning_rate
+        self.tau = tau
+
+        # Actor Network
+        self.inputs, self.out, self.scaled_out = self.create_actor_network()
+
+        self.network_params = tf.trainable_variables()
+
+        # Target Network
+        self.target_inputs, self.target_out, self.target_scaled_out = self.create_actor_network()
+
+        self.target_network_params = tf.trainable_variables()[len(self.network_params):]
+
+        # Op for periodically updating target network with online network weights
+        self.update_target_network_params = \
+            [self.target_network_params[i].assign(tf.multiply(self.network_params[i], self.tau) + \
+                                                  tf.multiply(self.target_network_params[i], 1. - self.tau))
+             for i in range(len(self.target_network_params))]
+
+        # This gradient will be provided by the critic network
+        self.action_gradient = tf.placeholder(tf.float32, [None, self.a_dim])
+
+        # Combine the gradients here
+        self.actor_gradients = tf.gradients(self.scaled_out, self.network_params, -self.action_gradient)
+
+        # Optimization Op by applying gradient, variable pairs
+        self.optimize = tf.train.AdamOptimizer(self.learning_rate). \
+            apply_gradients(zip(self.actor_gradients, self.network_params))
+
+        self.num_trainable_vars = len(self.network_params) + len(self.target_network_params)
+
+    def create_actor_network(self):
+        inputs = tf.placeholder(tf.float32, [None, self.s_dim])
+
+        # Input -> Hidden Layer
+        w1 = weight_variable([self.s_dim, n_hidden_1])
+        b1 = bias_variable([n_hidden_1])
+        # Hidden Layer -> Hidden Layer
+        w2 = weight_variable([n_hidden_1, n_hidden_2])
+        b2 = bias_variable([n_hidden_2])
+        # Hidden Layer -> Output
+        w3 = weight_variable([n_hidden_2, self.a_dim])
+        b3 = bias_variable([self.a_dim])
+
+        # 1st Hidden layer, OPTION: Softmax, relu, tanh or sigmoid
+        h1 = tf.nn.relu(tf.matmul(inputs, w1) + b1)
+        # 2nd Hidden layer, OPTION: Softmax, relu, tanh or sigmoid
+        h2 = tf.nn.relu(tf.matmul(h1, w2) + b2)
+
+        # Run tanh on output to get -1 to 1
+        out = tf.nn.tanh(tf.matmul(h2, w3) + b3)
+
+        scaled_out = tf.multiply(out, self.action_bound)  # Scale output to -action_bound to action_bound
+        return inputs, out, scaled_out
+
+    def train(self, inputs, a_gradient):
+        self.sess.run(self.optimize, feed_dict={
+            self.inputs: inputs,
+            self.action_gradient: a_gradient
+        })
+
+    def predict(self, inputs):
+        # out = self.sess.run(self.out, feed_dict={
+        #     self.inputs: inputs
+        # })
+        # print('actor.out = ', out)
+
+        return self.sess.run(self.scaled_out, feed_dict={
+            self.inputs: inputs
+        })
+
+    def predict_target(self, inputs):
+        return self.sess.run(self.target_scaled_out, feed_dict={
+            self.target_inputs: inputs
+        })
+
+    def update_target_network(self):
+        self.sess.run(self.update_target_network_params)
+
+    def get_num_trainable_vars(self):
+        return self.num_trainable_vars
+
+
+
+class CriticNetwork(object):
+    """
+    Input to the network is the state and action, output is Q(s,a).
+    The action must be obtained from the output of the Actor network.
+    """
+
+    def __init__(self, sess, state_dim, action_dim, learning_rate, tau, num_actor_vars):
+        self.sess = sess
+        self.s_dim = state_dim
+        self.a_dim = action_dim
+        self.learning_rate = learning_rate
+        self.tau = tau
+
+        # Create the critic network
+        self.inputs, self.action, self.out = self.create_critic_network()
+
+        self.network_params = tf.trainable_variables()[num_actor_vars:]
+
+        # Target Network
+        self.target_inputs, self.target_action, self.target_out = self.create_critic_network()
+
+        self.target_network_params = tf.trainable_variables()[(len(self.network_params) + num_actor_vars):]
+
+        # Op for periodically updating target network with online network weights with regularization
+        self.update_target_network_params = \
+            [self.target_network_params[i].assign(
+                tf.multiply(self.network_params[i], self.tau) + tf.multiply(self.target_network_params[i], 1. - self.tau))
+             for i in range(len(self.target_network_params))]
+
+        # Network target (y_i)
+        self.predicted_q_value = tf.placeholder(tf.float32, [None, 1])
+
+        # Define loss and optimization Op
+        self.loss = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(self.predicted_q_value, self.out))))
+        self.optimize = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
+
+        # Get the gradient of the net w.r.t. the action
+        self.action_grads = tf.gradients(self.out, self.action)
+
+    def create_critic_network(self):
+        inputs = tf.placeholder(tf.float32, [None, self.s_dim], name="critic_s")
+        action = tf.placeholder(tf.float32, [None, self.a_dim], name="critic_a")
+
+        # Input -> Hidden Layer
+        w1 = weight_variable([self.s_dim, n_hidden_1])
+        b1 = bias_variable([n_hidden_1])
+        # Hidden Layer -> Hidden Layer + Action
+        w2 = weight_variable([n_hidden_1, n_hidden_2])
+        w2a = weight_variable([self.a_dim, n_hidden_2])
+        b2 = bias_variable([n_hidden_2])
+        # Hidden Layer -> Output (Q)
+        w3 = weight_variable([n_hidden_2, 1])
+        b3 = bias_variable([1])
+
+        # 1st Hidden layer, OPTION: Softmax, relu, tanh or sigmoid
+        h1 = tf.nn.relu(tf.matmul(inputs, w1) + b1)
+        # 2nd Hidden layer, OPTION: Softmax, relu, tanh or sigmoid
+        # Action inserted here
+        h2 = tf.nn.relu(tf.matmul(h1, w2) + tf.matmul(action, w2a) + b2)
+
+        out = tf.matmul(h2, w3) + b3
+
+        return inputs, action, out
+
+    def train(self, inputs, action, predicted_q_value):
+        return self.sess.run([self.out, self.optimize], feed_dict={
+            self.inputs: inputs,
+            self.action: action,
+            self.predicted_q_value: predicted_q_value
+        })
+
+    def predict(self, inputs, action):
+        return self.sess.run(self.out, feed_dict={
+            self.inputs: inputs,
+            self.action: action
+        })
+
+    def predict_target(self, inputs, action):
+        return self.sess.run(self.target_out, feed_dict={
+            self.target_inputs: inputs,
+            self.target_action: action
+        })
+
+    def action_gradients(self, inputs, actions):
+        return self.sess.run(self.action_grads, feed_dict={
+            self.inputs: inputs,
+            self.action: actions
+        })
+
+    def update_target_network(self):
+        self.sess.run(self.update_target_network_params)
+
+
+

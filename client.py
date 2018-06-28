@@ -1,111 +1,56 @@
-from socketIO_client import SocketIO, BaseNamespace
+
 import sys, os, time
 import numpy as np
 import json
-# append this repo's root path
-sys.path.append(os.path.abspath(os.path.dirname(__file__)+'/../'))
-# import envs
-import gym
 from config import cfg
 from threading import Thread
 import signal                   # for ctrl+C
 import sys                      # for ctrl+C
+from socketIO_client import SocketIO, BaseNamespace
 
-TRAIN_MODE = True
+# import six
+# from abc import ABCMeta,abstractmethod
+# from socketIO_client import SocketIO, BaseNamespace
 
-#--------------Alread have id, connect again -------------#
-class EnvSpace(BaseNamespace):
-    # def __init__(self):
-    #     super(EnvSpace, self).__init__()
-    #     print('EnvSpce init')
-    #     self.set_cfg()
-
-    def on_connect(self):
-        self.env_name =''
-        self.env_init()
-        
-        self.frame_count = 0
-        self.reward_buf = []
-        self.state_buf  = []
-        self.next_state_buf  = []
-        self.action_buf = []
-        # print('EnvSpace say connect')
+class EnvBase(object):
+    def envbase_init(self):
         self.start_time = time.time()
         self.ep_s_time = time.time()
         self.ep = 0
         self.ep_use_step = 0
         self.ep_reward = 0
-        
 
-    def on_disconnect(self):
-        print('{} env say disconnect'.format(self.env_name))
-
+        self.env_name =''
+    
+    def on_predict_response(self, callback_action):
+        self.server_action =  callback_action
         
-    def env_init(self):
-        pass
+        # print('server_action: {},type ={}, shape={}'.format(callback_action, type(callback_action), np.shape(callback_action)))
+        action  = np.argmax(callback_action) if  cfg['RL']['action_discrete'] else callback_action
+        # print('use action: ', action)
+        # action = self.to_py_native(action)
+        self.on_action_response(action)
 
     def send_state_get_action(self, state):
         state       = state.tolist() if type(state) != list else state
         dic ={'state': state}
+
         self.emit('predict',dic)
+        
     
     def send_train_get_action(self, state, action, reward, done,next_state):
         self.ep_use_step += 1
         self.ep_reward += reward
-        
         state      = state.tolist() if type(state) == np.ndarray else state
+        # sever_action = self.server_action.tolist() if type(self.server_action) == np.ndarray else self.server_action
         next_state = next_state.tolist() if type(next_state) == np.ndarray else next_state
 
-        if not cfg['RL']['train_multi_steps']:
-            # train_multi_steps = no, like using Q-Learning, SARSA 
-            dic ={'state': state, 
-                        'action': action, 
+        dic ={'state': state, 
+                        'action': self.server_action, #action, 
                         'reward': reward, 
-                        'done':done,
+                        'done'  : done,
                         'next_state': next_state}
-            self.emit('train_and_predict',dic)
-        else:
-            # train_multi_steps = yes, like using DRL, A3C, DQN...etc.
-            self.frame_count+=1
-            self.state_buf.append(state)
-            self.action_buf.append(action)
-            self.reward_buf.append(reward)
-            self.next_state_buf.append(next_state)
-            send_train = False
-            if cfg['RL']['train_if_down']:
-                if done and cfg['RL']['train_run_steps'] == None:
-                    send_train = True
-                elif done and self.frame_count >= cfg['RL']['train_run_steps']:
-                    send_train = True
-                else:
-                    send_train = False
-            elif self.frame_count >= cfg['RL']['train_run_steps']:
-                # NOT train_if_down and step_count >= train_run_steps
-                send_train = True
-            else:
-                send_train = False
-            
-            if send_train:
-                # print('I: send for train state_buf.shape={}, type(state_buf)={}, state_buf={}'.format(np.shape(self.state_buf), type(self.state_buf),self.state_buf))
-                # print('I: send for train action_buf.shape={}, type(action_buf)={}, action_buf={}'.format(np.shape(self.action_buf), type(self.action_buf), self.action_buf))
-                # print('I: send for train reward_buf.shape={}, type(reward_buf)={}, reward_buf={}'.format(np.shape(self.reward_buf), type(self.reward_buf), self.reward_buf))
-                # print('I: send for train done = {}, type(done)={}'.format(done,type(done)) )
-
-                dic ={'state': self.state_buf, 
-                        'action': self.action_buf, 
-                        'reward': self.reward_buf, 
-                        'done':done,
-                        'next_state': self.next_state_buf}
-                self.emit('train_and_predict',dic)
-
-                self.frame_count = 0
-                self.reward_buf = []
-                self.state_buf  = []
-                self.action_buf = []
-                self.next_state_buf  = []
-            else:
-                self.send_state_get_action(state)
-
+        self.emit('train_and_predict',dic)
 
         if done:
             self.ep+=1
@@ -113,15 +58,11 @@ class EnvSpace(BaseNamespace):
             self.ep_use_step = 0
             self.ep_reward = 0
             self.ep_s_time = time.time()  # update episode start time
-
-
+    
     def log(self):
-        use_secs = time.time() - self.start_time
-        time_str = '%3dh%3dm%3ds' % (use_secs/3600, (use_secs%3600)/60, use_secs % 60 )
-        # print('%s -> EP:%4d, STEP:%3d, r: %4.2f, t:%s' % (self.client.client_id,  self.ep,  self.ep_use_step, self.reward, time_str))
-        print('(%s) EP:%5d, STEP:%4d, r: %7.2f, ep_t:%s, all_t:%s' % \
-            ( self.env_name, self.ep,  self.ep_use_step, self.ep_reward, self.time_str(self.ep_s_time, True), self.time_str(self.start_time)))
-
+        print('EP:%5d, STEP:%4d, r: %7.2f, ep_t:%s, all_t:%s' % \
+            ( self.ep,  self.ep_use_step, self.ep_reward, self.time_str(self.ep_s_time, True), self.time_str(self.start_time)))
+        
     def set_name(self,name):
         # print('set_name  = ', name)
         self.env_name = name
@@ -132,9 +73,27 @@ class EnvSpace(BaseNamespace):
             return '%3dm%2ds' % (use_secs/60, use_secs % 60 )
         return  '%3dh%2dm%2ds' % (use_secs/3600, (use_secs%3600)/60, use_secs % 60 )
 
-    # def set_cfg(self):
-    #     print('In EnvSpace set_cfg()')
-    #     self.cfg = cfg
+    # @abstractmethod
+    # def emit(self, cmd, dic):
+    #     pass   
+
+
+#--------------Alread have id, connect again -------------#
+class EnvSpace(EnvBase, BaseNamespace):
+
+    def on_connect(self):
+        print('EnvSpace say connect')
+        self.envbase_init()
+        self.env_init()
+       
+
+    def on_disconnect(self):
+        print('{} env say disconnect'.format(self.env_name))
+
+        
+    # def env_init(self):
+    #     pass
+
 
 class Client:
     def __init__(self, target_env_class, project_name=None,i_cfg = None, retrain_model = False):
@@ -179,59 +138,8 @@ class Client:
         self.connect_with_ns(new_ns)
 
     def connect_with_ns(self,ns):
-        print('defins ns ={}'.format(ns))
+        # print('get ns ={}'.format(ns))
         new_env = self.socketIO.define(self.target_env_class, ns)
         new_env.set_name(self.env_name)
         # method_to_call = getattr(new_env, self.env_call_fun)
         # result = method_to_call()
-
-
-'''
-class Gridworld_EX(EnvSpace):  # for test
-
-    def env_init(self):
-        self.EP_MAXSTEP = 1000
-        self.env = gym.make('gridworld-v0')
-        self.state = self.env.reset()
-
-        self.send_state_get_action(self.state)
-
-    def on_predict_response(self, action):
-        # print('client get action data = {}'.format(action))
-
-        next_state, reward, done, _ = self.env.step(action)
-        if TRAIN_MODE:
-            self.send_train_get_action(self.state, action, reward, done, next_state)
-        else:
-            self.send_state_get_action(self.state)
-        if self.ep_use_step >= self.EP_MAXSTEP: done = True
-        if self.ep % 50 == 25:
-            self.env._render(title = 'Episode: %4d, Step: %4d' % (self.ep,self.ep_use_step))
-        self.state = next_state
-        if done:
-            self.state =  self.env.reset()
-            self.send_state_get_action(self.state)
-
-if __name__ == '__main__':
-    # Client(EnvSpace) 
-    Client(Gridworld_EX)
-
-
-    # train_multi_steps: yes      # sub choose, train_if_down, train_run_steps, 
-    # train_if_down: yes   
-    # train_run_steps
-    # done
-    # if train_multi_steps:
-    #     if cfg[train_if_down]:
-    #         if done and train_run_steps == None:
-    #             send train
-    #         elif done and step_count >= train_run_steps:
-    #             send train
-    #         else:
-    #             get predict
-    #     elif step_count >= train_run_steps:
-    #         # NOT train_if_down and step_count >= train_run_steps
-            
-    #     else:
-    #         # get predict
-'''
