@@ -12,7 +12,7 @@ import tensorflow as tf
 import yaml
 import threading
 from worker import WorkerStandalone
-
+from server import ServerBase
 from client import EnvBase
 
 # default dir is same path as server.py
@@ -22,7 +22,7 @@ if not os.path.isdir(DATA_POOL):
     os.mkdir(DATA_POOL)
 
 
-class EnvSpace(EnvBase):
+class EnvSpace(EnvBase, ServerBase):
 
     # def env_init(self):
     #     pass
@@ -67,9 +67,9 @@ class EnvSpace(EnvBase):
         retrain_model = data[2]
         
         # create tf graph & tf session
-        tf_new_graph, tf_new_sess = self.server_create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'], cfg['misc']['random_seed'])
+        tf_new_graph, tf_new_sess = self.create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'], cfg['misc']['random_seed'])
         # create logdir and save cfg
-        model_log_dir = self.server_create_model_log_dir(prj_name, recreate_dir = retrain_model)
+        model_log_dir = self.create_model_log_dir(prj_name, recreate_dir = retrain_model)
         with open(os.path.join(model_log_dir, 'config.yaml') , 'w') as outfile:
             yaml.dump(cfg, outfile, default_flow_style=False)
         
@@ -79,36 +79,6 @@ class EnvSpace(EnvBase):
         self.worker = WorkerStandalone(cfg, main_queue = self.callback_queue,
                     model_log_dir=model_log_dir, graph = tf_new_graph, sess = tf_new_sess)
 
-
-    def server_create_new_tf_graph_sess(self, gpu_memory_ratio = 0.2, random_seed=1234):
-        tf_new_graph = tf.Graph()
-        tf_new_graph.seed = random_seed
-
-        config = tf.ConfigProto()
-        config.gpu_options.per_process_gpu_memory_fraction = gpu_memory_ratio
-        tf_new_sess = tf.Session(config=config, graph=tf_new_graph)
-        print('[I] Create session with gpu memory raito: '+  str(gpu_memory_ratio) )
-
-        return tf_new_graph, tf_new_sess
-
-    def server_create_model_log_dir(self, project_name, recreate_dir = False):
-        # self.model_log_dir = '{}/{}/'.format(DATA_POOL, project_name)   if project_name != None else None
-        model_log_dir = os.path.join(DATA_POOL, project_name) if project_name != None else None
-        
-        if model_log_dir !=None:
-            if not os.path.isdir(model_log_dir):
-                os.mkdir(model_log_dir)
-                print('[I] create model_log_dir:' + model_log_dir)
-            else:
-                if recreate_dir:
-                    from shutil import rmtree
-                    rmtree(model_log_dir)
-                    os.mkdir(model_log_dir)
-                    print('[I] REcreate model_log_dir:' + model_log_dir)
-        
-        return model_log_dir
-
-    
 
 class Client:
     def __init__(self, target_env_class, project_name=None,i_cfg = None, retrain_model = False):
