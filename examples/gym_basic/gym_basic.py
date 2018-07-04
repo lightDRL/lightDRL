@@ -15,9 +15,9 @@ import numpy as np
 import threading
 
 MAX_EPISODES = 1000
-RENDER = True
+RENDER = False
 
-ENV_NAME = 'CartPole-v0' 
+ENV_NAME = cfg['misc']['gym_env'] #'CartPole-v0' 
 
 class GymBasic(EnvSpace):
     def env_init(self):
@@ -28,32 +28,52 @@ class GymBasic(EnvSpace):
         self.send_state_get_action(self.state)
 
     def on_action_response(self, action):
+        # print('client use action = ', action)
         next_state, reward, done, _ = self.env.step(action)
         self.send_train_get_action(self.state, action, reward , done, next_state)
         self.state = next_state
     
-        if self.ep>=80 and RENDER:
+        if self.ep>=100 and RENDER:
             self.env.render()   
         if done:
             self.state =  self.env.reset()
             self.send_state_get_action(self.state)
 
+            if self.ep>=MAX_EPISODES:
+                exit()
+
+        
+
 def modify_cfg():
     env = gym.make(ENV_NAME)
-    # env.seed(1)     # reproducible, general Policy gradient has high variance
     env = env.unwrapped
-    # print('type(env.action_space.n) = ' + str(type(env.action_space)))
-    # print(env.action_space.n)
-    # print(env.action_space)
-    # print(env.observation_space.shape)
-    # print(env.observation_space.high)
-    # print(env.observation_space.low)
-    cfg['RL']['action_num'] = env.action_space.n
+    # state shape 
+    if type(env.observation_space)== gym.spaces.discrete.Discrete:
+        # discrete state shape
+        cfg['RL']['state_shape']  = np.array(1)
+    elif type(env.observation_space)==gym.spaces.tuple_space.Tuple:
+        state_num = len(env.observation_space.spaces)
+        cfg['RL']['state_shape']  = np.array(state_num)
+    else:
+        cfg['RL']['state_shape'] = env.observation_space.shape
+    
+    # action
     cfg['RL']['action_discrete'] = True if type(env.action_space) == gym.spaces.discrete.Discrete else False
-    cfg['RL']['state_shape'] = env.observation_space.shape
+    
+    print("cfg['RL']['action_discrete'] = ", cfg['RL']['action_discrete'])
+
+    if cfg['RL']['action_discrete']:
+        cfg['RL']['action_num'] = env.action_space.n
+    else:
+        assert len(env.action_space.shape) == 1, 'NOT support >= 2D action,  len(env.action_space.shape)=%d' %  len(env.action_space.shape)
+        assert (env.action_space.high == -env.action_space.low), 'NOT support action high low, only support high=-low'        
+        cfg['RL']['action_num'] = env.action_space.shape[0]
+        cfg['RL']['action_bound'] = env.action_space.high 
+        # print("cfg['RL']['action_num'] = ", cfg['RL']['action_num'])
+
     env.close()
     print('{} close! Because get parameter done.'.format(ENV_NAME))
     return cfg
 
 if __name__ == '__main__':
-    c = Client(GymBasic, project_name='gym-'+ ENV_NAME + '-' + get_yaml_name(), i_cfg = modify_cfg(), retrain_model= True)
+    c = Client(GymBasic, project_name='gym-' + get_yaml_name(), i_cfg = modify_cfg(), retrain_model= True)

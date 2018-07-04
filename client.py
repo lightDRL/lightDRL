@@ -53,8 +53,8 @@ class EnvBase(object):
         self.emit('train_and_predict',dic)
 
         if done:
-            self.ep+=1
             self.log()
+            self.ep+=1
             self.ep_use_step = 0
             self.ep_reward = 0
             self.ep_s_time = time.time()  # update episode start time

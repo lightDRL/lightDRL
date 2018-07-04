@@ -14,12 +14,13 @@ RL:
     reward_factor: 0.01
     add_data_steps: 'if_down'     # dafault: 1 , param: 'if_down', 'steps(int)'    
     reward_reverse: yes           # dafault: False
+    exploration: 3000        # train after exploration step
 
 DDPG:
     lr_actor:  0.0001  # learning rate for actor (1e-4)
     lr_critic:  0.001  # learning rate for critic
-    memory_capacity: 5000
-    exploration: 300        # train after exploration step
+    memory_capacity: 10000
+    memory_train_min: 3000        # train after exploration step
     batch_size: 100          
     tau: 0.001              # the factor about update network with target network
     
@@ -37,3 +38,4 @@ misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
     random_seed: 1234
+    gym_env: 'MountainCarContinuous-v0'

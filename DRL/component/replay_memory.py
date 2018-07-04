@@ -10,7 +10,8 @@ class ReplayMemory(object):
         random.seed(random_seed)
 
     def add(self, s, a, r, d, s2):
-        if type(s) == np.ndarray:
+        # print('type(s) = ', type(s))
+        if type(s) == np.ndarray and s.shape[0]>1:
             assert s.shape[0] == a.shape[0] == r.shape[0] == d.shape[0] == s2.shape[0], 's, a, r, d, s2 not all length same'
             for ind in range(s.shape[0]):
                 transition = (s[ind], a[ind], r[ind], d[ind], s2[ind])

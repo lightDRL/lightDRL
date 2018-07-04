@@ -32,6 +32,7 @@ class Reward(object):
 
         # print('ep_batch[:,2] -> ' + str(ep_batch[i,2]))
         # print('END---------in discount-----------')
+        # print('reward discounted = ', discounted)
 
         return discounted
 

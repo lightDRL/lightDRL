@@ -10,9 +10,6 @@ test/
 .ipynb_checkpoints/
 .vscode/
 log/
-DDPG_new/
-DDPG-cartpole/
-new2/
 log.txt
 #============== ignore from github default (by selecting python)=======# 
 # Byte-compiled / optimized / DLL files

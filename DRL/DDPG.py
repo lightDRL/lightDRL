@@ -29,7 +29,7 @@ class DDPG(DRL):
         super(DDPG, self).rl_init(cfg, model_log_dir)
         super(DDPG, self).drl_init(sess)
         self.memory_capacity = cfg['DDPG']['memory_capacity']
-        self.exploration_step = cfg['DDPG']['exploration']
+        self.memory_train_min = cfg['DDPG']['memory_train_min']
         self.batch_size = cfg['DDPG']['batch_size']
         self.lr_actor = cfg['DDPG']['lr_actor']
         self.lr_critic = cfg['DDPG']['lr_critic']
@@ -38,7 +38,6 @@ class DDPG(DRL):
 
         self.sess = sess
 
-
         self.actor = ActorNetwork(sess, self.s_dim, self.a_dim, self.a_bound, self.lr_actor, self.tau)
         self.critic = CriticNetwork(sess, self.s_dim, self.a_dim,
                             self.lr_critic, self.tau, self.actor.get_num_trainable_vars())
@@ -46,11 +45,12 @@ class DDPG(DRL):
         # noise = Noise(DELTA, SIGMA, OU_A, OU_MU)
         # reward = Reward(REWARD_FACTOR, GAMMA)
         # replay memory 
-        assert self.memory_capacity > self.exploration_step, "Replay memory: memory_capacity < exploration_step"
+        assert self.memory_capacity > self.memory_train_min, "Replay memory: memory_capacity < memory_train_min"
         self.mem = ReplayMemory(self.memory_capacity)
 
         self.sum_q_max = 0
         self.train_count = 0
+        self.notify_ep_done()  # for reset variable
 
     def choose_action(self, s):
         # out = self.actor.predict(np.reshape(s, (1, self.actor.s_dim)))
@@ -60,13 +60,22 @@ class DDPG(DRL):
     
     def add_data(self, s, a, r, d, s_):
         ''' self, states, actions, rewards, done, next_state''' 
+        # print('---Before add_data----')
+        # print('I: train get s.shape={}, type(s)={}'.format(np.shape(s), type(s)))
+        # print('I: train get a.shape={}, type(a)={}'.format(np.shape(a), type(a)))
+        # print('I: train get r.shape={}, type(r)={}'.format(np.shape(r), type(r)))
+        # print('I: train get d.shape={}, type(d)={}'.format(np.shape(d), type(d)))
+        # print('I: train get s_.shape={}, type(s_)={}'.format(np.shape(s_), type(s_)))
+       
+
         self.mem.add(s, a, r, d, s_)
         # print('self.mem.size()= ' , self.mem.size())
 
     def train(self):
-        
-        if self.mem.size() > self.exploration_step : #MINIBATCH_SIZE:
-            # print('in train')
+        # print(' self.mem.size() = ',  self.mem.size())
+        # if self.mem.size() > self.exploration_step : #MINIBATCH_SIZE:
+        if self.mem.size() > self.memory_train_min:
+            # print('DDPG in train')
             s_batch, a_batch, r_batch, d_batch, s2_batch = self.mem.sample_batch(self.batch_size)
 
             # Calculate targets
@@ -87,7 +96,7 @@ class DDPG(DRL):
             # print(" np.reshape(y_i, (self.batch_size, 1)=",  np.reshape(y_i, (self.batch_size, 1)).shape)
             
             # Update the critic given the targets
-            predicted_q_value, _ = self.critic.train(s_batch, a_batch, np.reshape(y_i, (self.batch_size, 1)))
+            predicted_q_value, c_loss, _ = self.critic.train(s_batch, a_batch, np.reshape(y_i, (self.batch_size, 1)))
 
             # print('predicted_q_value=', predicted_q_value)
             # ep_ave_max_q += np.amax(predicted_q_value)
@@ -106,14 +115,26 @@ class DDPG(DRL):
             self.sum_q_max += np.amax(predicted_q_value)
             self.train_count += 1
 
+            self.train_sum_critic_loss += c_loss
+
      # override
     def _build_net(self):
         pass
 
     def get_avg_q(self):
-    
         return  self.sum_q_max /self.train_count if self.train_count!=0 else 0
-        
+
+
+    def notify_ep_done(self):
+        self.train_count = 0
+        self.sum_q_max = 0
+        self.train_sum_critic_loss = 0
+
+    def get_log_dic(self):
+        log_dic = {'ep_avg_Q':self.get_avg_q() }
+        log_dic['critic avg loss'] = self.train_sum_critic_loss /self.train_count if self.train_count!=0 else 0
+        return log_dic
+
 class ActorNetwork(object):
     """
     Input to the network is the state, output is the action
@@ -159,7 +180,9 @@ class ActorNetwork(object):
         self.num_trainable_vars = len(self.network_params) + len(self.target_network_params)
 
     def create_actor_network(self):
-        inputs = tf.placeholder(tf.float32, [None, self.s_dim])
+        print(' self.s_dim=',  self.s_dim, ' self.s_dim.shape=',  np.shape(self.s_dim) )
+        print('type( self.s_dim = ', type( self.s_dim))
+        inputs = tf.placeholder(tf.float32, [None, self.s_dim], name = 'actor_s')
 
         # Input -> Hidden Layer
         w1 = weight_variable([self.s_dim, n_hidden_1])
@@ -276,7 +299,8 @@ class CriticNetwork(object):
         return inputs, action, out
 
     def train(self, inputs, action, predicted_q_value):
-        return self.sess.run([self.out, self.optimize], feed_dict={
+        # return self.sess.run([self.out, self.optimize], feed_dict={
+        return self.sess.run([self.out, self.loss, self.optimize], feed_dict={
             self.inputs: inputs,
             self.action: action,
             self.predicted_q_value: predicted_q_value

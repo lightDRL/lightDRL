@@ -1,0 +1,40 @@
+conn: 
+    server_worker_num: &ref_server_worker_num 1
+    server_ip: 127.0.0.1
+    server_frontend_port: 5555
+    server_backend_port: 5556
+    client_num: 4
+    client_retries: 3
+    client_timeout: 2500   #ms
+
+RL:
+    method: 'DDPG'
+    # train_multi_steps: 1       # default: 1, param: 'if_down', 'steps(int)'-> train if down or train after steps    
+    reward_gamma: 0.99
+    reward_factor: 0.01
+    add_data_steps: 'if_down'     # dafault: 1 , param: 'if_down', 'steps(int)'    
+    reward_reverse: yes           # dafault: False
+    exploration: 300        # train after exploration step
+
+DDPG:
+    lr_actor:  0.0001  # learning rate for actor (1e-4)
+    lr_critic:  0.001  # learning rate for critic
+    memory_capacity: 5000
+    memory_train_min: 300 
+    batch_size: 100          
+    tau: 0.001              # the factor about update network with target network
+    
+noise:   # Noise parameters - Ornstein Uhlenbeck
+    max_ep: 500
+    delta: 0.5  # The rate of change (time)
+    sigma: 0.5  # Volatility of the stochastic processes
+    ou_a: 3.0   # The rate of mean reversion
+    ou_mu: 0.0
+
+misc:
+    output_tf: yes
+    output_tf_dir: './log'
+    model_save_cycle: 30
+    gpu_memory_ratio: 0.3
+    random_seed: 1234
+    gym_env: 'CartPole-v0'

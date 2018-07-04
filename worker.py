@@ -47,6 +47,10 @@ class WorkerBase(object):
         #--------------setup var---------------#
         self.var_init(cfg)
 
+        # tf_summary_init
+        print('model_log_dir = ', model_log_dir)
+        self.tf_writer = tf.summary.FileWriter(model_log_dir)
+        
 
     def var_init(self, cfg):
         self.frame_count = 0
@@ -62,6 +66,7 @@ class WorkerBase(object):
         self.ep = 0
         self.ep_use_step = 0
         self.ep_reward = 0
+        self.ep_max_reward = 0
         self.all_step = 0
 
         self.action_discrete = cfg['RL']['action_discrete'] 
@@ -87,6 +92,20 @@ class WorkerBase(object):
         self.reward_process = Reward(cfg['RL']['reward_factor'], cfg['RL']['reward_gamma'])
         # self.one_step_buf = {'s':None, 'a':None, 'r':None, 'd':None, 's_':None} 
 
+
+        self.exploration_step = cfg['RL']['exploration']
+        self.exploration_action_noise = cfg['RL']['exploration_action_noise']
+
+        self.action_epsilon = cfg['RL']['action_epsilon']
+        self.action_epsilon_add = cfg['RL']['action_epsilon_add']
+        # self.random_choose
+
+    # def tf_summary_init(self, model_log_dir )
+    #     self.tf_writer = tf.summary.FileWriter(model_log_dir)
+
+        self.none_over_pos_count = 0 
+
+
     def train_process(self, data):
         
         state = data['state']
@@ -95,46 +114,81 @@ class WorkerBase(object):
         done = data['done']
         next_state = data['next_state']
 
+        self.all_step += 1
         self.ep_use_step += 1
         self.ep_reward += reward
+        self.ep_max_reward = reward if reward > self.ep_max_reward else self.ep_max_reward
 
-        
-        # print('I: train get states.shape={}, type(states)={}'.format(np.shape(states), type(states)))
-        # print('I: train get actions.shape={}, type(actions)={}'.format(np.shape(actions), type(actions)))
-        # print('I: train get rewards.shape={}, type(rewards)={}'.format(np.shape(rewards), type(rewards)))
+        if np.isscalar(state):
+            state = np.array([state])
+
+        if np.isscalar(next_state):
+            next_state = np.array([next_state])
+
+        # print('-------in train_process-------')
+        # print('I: train get state.shape={}, type(state)={}'.format(np.shape(state), type(state)))
+        # print('I: train get action.shape={}, type(action)={}'.format(np.shape(action), type(action)))
+        # print('I: train get reward.shape={}, type(reward)={}'.format(np.shape(reward), type(reward)))
         # print('I: train get done = {}'.format(done)) 
        
         self.train_add_data(state, action, reward, done, next_state )
 
-        if self.train_multi_steps == 1:     # usually do this
-            self.train()
-        elif type(self.train_multi_steps) == int:
-            self.train_multi_count += 1
-            if self.train_multi_count >= self.train_multi_steps:
+        if self.all_step > self.exploration_step:
+            if self.train_multi_steps == 1:     # usually do this
                 self.train()
-                self.train_multi_count = 0
-        elif self.train_multi_steps=='if_down' and done:
-            self.train()
-        else:
-            assert False, 'Error train_multi_steps'
+            elif type(self.train_multi_steps) == int:
+                self.train_multi_count += 1
+                if self.train_multi_count >= self.train_multi_steps:
+                    self.train()
+                    self.train_multi_count = 0
+            elif self.train_multi_steps=='if_down' and done:
+                self.train()
+            else:
+                assert False, 'Error train_multi_steps'
 
 
         if done:
-            self.ep+=1
-            log_str = '(Worker) EP %3d | Reward: %.4f' % (self.ep, self.ep_reward )
             
-            if issubclass(self.method_class, DRL):
-                 log_str = '%s, Avg_Q: %.4f' % (log_str, self.RL.get_avg_q())
+            log_str = '(Worker) EP %3d | Reward: %.4f | MAX_R: %.4f' % (self.ep, self.ep_reward, self.ep_max_reward )
             print(log_str)
+            # if issubclass(self.method_class, DRL):
+            #      log_str = '%s| Avg_Q: %.4f' % (log_str, self.RL.get_avg_q())
+            log_dict = self.RL.get_log_dic()
+            if self.action_epsilon !=None:
+                log_dict['epsilon'] = self.action_epsilon
+            ep_time = time.time() - self.ep_s_time
+            log_dict['EP Time'] = ep_time
+            
+            if self.action_epsilon!=None and self.ep_max_reward > 0:
+                self.action_epsilon += self.action_epsilon_add
 
+            self.tf_summary(self.ep , self.ep_reward,self.ep_max_reward,self.ep_use_step, log_dict)
+            self.ep+=1
             self.ep_use_step = 0
             self.ep_reward = 0
+            self.ep_max_reward = -99999
             self.ep_s_time = time.time()  # update episode start time
-        
-        
+            self.RL.notify_ep_done()
+            
+
+    def tf_summary(self, ep, ep_r, ep_max_r, ep_use_step, log_dict):
+        summary = tf.Summary()
+        summary.value.add(tag='EP Reward', simple_value=int(ep_r))
+        summary.value.add(tag='EP Max_Reward', simple_value=int(ep_max_r))
+        summary.value.add(tag='EP Use Steps', simple_value=int(ep_use_step))
+        if log_dict != None:
+            for key, value in log_dict.iteritems():
+                # print('{} -> {} '.format(key, value))
+                summary.value.add(tag=key, simple_value=float(value))
+
+        # summary.value.add(tag='Perf/Qmax', simple_value=float(ep_ave_max_q / float(j)))
+        self.tf_writer.add_summary(summary, ep)
+
 
     def train_add_data(self, state, action, reward, done, next_state ):
+        # print('self.add_data_steps  =', self.add_data_steps )
         if self.add_data_steps == 1:
+            # print('in add_data_steps ==1')
             self.RL.add_data( state, action, reward, done, next_state)
         else:
             go_multi_add = False
@@ -165,6 +219,15 @@ class WorkerBase(object):
                 next_states = np.array(self.next_state_buf) 
 
                 self.RL.add_data(states, actions, rewards, dones, next_states)
+                # if self.ep_max_reward > 0:
+                #     self.RL.add_data(states, actions, rewards, dones, next_states)
+                #     self.none_over_pos_count = 0 
+                # else:
+                #     self.none_over_pos_count += 1
+                #     if self.none_over_pos_count <= 2:
+                #         self.RL.add_data(states, actions, rewards, dones, next_states)
+
+                # print('self.none_over_pos_count = ', self.none_over_pos_count)
 
                 self.state_buf  = []
                 self.action_buf = []
@@ -173,22 +236,57 @@ class WorkerBase(object):
                 self.next_state_buf  = []
 
     def predict(self, state):
-        # print("I: predict() state.shape: {}, type(state)= {} ".format(np.shape(state), type(state)) )
+        # print('--------------%03d-%03d----------------' % ( self.ep, self.ep_use_step))
+        # print("I: predict() state.shape: {}, type(state)= {}, state={} ".format(np.shape(state), type(state), state) )
         state = np.array(state)
         a =  self.RL.choose_action(state)
-        self.all_step += 1
-
-        # print('outout a shape = ', np.shape(a))
-        # print('--------------%03d-%03d----------------' % ( self.ep, self.ep_use_step))
-        # Noise
-        if self.noise!=None and self.ep < self.noise_max_ep:
-            # print('before noise a = ' , a)
-            self.ou_level = self.noise.ornstein_uhlenbeck_level(self.ou_level)
-            a = a + self.ou_level
-
+       
+        # if self.noise!=None and self.ep < self.noise_max_ep:
+        #     self.ou_level = self.noise.ornstein_uhlenbeck_level(self.ou_level)
+        #     a = a + self.ou_level
             # print('ou_level = ' , self.ou_level)
         action = a[0]
+
+        # print('send action = ', action)
+
         return action
+
+    def predict_postprocess(self, a):
+        # print('--------------%03d-%03d----------------' % ( self.ep, self.ep_use_step))
+        # print('before a = ', a)
+        if self.noise!=None and self.ep < self.noise_max_ep:
+            self.ou_level = self.noise.ornstein_uhlenbeck_level(self.ou_level)
+            a = a + self.ou_level
+            # print('in ornstein_uhlenbeck ou_level = ' , self.ou_level)
+        
+        a_dim = a.shape[0]
+        #------replace original action-----#
+        if self.all_step < self.exploration_step:
+            if self.action_discrete==True:
+                
+                if self.exploration_action_noise=='np_random':
+                    # print('in np_random')
+                    a = np.zeros(a_dim)
+                    a[ np.random.randint(a_dim) ] =1
+                elif self.exploration_action_noise=='dirichlet':
+                    # print('in dirichlet')
+                    a = np.random.dirichlet(np.ones(a_dim) )       # random, and sum is 1 
+            
+        
+        if  self.action_epsilon!=None and self.all_step > self.exploration_step:
+            if np.random.rand(1)[0] > self.action_epsilon:
+                a = np.zeros(a_dim)
+                a[ np.random.randint(a_dim) ] =1
+
+                
+        # if self.ep_max_reward > 0: 
+            # print('iniiniin  self.ep_max_reward > 0')
+        
+        # print('self.action_epsilon = ' , self.action_epsilon)
+        # print('after a=', a )
+        # print('worker use action = ', np.argmax(a))
+
+        return a
 
     def train(self):
         with self.graph.as_default():
@@ -218,7 +316,7 @@ class WorkerStandalone(WorkerBase):
         self.lock.acquire()
         
         action = self.predict(data['state'])
-
+        action = self.predict_postprocess(action)
         self.main_queue.put(action)
         self.lock.release()
     
@@ -229,6 +327,7 @@ class WorkerStandalone(WorkerBase):
 
         if not data['done']:
             action = self.predict(data['next_state'])
+            action = self.predict_postprocess(action)
             # print('worker on_train_and_predict action = ' , action,', thread=' ,threading.current_thread().name )
             self.main_queue.put(action)
 
