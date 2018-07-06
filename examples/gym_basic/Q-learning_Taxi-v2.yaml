@@ -1,0 +1,27 @@
+conn: 
+    server_worker_num: &ref_server_worker_num 1
+    server_ip: 127.0.0.1
+    server_frontend_port: 5555
+    server_backend_port: 5556
+    client_num: 4
+    client_retries: 3
+    client_timeout: 2500   #ms
+
+RL:
+    method: 'Q-learning'
+    action_noise: 'epsilon-greedy'
+    
+Q-learning:
+    lr:  0.01               # Q-learning learning rate
+    discount_factor:  0.99  # Q-learning discount factor
+    
+epsilon-greedy:
+    value: 1.0
+    discount: 0.0001    # each step discount it  
+
+misc:
+    model_save_cycle: 30
+    gpu_memory_ratio: 0.3
+    max_ep:  10000                       #over the ep will auto exit()
+    render: no                          
+    gym_env: 'Taxi-v2'

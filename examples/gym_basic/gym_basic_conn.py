@@ -13,6 +13,7 @@ import time
 from config import cfg, get_yaml_name
 import numpy as np
 import threading
+from gym_basic import modify_cfg
 
 MAX_EPISODES = 1000
 RENDER = True
@@ -38,22 +39,22 @@ class GymBasic(EnvSpace):
             self.state =  self.env.reset()
             self.send_state_get_action(self.state)
 
-def modify_cfg():
-    env = gym.make(ENV_NAME)
-    # env.seed(1)     # reproducible, general Policy gradient has high variance
-    env = env.unwrapped
-    # print('type(env.action_space.n) = ' + str(type(env.action_space)))
-    # print(env.action_space.n)
-    # print(env.action_space)
-    # print(env.observation_space.shape)
-    # print(env.observation_space.high)
-    # print(env.observation_space.low)
-    cfg['RL']['action_num'] = env.action_space.n
-    cfg['RL']['action_discrete'] = True if type(env.action_space) == gym.spaces.discrete.Discrete else False
-    cfg['RL']['state_shape'] = env.observation_space.shape
-    env.close()
-    print('{} close! Because get parameter done.'.format(ENV_NAME))
-    return cfg
+# def modify_cfg():
+#     env = gym.make(ENV_NAME)
+#     # env.seed(1)     # reproducible, general Policy gradient has high variance
+#     env = env.unwrapped
+#     # print('type(env.action_space.n) = ' + str(type(env.action_space)))
+#     # print(env.action_space.n)
+#     # print(env.action_space)
+#     # print(env.observation_space.shape)
+#     # print(env.observation_space.high)
+#     # print(env.observation_space.low)
+#     cfg['RL']['action_num'] = env.action_space.n
+#     cfg['RL']['action_discrete'] = True if type(env.action_space) == gym.spaces.discrete.Discrete else False
+#     cfg['RL']['state_shape'] = env.observation_space.shape
+#     env.close()
+#     print('{} close! Because get parameter done.'.format(ENV_NAME))
+#     return cfg
 
 if __name__ == '__main__':
     c = Client(GymBasic, project_name='gym-'+ ENV_NAME + '-' + get_yaml_name(), i_cfg = modify_cfg(), retrain_model= True)

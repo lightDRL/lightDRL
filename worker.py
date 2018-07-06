@@ -10,6 +10,7 @@ from flask_socketio import Namespace, emit
 # DRL import 
 from DRL.Base import RL, DRL
 from DRL.DDPG import DDPG
+from DRL.Qlearning import Qlearning
 from DRL.component.reward import Reward
 from DRL.component.noise import Noise
 
@@ -18,7 +19,6 @@ class WorkerBase(object):
     def base_init(self, cfg, graph, sess, model_log_dir):
         self.graph = graph
         # RL or DRL Init
-        # self.nA = cfg['RL']['action_num']
         np.random.seed( cfg['misc']['random_seed'])
         #----------------------------setup RL method--------------------------#
         method_class = globals()[cfg['RL']['method'] ]
@@ -33,11 +33,10 @@ class WorkerBase(object):
                 else:
                     self.RL = method_class(cfg, model_log_dir, self.sess )
     
-
                 self.RL.init_or_restore_model(self.sess)    # init or check model
         elif issubclass(method_class, RL):
             '''Use RL'''
-            self.RL = method_class()
+            self.RL = method_class(cfg, model_log_dir, None)
             pass
         else:
             print('E: Worker::__init__() say error method name={}'.format(cfg['RL']['method'] ))
@@ -63,13 +62,14 @@ class WorkerBase(object):
 
         self.start_time = time.time()
         self.ep_s_time = time.time()
+        self.train_s_time = self.ep_s_time
         self.ep = 0
         self.ep_use_step = 0
         self.ep_reward = 0
         self.ep_max_reward = 0
         self.all_step = 0
 
-        self.action_discrete = cfg['RL']['action_discrete'] 
+        self.a_discrete = cfg['RL']['action_discrete'] 
         self.train_multi_steps = cfg['RL']['train_multi_steps']        # default: 1, param: 'if_down', 'steps(int)'-> train if down or train after steps
         self.add_data_steps = cfg['RL']['add_data_steps']              # default: 1, param: 'if_down', 'steps(int)'-> add data if down or add data after steps    
 
@@ -79,17 +79,12 @@ class WorkerBase(object):
         if type(self.add_data_steps) == int:
             self.add_data_count =  0
 
-        self.noise = None
-        # setup noise
-        if 'noise' in cfg:
-            # print('--------in cofigure noise-----')
-            self.noise = Noise( cfg['noise']['delta'], cfg['noise']['sigma'], cfg['noise']['ou_a'], cfg['noise']['ou_mu'])
-            self.noise_max_ep= cfg['noise']['max_ep']
-            self.ou_level = 0
+        
 
         # setup reward
-        self.reward_reverse = cfg['RL']['reward_reverse']
-        self.reward_process = Reward(cfg['RL']['reward_factor'], cfg['RL']['reward_gamma'])
+        if cfg['RL']['reward_reverse'] == True:
+            self.reward_reverse = cfg['RL']['reward_reverse']
+            self.reward_process = Reward(cfg['RL']['reward_factor'], cfg['RL']['reward_gamma'])
         # self.one_step_buf = {'s':None, 'a':None, 'r':None, 'd':None, 's_':None} 
 
 
@@ -98,8 +93,18 @@ class WorkerBase(object):
 
         self.action_epsilon = cfg['RL']['action_epsilon']
         self.action_epsilon_add = cfg['RL']['action_epsilon_add']
-        # self.random_choose
-
+        self.action_noise = cfg['RL']['action_noise']
+        # setup noise
+        if self.action_noise!=None:
+            if self.action_noise =='epsilon-greedy':
+                self.epsilon_greedy_value = cfg['epsilon-greedy']['value']
+                self.epsilon_greedy_discount = cfg['epsilon-greedy']['discount']
+            elif self.action_noise =='Uhlenbeck':
+                self.noise = None
+                # print('--------in cofigure noise-----')
+                self.noise = Noise( cfg['Uhlenbeck']['delta'], cfg['Uhlenbeck']['sigma'], cfg['Uhlenbeck']['ou_a'], cfg['Uhlenbeck']['ou_mu'])
+                self.noise_max_ep= cfg['Uhlenbeck']['max_ep']
+                self.ou_level = 0
     # def tf_summary_init(self, model_log_dir )
     #     self.tf_writer = tf.summary.FileWriter(model_log_dir)
 
@@ -148,34 +153,42 @@ class WorkerBase(object):
 
 
         if done:
-            
-            log_str = '(Worker) EP %3d | Reward: %.4f | MAX_R: %.4f' % (self.ep, self.ep_reward, self.ep_max_reward )
+            ep_time_str = self.time_str(self.ep_s_time,min=True)
+            all_time_str = self.time_str(self.train_s_time)
+            log_str = '(Worker) EP%5d | EP_Reward: %8.2f | MAX_R: %4.2f | EP_Time: %s | All_Time: %s ' % (self.ep, self.ep_reward, self.ep_max_reward, ep_time_str, all_time_str )
             print(log_str)
             # if issubclass(self.method_class, DRL):
             #      log_str = '%s| Avg_Q: %.4f' % (log_str, self.RL.get_avg_q())
             log_dict = self.RL.get_log_dic()
-            if self.action_epsilon !=None:
-                log_dict['epsilon'] = self.action_epsilon
-            ep_time = time.time() - self.ep_s_time
-            log_dict['EP Time'] = ep_time
+            # if self.action_epsilon !=None:
+            #     log_dict = dict() if log_dict == None else log_dict
+            #     log_dict['epsilon'] = self.action_epsilon
+
+            if self.action_noise =='epsilon-greedy':
+                log_dict = dict() if log_dict == None else log_dict
+                log_dict['epsilon'] = self.epsilon_greedy_value
+            # ep_time = time.time() - self.ep_s_time
+            # log_dict['EP Time'] = ep_time
             
             if self.action_epsilon!=None and self.ep_max_reward > 0:
                 self.action_epsilon += self.action_epsilon_add
 
-            self.tf_summary(self.ep , self.ep_reward,self.ep_max_reward,self.ep_use_step, log_dict)
+            self.tf_summary(self.ep , self.ep_reward,self.ep_max_reward,self.ep_use_step, self.ep_s_time, log_dict)
             self.ep+=1
             self.ep_use_step = 0
             self.ep_reward = 0
             self.ep_max_reward = -99999
-            self.ep_s_time = time.time()  # update episode start time
             self.RL.notify_ep_done()
+            self.ep_s_time = time.time()  # update episode start time
             
 
-    def tf_summary(self, ep, ep_r, ep_max_r, ep_use_step, log_dict):
+    def tf_summary(self, ep, ep_r, ep_max_r, ep_use_step, ep_s_time, log_dict):
         summary = tf.Summary()
         summary.value.add(tag='EP Reward', simple_value=int(ep_r))
         summary.value.add(tag='EP Max_Reward', simple_value=int(ep_max_r))
         summary.value.add(tag='EP Use Steps', simple_value=int(ep_use_step))
+        summary.value.add(tag='EP Time', simple_value=float(time.time() - ep_s_time))
+        summary.value.add(tag='All Time', simple_value=float(time.time() - self.train_s_time))
         if log_dict != None:
             for key, value in log_dict.iteritems():
                 # print('{} -> {} '.format(key, value))
@@ -245,15 +258,31 @@ class WorkerBase(object):
         #     self.ou_level = self.noise.ornstein_uhlenbeck_level(self.ou_level)
         #     a = a + self.ou_level
             # print('ou_level = ' , self.ou_level)
-        action = a[0]
+        # action = a[0]
 
         # print('send action = ', action)
 
-        return action
+        return a
 
-    def predict_postprocess(self, a):
+    def add_action_noise(self, a):
         # print('--------------%03d-%03d----------------' % ( self.ep, self.ep_use_step))
         # print('before a = ', a)
+        if self.a_discrete==True:
+            a_dim = self.RL.a_discrete_n
+            if self.action_noise=='epsilon-greedy':
+                if np.random.rand() < self.epsilon_greedy_value:
+                    a = np.zeros(a_dim)
+                    a[ np.random.randint(self.RL.a_discrete_n) ] =1
+                    self.epsilon_greedy_value -= self.epsilon_greedy_discount
+
+
+        if self.action_noise=='Uhlenbeck' and self.ep < self.noise_max_ep:
+            self.ou_level = self.noise.ornstein_uhlenbeck_level(self.ou_level)
+            a = a + self.ou_level
+            # print('in ornstein_uhlenbeck ou_level = ' , self.ou_level)
+        # print('after a = ', a)
+        return a
+        '''
         if self.noise!=None and self.ep < self.noise_max_ep:
             self.ou_level = self.noise.ornstein_uhlenbeck_level(self.ou_level)
             a = a + self.ou_level
@@ -285,8 +314,8 @@ class WorkerBase(object):
         # print('self.action_epsilon = ' , self.action_epsilon)
         # print('after a=', a )
         # print('worker use action = ', np.argmax(a))
-
-        return a
+        '''
+        
 
     def train(self):
         with self.graph.as_default():
@@ -298,6 +327,12 @@ class WorkerBase(object):
             return obj.tolist()
         if isinstance(obj, np.generic):
             return np.asscalar(obj)
+
+    def time_str(self, start_time, min=False):
+        use_secs = time.time() - start_time
+        if min:
+            return '%3dm%2ds' % (use_secs/60, use_secs % 60 )
+        return  '%3dh%2dm%2ds' % (use_secs/3600, (use_secs%3600)/60, use_secs % 60 )
 
 
 class WorkerStandalone(WorkerBase):
@@ -316,7 +351,8 @@ class WorkerStandalone(WorkerBase):
         self.lock.acquire()
         
         action = self.predict(data['state'])
-        action = self.predict_postprocess(action)
+        if self.action_noise != None:
+            action = self.add_action_noise(action)
         self.main_queue.put(action)
         self.lock.release()
     
@@ -327,7 +363,7 @@ class WorkerStandalone(WorkerBase):
 
         if not data['done']:
             action = self.predict(data['next_state'])
-            action = self.predict_postprocess(action)
+            action = self.add_action_noise(action)
             # print('worker on_train_and_predict action = ' , action,', thread=' ,threading.current_thread().name )
             self.main_queue.put(action)
 

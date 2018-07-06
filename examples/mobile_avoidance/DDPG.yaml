@@ -13,7 +13,7 @@ RL:
     state_frames: 1
     state_shape: 22
     action_discrete: no         # no -> provide action_bound for continuous control
-    action_num: 1               # no shape support, what need for action shape?
+    action_shape: !!python/tuple [1,]         
     action_bound: [-3.14159, 3.14159]
     reward_discount: 0.9
     train_multi_steps: no      # sub choose, train_if_down, train_run_steps,            
@@ -26,8 +26,6 @@ DDPG:
     batch_size: 32
 
 misc:
-    output_tf: yes
-    output_tf_dir: './log'
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
     

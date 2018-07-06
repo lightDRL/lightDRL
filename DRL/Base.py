@@ -20,21 +20,46 @@ class RL(object):
         self.set_rl_basic_from_config(cfg)
 
         print('rl_init() model_log_dir = ' + self.model_log_dir)
+        self.check_s_a_dim()
         
     def set_rl_basic_from_config(self, cfg):
-        self.a_dim = np.squeeze(cfg['RL']['action_num'])   # continuous-> OK, discrete: onehost
-        self.s_dim = np.squeeze(cfg['RL']['state_shape'])
-        if not cfg['RL']['action_discrete']:    
-            self.a_bound = cfg['RL']['action_bound']
-        else:
-            self.a_bound = 1.
+        # self.a_dim = np.squeeze(cfg['RL']['action_shape'])   # continuous-> OK, discrete: onehost
+        self.a_shape = cfg['RL']['action_shape']   
+        
+        self.a_discrete = cfg['RL']['action_discrete']  # true -> discrete, false-> continuous
 
+        if  cfg['RL']['action_discrete']:    
+            self.a_discrete_n = cfg['RL']['action_discrete_n']
+            self.a_bound = 1.
+            self.a_dim = self.a_discrete_n
+        else:
+            self.a_bound = cfg['RL']['action_bound']
+            self.a_dim = np.squeeze(np.array(self.a_shape))
+
+        # state
+        # print("cfg['RL']['state_shape']=", cfg['RL']['state_shape'])
+        # self.s_dim = np.squeeze(cfg['RL']['state_shape'])
+        self.s_shape = cfg['RL']['state_shape']
+        self.s_dim =  np.squeeze(np.array(self.s_shape))
+        self.s_discrete = cfg['RL']['state_discrete']
+        if self.s_discrete:
+            self.s_discrete_n = cfg['RL']['state_discrete_n']
         
         # self.r_discount = self.reward_discount = cfg['DRL']['reward_discount']
         # self.r_reverse_norm =  self.reward_reverse_norm = cfg['RL']['reward_reverse_norm']
-        self.action_discrete = cfg['RL']['action_discrete']
         
         self.model_save_cycle = cfg['misc']['model_save_cycle'] if ('misc' in cfg) and ('model_save_cycle' in cfg['misc']) else None
+
+
+    def check_s_a_dim(self):
+        print('self.a_shape = ', self.a_shape)
+        print('self.a_dim = ', self.a_dim)
+        print('self.a_bound = ', self.a_bound)
+        print('self.action_discrete = ', self.a_discrete)
+        
+        print('self.s_shape = ', self.s_shape)
+        print('self.s_dim = ', self.s_dim)
+        
 
     @abstractmethod
     def choose_action(self, state):

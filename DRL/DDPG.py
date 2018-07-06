@@ -54,7 +54,9 @@ class DDPG(DRL):
 
     def choose_action(self, s):
         # out = self.actor.predict(np.reshape(s, (1, self.actor.s_dim)))
-        return self.actor.predict(np.reshape(s, (1, self.actor.s_dim)))
+        a = self.actor.predict(np.reshape(s, (1, self.actor.s_dim)))
+        action = a[0]
+        return action
 
 
     
@@ -66,7 +68,7 @@ class DDPG(DRL):
         # print('I: train get r.shape={}, type(r)={}'.format(np.shape(r), type(r)))
         # print('I: train get d.shape={}, type(d)={}'.format(np.shape(d), type(d)))
         # print('I: train get s_.shape={}, type(s_)={}'.format(np.shape(s_), type(s_)))
-       
+        
 
         self.mem.add(s, a, r, d, s_)
         # print('self.mem.size()= ' , self.mem.size())

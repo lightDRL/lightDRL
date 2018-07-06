@@ -25,9 +25,9 @@ python gym_basic_conn.py DDPG_CartPole-v0.yaml
 
 1. MountainCarContinuous-v0
 
-algo. input: continous state
+agent input: continous state
 
-algo. output: continous action
+agent output: continous action
 
 ```
 python gym_basic_conn.py DDPG_MountainCarContinuous-v0.yaml
@@ -35,12 +35,23 @@ python gym_basic_conn.py DDPG_MountainCarContinuous-v0.yaml
 
 2. CartPole-v0
 
-algo. input: continous state
+agent input: continous state
 
-algo. output: discrete action
+agent output: discrete action
 
 ```
 python gym_basic_conn.py DDPG_CartPole-v0.yaml
 ```
+
+3. Taxi-v2
+
+agent input: discrete state
+
+agent output: discrete action
+
+```
+python gym_basic_conn.py DDPG_CartPole-v0.yaml
+```
+
 
 

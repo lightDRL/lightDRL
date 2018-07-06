@@ -93,6 +93,5 @@ class Client:
         self.env_space.standalone_init(project_name, send_cfg, retrain_model)
         self.env_space.env_init()
 
-        print('--------> after env_init()')
         while True:
             self.env_space.from_main_thread_blocking()

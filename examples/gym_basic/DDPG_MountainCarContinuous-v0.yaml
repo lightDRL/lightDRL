@@ -15,6 +15,7 @@ RL:
     add_data_steps: 'if_down'     # dafault: 1 , param: 'if_down', 'steps(int)'    
     reward_reverse: yes           # dafault: False
     exploration: 3000        # train after exploration step
+    action_noise: 'Uhlenbeck'
 
 DDPG:
     lr_actor:  0.0001  # learning rate for actor (1e-4)
@@ -25,7 +26,7 @@ DDPG:
     tau: 0.001              # the factor about update network with target network
     
 
-noise:   # Noise parameters - Ornstein Uhlenbeck
+Uhlenbeck:   # Noise parameters - Ornstein Uhlenbeck
     max_ep: 500
     delta: 0.5  # The rate of change (time)
     sigma: 0.5  # Volatility of the stochastic processes
@@ -33,9 +34,10 @@ noise:   # Noise parameters - Ornstein Uhlenbeck
     ou_mu: 0.0
 
 misc:
-    output_tf: yes
-    output_tf_dir: './log'
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
     random_seed: 1234
+    max_ep:  500                       # defualt:1000, over the ep will auto exit()
+    render: yes                        # defualt: false, render the env 
+    render_after_ep: 20                # defualt: 0, render afet the ep 
     gym_env: 'MountainCarContinuous-v0'

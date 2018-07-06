@@ -45,7 +45,14 @@ python gym_basic_conn.py DDPG.yaml
 
 ## Version Note 
 
-### v0.10 (latest)
+### v0.11 (latest)
+Support Q-learning !
+
+```
+python examples/gym_basic/gym_basic.py examples/gym_basic/Q-learning_Taxi-v2.yaml
+```
+
+### v0.10 
 Change framework
 
 Now, support standalone & server-client version !!

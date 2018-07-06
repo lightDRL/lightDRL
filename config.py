@@ -38,7 +38,14 @@ def set_none_if_not_exist():
     cfg['RL']['exploration_action_noise'] = cfg['RL']['exploration_action_noise'] if 'exploration_action_noise' in cfg['RL'] else None
     cfg['RL']['action_epsilon'] = cfg['RL']['action_epsilon'] if 'action_epsilon' in cfg['RL'] else None
     cfg['RL']['action_epsilon_add'] = cfg['RL']['action_epsilon_add'] if 'action_epsilon_add' in cfg['RL'] else None
-    cfg['misc']['random_seed'] = cfg['misc']['random_seed'] if 'random_seed' in cfg['misc'] else None
+    cfg['RL']['method'] = 'Qlearning'   if cfg['RL']['method']=='Q-learning'  else cfg['RL']['method']    # for python variable rule
+    cfg['RL']['reward_factor'] =  1.0 if not 'reward_factor' in cfg['RL'] else cfg['RL']['reward_factor']
+    cfg['RL']['action_noise'] = None if  not 'action_noise' in cfg['RL'] else cfg['RL']['action_noise']
+
+    cfg['misc']['random_seed'] = None  if 'random_seed' not in cfg['misc'] else cfg['misc']['random_seed']
+    cfg['misc']['render'] = False if  not 'render' in cfg['misc'] else cfg['misc']['render']
+    cfg['misc']['render_after_ep'] = 0 if  not 'render_after_ep' in cfg['misc'] else cfg['misc']['render_after_ep']
+    cfg['misc']['max_ep'] = 1000  if  not 'max_ep' in cfg['misc'] else cfg['misc']['max_ep']
     
 
 def get_yaml_name():
@@ -49,4 +56,8 @@ def get_yaml_name():
     return f_name
 
 set_none_if_not_exist()
+
+
+# print(cfg['RL']['action_shape'])
+# print(type(cfg['RL']['action_shape']))
 
