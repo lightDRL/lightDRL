@@ -46,7 +46,7 @@ def set_none_if_not_exist():
     cfg['misc']['render'] = False if  not 'render' in cfg['misc'] else cfg['misc']['render']
     cfg['misc']['render_after_ep'] = 0 if  not 'render_after_ep' in cfg['misc'] else cfg['misc']['render_after_ep']
     cfg['misc']['max_ep'] = 1000  if  not 'max_ep' in cfg['misc'] else cfg['misc']['max_ep']
-    
+    cfg['misc']['worker_nickname'] ='worker'  if  not 'worker_nickname' in cfg['misc'] else cfg['misc']['worker_nickname']
 
 def get_yaml_name():
     from os.path import basename, splitext

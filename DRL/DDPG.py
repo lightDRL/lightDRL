@@ -5,24 +5,11 @@ Modify from: https://github.com/liampetti/DDPG/blob/master/ddpg.py
 import tensorflow as tf
 import numpy as np
 from Base import DRL
-# from ReplayMemory import ReplayMemory
 from component.replay_memory import ReplayMemory
+from DNN_v3 import *
 # Network Parameters - Hidden layers
 n_hidden_1 = 400
 n_hidden_2 = 300
-
-# np.random.seed(1234)
-# tf.set_random_seed(1234)
-
-def weight_variable(shape):
-    initial = tf.truncated_normal(shape, stddev=0.01)
-    # initial = tf.constant(0.03, shape=shape)
-    return tf.Variable(initial)
-
-def bias_variable(shape):
-    initial = tf.constant(0.03, shape=shape)
-    return tf.Variable(initial)
-
 
 class DDPG(DRL):
     def __init__(self, cfg, model_log_dir="", sess = None):
@@ -138,13 +125,6 @@ class DDPG(DRL):
         return log_dic
 
 class ActorNetwork(object):
-    """
-    Input to the network is the state, output is the action
-    under a deterministic policy.
-    The output layer activation is a tanh to keep the action
-    between -2 and 2
-    """
-
     def __init__(self, sess, state_dim, action_dim, action_bound, learning_rate, tau):
         self.sess = sess
         self.s_dim = state_dim
@@ -154,12 +134,12 @@ class ActorNetwork(object):
         self.tau = tau
 
         # Actor Network
-        self.inputs, self.out, self.scaled_out = self.create_actor_network()
+        self.inputs, self.out, self.scaled_out = self.create_actor_network('actor')
 
         self.network_params = tf.trainable_variables()
 
         # Target Network
-        self.target_inputs, self.target_out, self.target_scaled_out = self.create_actor_network()
+        self.target_inputs, self.target_out, self.target_scaled_out = self.create_actor_network('actor_target')
 
         self.target_network_params = tf.trainable_variables()[len(self.network_params):]
 
@@ -181,28 +161,16 @@ class ActorNetwork(object):
 
         self.num_trainable_vars = len(self.network_params) + len(self.target_network_params)
 
-    def create_actor_network(self):
-        print(' self.s_dim=',  self.s_dim, ' self.s_dim.shape=',  np.shape(self.s_dim) )
-        print('type( self.s_dim = ', type( self.s_dim))
-        inputs = tf.placeholder(tf.float32, [None, self.s_dim], name = 'actor_s')
+    def create_actor_network(self, actor_name):
+        # print(' self.s_dim=',  self.s_dim, ' self.s_dim.shape=',  np.shape(self.s_dim) )
+        # print('type( self.s_dim = ', type( self.s_dim),'self.s_dim = ', self.s_dim)
+        # print('self.a_dim = ' , self.a_dim)
+       
+        inputs = tf.placeholder(tf.float32, [None, self.s_dim], name = actor_name + '_state')
 
-        # Input -> Hidden Layer
-        w1 = weight_variable([self.s_dim, n_hidden_1])
-        b1 = bias_variable([n_hidden_1])
-        # Hidden Layer -> Hidden Layer
-        w2 = weight_variable([n_hidden_1, n_hidden_2])
-        b2 = bias_variable([n_hidden_2])
-        # Hidden Layer -> Output
-        w3 = weight_variable([n_hidden_2, self.a_dim])
-        b3 = bias_variable([self.a_dim])
-
-        # 1st Hidden layer, OPTION: Softmax, relu, tanh or sigmoid
-        h1 = tf.nn.relu(tf.matmul(inputs, w1) + b1)
-        # 2nd Hidden layer, OPTION: Softmax, relu, tanh or sigmoid
-        h2 = tf.nn.relu(tf.matmul(h1, w2) + b2)
-
-        # Run tanh on output to get -1 to 1
-        out = tf.nn.tanh(tf.matmul(h2, w3) + b3)
+        fc1 = FC(inputs, n_hidden_1, name_prefix = actor_name + '_fc_1', op='relu', initializer = 'truncated_normal', bias_const=0.03)
+        fc2 = FC(fc1   , n_hidden_2, name_prefix = actor_name + '_fc_2', op='relu', initializer = 'truncated_normal', bias_const=0.03)
+        out = FC(fc2   , self.a_dim, name_prefix = actor_name + '_output', op='tanh', initializer = 'truncated_normal', bias_const=0.03)
 
         scaled_out = tf.multiply(out, self.action_bound)  # Scale output to -action_bound to action_bound
         return inputs, out, scaled_out
@@ -250,12 +218,12 @@ class CriticNetwork(object):
         self.tau = tau
 
         # Create the critic network
-        self.inputs, self.action, self.out = self.create_critic_network()
+        self.inputs, self.action, self.out = self.create_critic_network('critic')
 
         self.network_params = tf.trainable_variables()[num_actor_vars:]
 
         # Target Network
-        self.target_inputs, self.target_action, self.target_out = self.create_critic_network()
+        self.target_inputs, self.target_action, self.target_out = self.create_critic_network('critic_target')
 
         self.target_network_params = tf.trainable_variables()[(len(self.network_params) + num_actor_vars):]
 
@@ -275,31 +243,21 @@ class CriticNetwork(object):
         # Get the gradient of the net w.r.t. the action
         self.action_grads = tf.gradients(self.out, self.action)
 
-    def create_critic_network(self):
-        inputs = tf.placeholder(tf.float32, [None, self.s_dim], name="critic_s")
-        action = tf.placeholder(tf.float32, [None, self.a_dim], name="critic_a")
+    def create_critic_network(self, critic_name):
+        
+        state = tf.placeholder(tf.float32, [None, self.s_dim], name=critic_name + "_state")
+        action = tf.placeholder(tf.float32, [None, self.a_dim], name=critic_name + "_action")
+        # state -> fc1
+        fc1 = FC(state, n_hidden_1, name_prefix = critic_name + '_fc_1', op='relu', initializer = 'truncated_normal', bias_const=0.03)
+        # fc1*w2 +  fc_action (action-> fc_action)
+        w2 = weight_variable([n_hidden_1, n_hidden_2] , initializer='truncated_normal',normal_mean=0.0, normal_stddev=0.01, name=critic_name + '_w2')
+        fc_action = FC(action, n_hidden_2, name_prefix = critic_name + '_fc_action', op='none', initializer = 'truncated_normal', bias_const=0.03)
+        add_fc_s_a = tf.nn.relu(tf.matmul(fc1, w2) + fc_action)
 
-        # Input -> Hidden Layer
-        w1 = weight_variable([self.s_dim, n_hidden_1])
-        b1 = bias_variable([n_hidden_1])
-        # Hidden Layer -> Hidden Layer + Action
-        w2 = weight_variable([n_hidden_1, n_hidden_2])
-        w2a = weight_variable([self.a_dim, n_hidden_2])
-        b2 = bias_variable([n_hidden_2])
-        # Hidden Layer -> Output (Q)
-        w3 = weight_variable([n_hidden_2, 1])
-        b3 = bias_variable([1])
-
-        # 1st Hidden layer, OPTION: Softmax, relu, tanh or sigmoid
-        h1 = tf.nn.relu(tf.matmul(inputs, w1) + b1)
-        # 2nd Hidden layer, OPTION: Softmax, relu, tanh or sigmoid
-        # Action inserted here
-        h2 = tf.nn.relu(tf.matmul(h1, w2) + tf.matmul(action, w2a) + b2)
-
-        out = tf.matmul(h2, w3) + b3
-
-        return inputs, action, out
-
+        out = FC(add_fc_s_a, 1, name_prefix = critic_name + '_out', op='none', initializer = 'truncated_normal', bias_const=0.03)
+        
+        return state, action, out
+    
     def train(self, inputs, action, predicted_q_value):
         # return self.sess.run([self.out, self.optimize], feed_dict={
         return self.sess.run([self.out, self.loss, self.optimize], feed_dict={

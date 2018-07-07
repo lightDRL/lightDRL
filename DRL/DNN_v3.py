@@ -13,21 +13,28 @@ def safe_get(name, *args, **kwargs):
         return tf.get_variable(name, *args, **kwargs)
 
 
-def weight_variable(shape, name="w", initializer = 'xavier'):
+def weight_variable(shape, name="w", initializer = 'xavier', normal_mean=0.0, normal_stddev=0.01):
     # print('name ={} weight_variable shape = {}'.format(name, shape))
     if initializer == 'xavier':
         xavier_init =  tf.contrib.layers.xavier_initializer(dtype=tf.float32)
         return safe_get(name, shape, initializer=xavier_init, dtype=tf.float32)
     elif initializer == 'truncated_normal':
-        truncated_normal_init = tf.truncated_normal_initializer(mean=0.0, stddev=0.1, dtype=tf.float32)
+        truncated_normal_init = tf.truncated_normal_initializer(mean=normal_mean, stddev=normal_stddev, dtype=tf.float32)
         return safe_get(name, shape, initializer=truncated_normal_init, dtype=tf.float32)
     elif initializer == 'selu':
         muti_exclude_last = np.prod(shape[:-1])  # ex [4, 4, 3, 32] -> 4 * 4*3
         weights = np.random.normal(scale=np.sqrt(1.0/muti_exclude_last), size=shape).astype('f')
         return safe_get(name, list(shape), initializer=tf.constant_initializer(weights), dtype=tf.float32)
+    else:
+        assert False, 'weight_variable() say Error initializer'
 
-def bias_variable(shape, name = "b"):
-    return safe_get(name, initializer=tf.zeros(shape, dtype=tf.float32))
+def bias_variable(shape, name = "b", const = 0.0):
+    if const ==0:
+        init = tf.zeros(shape, dtype=tf.float32)
+    else:
+        init = tf.constant(const, shape=shape, dtype=tf.float32)
+    return safe_get(name, initializer=init)
+    # return safe_get(name, initializer=tf.zeros(shape, dtype=tf.float32))
     # inital = tf.constant(0.1, shape=shape)
     # return tf.Variable(inital, name = name)
 
@@ -68,23 +75,26 @@ def Flaten(x):
     # print('flat num = %d' % num)
     return tf.reshape(x, [-1, num]) 
 
-def FC(x, fc_size = 1024, name_prefix = 'fc', w = None, b = None, initializer='xavier', op='relu'):
+def FC(x, fc_size = 1024, name_prefix = 'fc', w = None, b = None, initializer='xavier', op='relu', bias_const=0):
     assert len(x.shape) == 2, 'FC() say the len of input shape is not 2'
     num = int(x.shape[1]) 
 
     if w == None:
         w = weight_variable([num, fc_size],name= name_prefix + "_w", initializer=initializer) 
     if b == None:
-        b = bias_variable([fc_size], name = name_prefix + '_b') 
+        b = bias_variable([fc_size], name = name_prefix + '_b', const=bias_const) 
     
     if op=='relu':
         return tf.nn.relu(tf.matmul(x, w) + b, name = name_prefix+ "_relu")
     elif op=='softmax':
         return tf.nn.softmax(tf.matmul(x, w) + b, name = name_prefix+ "_softmax")
+    elif op=='tanh':
+        return tf.nn.tanh(tf.matmul(x, w) + b, name = name_prefix+ "_tanh")
     elif op=='none':
         return tf.matmul(x, w) + b
     else:
         print('error op ==' + op)
+        assert False, 'FC() say Error op'
    
 
 def norm(layer, norm_type='batch_norm', decay=0.9, id=0, is_training=True, activation_fn=tf.nn.relu, name='conv_'):

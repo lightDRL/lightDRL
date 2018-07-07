@@ -68,7 +68,9 @@ class WorkerBase(object):
         self.ep_reward = 0
         self.ep_max_reward = 0
         self.all_step = 0
+        self.all_ep_reward = 0   # sum of all ep reward
 
+        self.max_ep = cfg['misc']['max_ep']
         self.a_discrete = cfg['RL']['action_discrete'] 
         self.train_multi_steps = cfg['RL']['train_multi_steps']        # default: 1, param: 'if_down', 'steps(int)'-> train if down or train after steps
         self.add_data_steps = cfg['RL']['add_data_steps']              # default: 1, param: 'if_down', 'steps(int)'-> add data if down or add data after steps    
@@ -110,6 +112,8 @@ class WorkerBase(object):
 
         self.none_over_pos_count = 0 
 
+        self.worker_nickname = cfg['misc']['worker_nickname']
+        print('worker_nickname = ', self.worker_nickname)
 
     def train_process(self, data):
         
@@ -155,7 +159,8 @@ class WorkerBase(object):
         if done:
             ep_time_str = self.time_str(self.ep_s_time,min=True)
             all_time_str = self.time_str(self.train_s_time)
-            log_str = '(Worker) EP%5d | EP_Reward: %8.2f | MAX_R: %4.2f | EP_Time: %s | All_Time: %s ' % (self.ep, self.ep_reward, self.ep_max_reward, ep_time_str, all_time_str )
+            log_str = '(%s) EP%5d | EP_Reward: %8.2f | MAX_R: %4.2f | EP_Time: %s | All_Time: %s ' % \
+                    (self.worker_nickname, self.ep, self.ep_reward, self.ep_max_reward, ep_time_str, all_time_str )
             print(log_str)
             # if issubclass(self.method_class, DRL):
             #      log_str = '%s| Avg_Q: %.4f' % (log_str, self.RL.get_avg_q())
@@ -173,13 +178,19 @@ class WorkerBase(object):
             if self.action_epsilon!=None and self.ep_max_reward > 0:
                 self.action_epsilon += self.action_epsilon_add
 
+            
+            self.all_ep_reward+= self.ep_reward
             self.tf_summary(self.ep , self.ep_reward,self.ep_max_reward,self.ep_use_step, self.ep_s_time, log_dict)
             self.ep+=1
             self.ep_use_step = 0
             self.ep_reward = 0
             self.ep_max_reward = -99999
-            self.RL.notify_ep_done()
+            
             self.ep_s_time = time.time()  # update episode start time
+
+            self.RL.notify_ep_done()
+           
+            
             
 
     def tf_summary(self, ep, ep_r, ep_max_r, ep_use_step, ep_s_time, log_dict):
@@ -334,6 +345,13 @@ class WorkerBase(object):
             return '%3dm%2ds' % (use_secs/60, use_secs % 60 )
         return  '%3dh%2dm%2ds' % (use_secs/3600, (use_secs%3600)/60, use_secs % 60 )
 
+    
+    def avg_ep_reward(self):
+        return float(self.all_ep_reward) / float(self.ep)
+
+    @property
+    def is_done(self):
+        return (self.ep > self.max_ep)
 
 class WorkerStandalone(WorkerBase):
     def __init__(self, cfg = None, main_queue = None,
@@ -366,6 +384,8 @@ class WorkerStandalone(WorkerBase):
             action = self.add_action_noise(action)
             # print('worker on_train_and_predict action = ' , action,', thread=' ,threading.current_thread().name )
             self.main_queue.put(action)
+
+        
 
 
 class WorkerConn(WorkerBase, Namespace):  # if you want to standalone, you could use  Worker(object)

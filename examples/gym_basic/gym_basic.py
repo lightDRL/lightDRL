@@ -12,14 +12,11 @@ import gym
 import time
 from config import cfg, get_yaml_name
 import numpy as np
-import threading
-
-ENV_NAME = cfg['misc']['gym_env'] #'CartPole-v0' 
 
 class GymBasic(EnvSpace):
     def env_init(self):
-        self.env = gym.make(ENV_NAME)
-        self.env.seed(cfg['misc']['random_seed'])
+        self.env = gym.make(self.cfg['misc']['gym_env'])
+        self.env.seed(self.cfg['misc']['random_seed'])
 
         self.state = self.env.reset()
         self.send_state_get_action(self.state)
@@ -30,19 +27,18 @@ class GymBasic(EnvSpace):
         self.send_train_get_action(self.state, action, reward , done, next_state)
         self.state = next_state
     
-        if cfg['misc']['render'] and self.ep > cfg['misc']['render_after_ep']:
+        if self.cfg['misc']['render'] and self.ep > self.cfg['misc']['render_after_ep']:
             self.env.render()   
         if done:
             self.state =  self.env.reset()
             self.send_state_get_action(self.state)
 
-            if self.ep > cfg['misc']['max_ep']:
-                exit()
+            if self.ep > self.cfg['misc']['max_ep']:
+                # exit()
+                return 
 
-        
-
-def modify_cfg():
-    env = gym.make(ENV_NAME)
+def gym_cfg(cfg):
+    env = gym.make( cfg['misc']['gym_env'])
     env = env.unwrapped
 
     cfg['RL']['state_discrete'] = True if type(env.observation_space) == gym.spaces.discrete.Discrete else False
@@ -72,8 +68,8 @@ def modify_cfg():
         cfg['RL']['action_bound'] = env.action_space.high 
         cfg['RL']['action_shape'] = env.action_space.shape
     env.close()
-    print('{} close! Because get parameter done.'.format(ENV_NAME))
+    print('{} close! Because get parameter done.'.format( cfg['misc']['gym_env']))
     return cfg
 
 if __name__ == '__main__':
-    c = Client(GymBasic, project_name='gym-' + get_yaml_name(), i_cfg = modify_cfg(), retrain_model= True)
+    c = Client(GymBasic, i_cfg = gym_cfg(cfg) , project_name='gym-' + get_yaml_name() ,retrain_model= True).run()

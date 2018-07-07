@@ -2,7 +2,7 @@
 import sys, os, time
 import numpy as np
 import json
-from config import cfg
+# from config import cfg
 from threading import Thread
 import signal                   # for ctrl+C
 import sys                      # for ctrl+C
@@ -21,12 +21,15 @@ class EnvBase(object):
         self.ep_reward = 0
 
         self.env_name =''
+        
+    def set_cfg(self, cfg):
+        self.cfg = cfg
     
     def on_predict_response(self, callback_action):
         self.server_action =  callback_action
         
         # print('server_action: {},type ={}, shape={}'.format(callback_action, type(callback_action), np.shape(callback_action)))
-        action  = np.argmax(callback_action) if  cfg['RL']['action_discrete'] else callback_action
+        action  = np.argmax(callback_action) if  self.cfg['RL']['action_discrete'] else callback_action
         # print('use action: ', action)
         # action = self.to_py_native(action)
         self.on_action_response(action)
@@ -96,9 +99,9 @@ class EnvSpace(EnvBase, BaseNamespace):
 
 
 class Client:
-    def __init__(self, target_env_class, project_name=None,i_cfg = None, retrain_model = False):
+    def __init__(self, target_env_class, i_cfg , project_name=None, retrain_model = False):
         # Thread.__init__(self)
-        self.target_env_class = target_env_class
+        
         self.env_name = project_name
         self.socketIO = SocketIO('127.0.0.1', 5000)
         self.socketIO.on('connect', self.on_connect)
@@ -109,9 +112,13 @@ class Client:
         # for ctrl+C
         signal.signal(signal.SIGINT, self.signal_handler)
 
-        send_cfg = cfg if i_cfg == None else cfg
+        # send_cfg = cfg if i_cfg == None else cfg
+        
+        self.send_cfg = i_cfg
+        self.target_env_class = target_env_class
+
         #self.socketIO.emit('session', project_name, cfg)  
-        self.socketIO.emit('session', project_name, send_cfg, retrain_model)  
+        self.socketIO.emit('session', project_name, self.send_cfg, retrain_model)  
         self.socketIO.wait()
         
 
@@ -140,6 +147,7 @@ class Client:
     def connect_with_ns(self,ns):
         # print('get ns ={}'.format(ns))
         new_env = self.socketIO.define(self.target_env_class, ns)
+        new_env.set_cfg(self.send_cfg)
         new_env.set_name(self.env_name)
         # method_to_call = getattr(new_env, self.env_call_fun)
         # result = method_to_call()

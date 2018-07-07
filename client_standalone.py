@@ -2,12 +2,8 @@ import sys, os, time
 import numpy as np
 import json
 import gym
-from config import cfg
-
-import signal                   # for ctrl+C
-import sys                      # for ctrl+C
-
-# ---------------for standalone! combine sever, worker in one file-----------------
+# from config import cfg
+# ---------------for standalone! combine sever and worker in one file-----------------
 import tensorflow as tf
 import yaml
 import threading
@@ -41,8 +37,6 @@ class EnvSpace(EnvBase, ServerBase):
             
     def from_main_thread_blocking(self):
         callback_action = self.callback_queue.get() #blocks until an item is available
-        # callback()
-        # print('callback_action = ', callback_action)
         self.on_predict_response(callback_action)
 
     # def from_main_thread_nonblocking(self):
@@ -81,17 +75,19 @@ class EnvSpace(EnvBase, ServerBase):
 
 
 class Client:
-    def __init__(self, target_env_class, project_name=None,i_cfg = None, retrain_model = False):
-        # Thread.__init__(self)
+    def __init__(self, target_env_class, i_cfg, project_name=None, retrain_model = False):
         self.target_env_class = target_env_class
         self.env_name = project_name
 
-        send_cfg = cfg if i_cfg == None else cfg
-        #self.socketIO.emit('session', project_name, cfg)  
-        # self.socketIO.emit('session', project_name, send_cfg, retrain_model)  
+        # print('i_cfg=',i_cfg)
+        self.target_env_class = target_env_class  
         self.env_space = self.target_env_class()
-        self.env_space.standalone_init(project_name, send_cfg, retrain_model)
+        self.env_space.set_cfg(i_cfg)
+        self.env_space.standalone_init(project_name, i_cfg, retrain_model)
         self.env_space.env_init()
 
+    def run(self):
         while True:
+            if self.env_space.worker.is_done:
+                break
             self.env_space.from_main_thread_blocking()

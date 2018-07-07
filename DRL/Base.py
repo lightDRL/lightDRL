@@ -19,8 +19,8 @@ class RL(object):
         # self.cfg = cfg
         self.set_rl_basic_from_config(cfg)
 
-        print('rl_init() model_log_dir = ' + self.model_log_dir)
-        self.check_s_a_dim()
+        # print('rl_init() model_log_dir = ' + self.model_log_dir)
+        # self.check_s_a_dim()
         
     def set_rl_basic_from_config(self, cfg):
         # self.a_dim = np.squeeze(cfg['RL']['action_shape'])   # continuous-> OK, discrete: onehost

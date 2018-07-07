@@ -35,8 +35,8 @@ Uhlenbeck:   # Noise parameters - Ornstein Uhlenbeck
 misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
-    random_seed: 1234
+    random_seed: 12
     max_ep:  500                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
-    render_after_ep: 50                # defualt: 0, render afet the ep 
+    render_after_ep: 100                # defualt: 0, render afet the ep 
     gym_env: 'CartPole-v0'             
