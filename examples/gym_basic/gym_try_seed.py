@@ -44,8 +44,8 @@ def gym_thread(seed):
     
     cfg_copy['misc']['random_seed'] = seed
     cfg_copy['misc']['render'] = False
-    cfg_copy['misc']['gpu_memory_ratio'] = 0.02
-    cfg_copy['misc']['max_ep'] = 150
+    cfg_copy['misc']['gpu_memory_ratio'] = 0.6
+    cfg_copy['misc']['max_ep'] = 200
     cfg_copy['misc']['worker_nickname'] = 'w_' + str(seed)
     prj_name ='gym-cartpole_seed_%04d' % ( seed)
     
@@ -56,7 +56,7 @@ def gym_thread(seed):
 
 if __name__ == '__main__':
     all_t =[]
-    for seed in range(30):
+    for seed in range(61,200):  #39, 118
         s = seed
         t = ThreadWithReturnValue(target=gym_thread, args=(s,), name='t_'+ str(seed), )
         t.start()
