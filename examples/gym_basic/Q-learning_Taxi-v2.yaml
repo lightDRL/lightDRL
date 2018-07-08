@@ -22,6 +22,8 @@ epsilon-greedy:
 misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
-    max_ep:  10000                       #over the ep will auto exit()
+    max_ep:  10000                       #over the ep will auto exit
     render: no                          
     gym_env: 'Taxi-v2'
+    gym_monitor_path: 'monitor/'        # will crate in data_pool/<project_name>/monitor/
+    gym_monitor_episode: 1000             # record every 10 episode 

@@ -45,8 +45,18 @@ python gym_basic_conn.py DDPG.yaml
 
 ## Version Note 
 
-### v0.11 (latest)
-Support Q-learning !
+### v0.12 (latest)
+Support DQN! Now support DQN, DDPG, and Q-learning
+
+
+Play maze with DQN 
+```
+python examples/maze/maze.py examples/maze/DQN.yaml
+```
+
+### v0.11
+Support Q-learning!
+
 
 ```
 python examples/gym_basic/gym_basic.py examples/gym_basic/Q-learning_Taxi-v2.yaml
@@ -131,6 +141,3 @@ After run `server.py` and `two_dof_arm.py`
 
 * `server.py` workers train the parameter to `Main_Net`
 
-## Acknowledgement
-
-1. [MorvanZhou RL Class](https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow)

@@ -16,7 +16,6 @@ class RL(object):
     def rl_init(self, cfg, model_log_dir):
         self.ep = 0         # episode
         self.model_log_dir = model_log_dir
-        # self.cfg = cfg
         self.set_rl_basic_from_config(cfg)
 
         # print('rl_init() model_log_dir = ' + self.model_log_dir)
@@ -56,10 +55,15 @@ class RL(object):
         print('self.a_dim = ', self.a_dim)
         print('self.a_bound = ', self.a_bound)
         print('self.action_discrete = ', self.a_discrete)
+        if self.a_discrete:
+            print('self.a_discrete_n = ', self.a_discrete_n )
         
+
         print('self.s_shape = ', self.s_shape)
         print('self.s_dim = ', self.s_dim)
-        
+        print('self.s_discrete = ', self.s_discrete)
+        if self.s_discrete:
+            print('self.s_discrete_n = ', self.s_discrete_n)
 
     @abstractmethod
     def choose_action(self, state):

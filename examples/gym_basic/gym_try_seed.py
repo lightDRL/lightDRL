@@ -10,7 +10,7 @@ sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'
 from client_standalone import Client, EnvSpace
 import gym
 import time
-from config import cfg, get_yaml_name
+from config import cfg, get_yaml_name, set_gym_monitor_path
 import numpy as np
 from gym_basic import gym_cfg, GymBasic
 from threading import Thread, Lock
@@ -44,11 +44,15 @@ def gym_thread(seed):
     
     cfg_copy['misc']['random_seed'] = seed
     cfg_copy['misc']['render'] = False
-    cfg_copy['misc']['gpu_memory_ratio'] = 0.6
-    cfg_copy['misc']['max_ep'] = 200
+    cfg_copy['misc']['gpu_memory_ratio'] = 0.8
+    cfg_copy['misc']['max_ep'] = 80
     cfg_copy['misc']['worker_nickname'] = 'w_' + str(seed)
-    prj_name ='gym-cartpole_seed_%04d' % ( seed)
+    prj_name ='gym-%s_seed_%04d' % ( get_yaml_name(), seed)
     
+    cfg_copy['misc']['gym_monitor_path'] = None
+    # cfg_copy['misc']['gym_monitor_path'] = set_gym_monitor_path(cfg_copy['misc']['gym_monitor_path_origin'], i_project_name=prj_name)
+    # print("cfg['misc']['gym_monitor_path'] = ", cfg_copy['misc']['gym_monitor_path'])    
+
     c = Client(GymBasic, project_name=prj_name, i_cfg = cfg_copy, retrain_model= True)
     c.run()
     avg_r = c.env_space.worker.avg_ep_reward()
@@ -56,7 +60,7 @@ def gym_thread(seed):
 
 if __name__ == '__main__':
     all_t =[]
-    for seed in range(61,200):  #39, 118
+    for seed in range(1,100):  #39, 118
         s = seed
         t = ThreadWithReturnValue(target=gym_thread, args=(s,), name='t_'+ str(seed), )
         t.start()
@@ -73,3 +77,15 @@ if __name__ == '__main__':
         
     print('%s get max reward = %6.2f' % (max_t.name, max_avg_ep_r))
     
+
+'''
+moutaincar
+(w_33) EP   78 | EP_Reward:    84.89 | MAX_R: 99.88 | EP_Time:   0m19s | All_Time:   2h20m16s
+(w_91) EP   75 | EP_Reward:    91.64 | MAX_R: 99.90 | EP_Time:   0m 9s | All_Time:   2h20m15s
+(w_34) EP   26 | EP_Reward:   -20.34 | MAX_R: -0.00 | EP_Time:   2m20s | All_Time:   2h20m21s
+(w_62) EP   26 | EP_Reward:   -24.68 | MAX_R: -0.00 | EP_Time:   2m21s | All_Time:   2h20m23s
+(w_92) EP   59 | EP_Reward:    88.35 | MAX_R: 99.95 | EP_Time:   0m12s | All_Time:   2h20m23s
+(w_8) EP   37 | EP_Reward:    89.27 | MAX_R: 100.00 | EP_Time:   0m11s | All_Time:   2h20m25s
+(w_35) EP   26 | EP_Reward:   -19.47 | MAX_R: -0.00 | EP_Time:   2m19s | All_Time:   2h20m24s
+t_44 get max reward =  78.59
+'''

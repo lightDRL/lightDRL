@@ -10,6 +10,7 @@ from flask_socketio import Namespace, emit
 # DRL import 
 from DRL.Base import RL, DRL
 from DRL.DDPG import DDPG
+from DRL.DQN import DQN
 from DRL.Qlearning import Qlearning
 from DRL.component.reward import Reward
 from DRL.component.noise import Noise

@@ -16,10 +16,14 @@ import numpy as np
 class GymBasic(EnvSpace):
     def env_init(self):
         self.env = gym.make(self.cfg['misc']['gym_env'])
-        if cfg['misc']['gym_monitor_path'] != None:
-            self.env = gym.wrappers.monitor.Monitor(self.env,cfg['misc']['gym_monitor_path'], 
-                force=True, video_callable=lambda episode_id: episode_id % self.cfg['misc']['gym_monitor_episode']==0 ) 
-            
+        if self.cfg['misc']['gym_monitor_path'] != None:
+            try:
+                self.env = gym.wrappers.monitor.Monitor(self.env,self.cfg['misc']['gym_monitor_path'], 
+                    force=True, video_callable=lambda episode_id: episode_id % self.cfg['misc']['gym_monitor_episode']==0 ) 
+            except:
+                self.env = gym.wrappers.monitoring.Monitor(self.env,self.cfg['misc']['gym_monitor_path'], 
+                    force=True, video_callable=lambda episode_id: episode_id % self.cfg['misc']['gym_monitor_episode']==0 ) 
+                
         self.env.seed(self.cfg['misc']['random_seed'])
         
         self.state = self.env.reset()

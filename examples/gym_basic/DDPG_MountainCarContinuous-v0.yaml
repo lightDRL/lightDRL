@@ -36,8 +36,10 @@ Uhlenbeck:   # Noise parameters - Ornstein Uhlenbeck
 misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
-    random_seed: 1234
-    max_ep:  500                       # defualt:1000, over the ep will auto exit()
+    random_seed: 44
+    max_ep:  100                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
     render_after_ep: 20                # defualt: 0, render afet the ep 
     gym_env: 'MountainCarContinuous-v0'
+    gym_monitor_path: 'monitor/'        # will crate in data_pool/<project_name>/monitor/
+    gym_monitor_episode: 10             # record every 10 episode 

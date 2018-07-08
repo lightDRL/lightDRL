@@ -6,7 +6,7 @@ import tensorflow as tf
 import numpy as np
 from Base import DRL
 from component.replay_memory import ReplayMemory
-from DNN_v3 import *
+from component.DNN_v3 import *
 # Network Parameters - Hidden layers
 n_hidden_1 = 400
 n_hidden_2 = 300
@@ -40,7 +40,8 @@ class DDPG(DRL):
         self.notify_ep_done()  # for reset variable
 
     def choose_action(self, s):
-        # out = self.actor.predict(np.reshape(s, (1, self.actor.s_dim)))
+        # print('self.actor.s_dim = ', self.actor.s_dim, ', type = ', type(self.actor.s_dim))
+        # print('choose_action() shape = ', np.shape(s), ', type = ', type(s),', s=', s)
         a = self.actor.predict(np.reshape(s, (1, self.actor.s_dim)))
         action = a[0]
         return action
