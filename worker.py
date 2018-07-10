@@ -72,6 +72,7 @@ class WorkerBase(object):
         self.all_ep_reward = 0   # sum of all ep reward
 
         self.max_ep = cfg['misc']['max_ep']
+        self.ep_max_step =  cfg['misc']['ep_max_step']                 # default: None -> unlimit steps, max steps in one episode
         self.a_discrete = cfg['RL']['action_discrete'] 
         self.train_multi_steps = cfg['RL']['train_multi_steps']        # default: 1, param: 'if_down', 'steps(int)'-> train if down or train after steps
         self.add_data_steps = cfg['RL']['add_data_steps']              # default: 1, param: 'if_down', 'steps(int)'-> add data if down or add data after steps    
@@ -140,8 +141,11 @@ class WorkerBase(object):
         # print('I: train get action.shape={}, type(action)={}'.format(np.shape(action), type(action)))
         # print('I: train get reward.shape={}, type(reward)={}'.format(np.shape(reward), type(reward)))
         # print('I: train get done = {}'.format(done)) 
-       
-        self.train_add_data(state, action, reward, done, next_state )
+        train_done = done
+        if done == True:
+            # print('done = {}, ep_use_step={}'.format(done, self.ep_use_step))
+            train_done = False if self.ep_use_step >= self.ep_max_step  else done
+        self.train_add_data(state, action, reward, train_done, next_state )
 
         if self.all_step > self.exploration_step:
             if self.train_multi_steps == 1:     # usually do this
@@ -160,8 +164,12 @@ class WorkerBase(object):
         if done:
             ep_time_str = self.time_str(self.ep_s_time,min=True)
             all_time_str = self.time_str(self.train_s_time)
-            log_str = '(%s) EP%5d | EP_Reward: %8.2f | MAX_R: %4.2f | EP_Time: %s | All_Time: %s ' % \
-                    (self.worker_nickname, self.ep, self.ep_reward, self.ep_max_reward, ep_time_str, all_time_str )
+            more_log = ''
+            if self.action_noise =='epsilon-greedy':
+                more_log += ' | epsilon: %5.4f' % self.epsilon_greedy_value
+            # print('more_log = ' ,more_log)
+            log_str = '(%s) EP%5d | EP_Step: %5d | EP_Reward: %8.2f | MAX_R: %4.2f %s | EP_Time: %s | All_Time: %s ' % \
+                    (self.worker_nickname, self.ep, self.ep_use_step, self.ep_reward, self.ep_max_reward, more_log, ep_time_str, all_time_str )
             print(log_str)
             # if issubclass(self.method_class, DRL):
             #      log_str = '%s| Avg_Q: %.4f' % (log_str, self.RL.get_avg_q())

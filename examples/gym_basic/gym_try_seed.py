@@ -44,8 +44,8 @@ def gym_thread(seed):
     
     cfg_copy['misc']['random_seed'] = seed
     cfg_copy['misc']['render'] = False
-    cfg_copy['misc']['gpu_memory_ratio'] = 0.8
-    cfg_copy['misc']['max_ep'] = 80
+    cfg_copy['misc']['gpu_memory_ratio'] = 0.1
+    cfg_copy['misc']['max_ep'] = 1000
     cfg_copy['misc']['worker_nickname'] = 'w_' + str(seed)
     prj_name ='gym-%s_seed_%04d' % ( get_yaml_name(), seed)
     

@@ -45,7 +45,15 @@ python gym_basic_conn.py DDPG.yaml
 
 ## Version Note 
 
-### v0.12 (latest)
+### v0.121 (latest)
+Update Q-learning to more general
+Play maze with Q-learning 
+Add cfg['misc']['ep_max_step'], if done = True and self.ep_use_step >= self.ep_max_step -> train_done = False
+```
+python examples/maze/maze.py  examples/maze/Q-learning.yaml
+```
+
+### v0.12 
 Support DQN! Now support DQN, DDPG, and Q-learning
 
 

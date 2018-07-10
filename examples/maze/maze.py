@@ -1,6 +1,5 @@
-# Run with DDPG
-#   python ../../server.py
-#   python gym_basic.py DDPG.yaml
+#   python maze.py DQN.yaml
+#   python maze.py Q-learning.yaml
 #   
 # Author:  kbehouse  <https://github.com/kbehouse/>
 #          

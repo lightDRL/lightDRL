@@ -17,14 +17,12 @@ Q-learning:
     
 epsilon-greedy:
     value: 1.0
-    discount: 0.0001    # each step discount it  
+    discount: 0.005    # each step discount it  
 
 misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
-    random_seed: 12             # t_82 get max reward = 114.10
-    max_ep:  10000                       #over the ep will auto exit
-    render: no                          
-    gym_env: 'Taxi-v2'
-    gym_monitor_path: 'monitor/'        # will crate in data_pool/<project_name>/monitor/
-    gym_monitor_episode: 1000             # record every 1000 episode 
+    random_seed: 8
+    max_ep:  300                       #over the ep will auto exit
+    render: yes                         
+    
