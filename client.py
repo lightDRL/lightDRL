@@ -35,7 +35,7 @@ class EnvBase(object):
         self.on_action_response(action)
 
     def send_state_get_action(self, state):
-        state       = state.tolist() if type(state) != list else state
+        state       = state.tolist()  if type(state) == np.ndarray else state # if type(state) != list else state
         dic ={'state': state}
 
         self.emit('predict',dic)

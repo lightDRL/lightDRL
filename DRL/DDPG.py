@@ -43,6 +43,7 @@ class DDPG(DRL):
         # print('choose_action() shape = ', np.shape(s), ', type = ', type(s),', s=', s)
         a = self.actor.predict(np.reshape(s, (1, self.actor.s_dim)))
         action = a[0]
+        # print('action = ', action)
         return action
 
 
