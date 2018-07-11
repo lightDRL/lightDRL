@@ -142,9 +142,10 @@ class WorkerBase(object):
         # print('I: train get reward.shape={}, type(reward)={}'.format(np.shape(reward), type(reward)))
         # print('I: train get done = {}'.format(done)) 
         train_done = done
-        if done == True:
-            # print('done = {}, ep_use_step={}'.format(done, self.ep_use_step))
-            train_done = False if self.ep_use_step >= self.ep_max_step  else done
+        if done == True and self.ep_use_step >= self.ep_max_step:
+            # if the env has end position which could get reward, try to get the end position (like maze) as the done
+            # else like cartpole which is no end position, so it use the default done
+            train_done = False 
         self.train_add_data(state, action, reward, train_done, next_state )
 
         if self.all_step > self.exploration_step:
