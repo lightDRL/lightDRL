@@ -45,7 +45,11 @@ python gym_basic_conn.py DDPG.yaml
 
 ## Version Note 
 
-### v0.121 (latest)
+
+### v0.13 (latest)
+Support NNcomponent, you can modify network by config.yaml
+
+### v0.121 
 Update Q-learning to more general
 Play maze with Q-learning 
 Add cfg['misc']['ep_max_step'], if done = True and self.ep_use_step >= self.ep_max_step -> train_done = False
