@@ -40,7 +40,7 @@ def NNcomponent(cfg_nn, input_layer):
             initializer   = 'truncated_normal' if 'initializer' not in com else com['initializer']
             bias_const    = 0.01 if 'bias_const' not in com else com['bias_const']
 
-            print('build "{}" layer-> size={}, op={}, initializer={}, bias_const={}'.format(key, size, op, initializer, bias_const) )
+            # print('build "{}" layer-> size={}, op={}, initializer={}, bias_const={}'.format(key, size, op, initializer, bias_const) )
             out_layer = FC(pre_layer, size, name_prefix = key , op=op, initializer = initializer, bias_const=bias_const)
     
 

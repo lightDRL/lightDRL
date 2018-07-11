@@ -32,10 +32,41 @@ Uhlenbeck:   # Noise parameters - Ornstein Uhlenbeck
     ou_a: 3.0   # The rate of mean reversion
     ou_mu: 0.0
 
+actor_NN:
+    actor_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
+        type: 'fc'
+        size: 400
+        bias_const: 0.03
+
+    actor_fc_2:
+        type: 'fc'
+        size: 300
+        bias_const: 0.03
+
+critic_state_NN:
+    state_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
+        type: 'fc'
+        size: 400
+        bias_const: 0.03
+
+    state_fc_2:
+        type: 'fc'
+        size: 300
+        bias_const: 0.03
+        op: 'none'
+
+
+critic_action_NN:
+    action_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
+        type: 'fc'
+        size: 300
+        bias_const: 0.03
+        op: 'none'
+        
 misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
-    random_seed: 12             # t_82 get max reward = 114.10
+    random_seed: 38             # t_82 get max reward = 114.10
     max_ep:  200                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
     render_after_ep: 100                # defualt: 0, render afet the ep 

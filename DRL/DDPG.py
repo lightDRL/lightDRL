@@ -7,9 +7,7 @@ import numpy as np
 from Base import DRL
 from component.replay_memory import ReplayMemory
 from component.DNN_v3 import *
-# Network Parameters - Hidden layers
-n_hidden_1 = 400
-n_hidden_2 = 300
+from component.NNcomponent import NNcomponent
 
 class DDPG(DRL):
     def __init__(self, cfg, model_log_dir="", sess = None):
@@ -22,12 +20,13 @@ class DDPG(DRL):
         self.lr_critic = cfg['DDPG']['lr_critic']
         self.tau = cfg['DDPG']['tau']                    
         self.gamma = cfg['RL']['reward_gamma']
+        # self.actor_NN = cfg['actor_NN']
 
         self.sess = sess
 
-        self.actor = ActorNetwork(sess, self.s_dim, self.a_dim, self.a_bound, self.lr_actor, self.tau)
+        self.actor = ActorNetwork(sess, self.s_dim, self.a_dim, self.a_bound, self.lr_actor, self.tau, cfg['actor_NN'])
         self.critic = CriticNetwork(sess, self.s_dim, self.a_dim,
-                            self.lr_critic, self.tau, self.actor.get_num_trainable_vars())
+                            self.lr_critic, self.tau, self.actor.get_num_trainable_vars(),  cfg['critic_state_NN'],  cfg['critic_action_NN'])
 
         # noise = Noise(DELTA, SIGMA, OU_A, OU_MU)
         # reward = Reward(REWARD_FACTOR, GAMMA)
@@ -126,21 +125,26 @@ class DDPG(DRL):
         return log_dic
 
 class ActorNetwork(object):
-    def __init__(self, sess, state_dim, action_dim, action_bound, learning_rate, tau):
+    def __init__(self, sess, state_dim, action_dim, action_bound, learning_rate, tau, actor_NN):
         self.sess = sess
         self.s_dim = state_dim
         self.a_dim = action_dim
         self.action_bound = action_bound
         self.learning_rate = learning_rate
         self.tau = tau
+        self.actor_NN = actor_NN
 
         # Actor Network
-        self.inputs, self.out, self.scaled_out = self.create_actor_network('actor')
+        with tf.variable_scope('actor'):
+            self.inputs, self.out, self.scaled_out = self.create_actor_network()
+        # self.inputs, self.out, self.scaled_out = self.create_actor_network('actor')
 
         self.network_params = tf.trainable_variables()
 
         # Target Network
-        self.target_inputs, self.target_out, self.target_scaled_out = self.create_actor_network('actor_target')
+        with tf.variable_scope('actor_target'):
+            self.target_inputs, self.target_out, self.target_scaled_out = self.create_actor_network()
+        #self.target_inputs, self.target_out, self.target_scaled_out = self.create_actor_network('actor_target')
 
         self.target_network_params = tf.trainable_variables()[len(self.network_params):]
 
@@ -162,16 +166,19 @@ class ActorNetwork(object):
 
         self.num_trainable_vars = len(self.network_params) + len(self.target_network_params)
 
-    def create_actor_network(self, actor_name):
+    def create_actor_network(self):
         # print(' self.s_dim=',  self.s_dim, ' self.s_dim.shape=',  np.shape(self.s_dim) )
         # print('type( self.s_dim = ', type( self.s_dim),'self.s_dim = ', self.s_dim)
         # print('self.a_dim = ' , self.a_dim)
        
-        inputs = tf.placeholder(tf.float32, [None, self.s_dim], name = actor_name + '_state')
-
-        fc1 = FC(inputs, n_hidden_1, name_prefix = actor_name + '_fc_1', op='relu', initializer = 'truncated_normal', bias_const=0.03)
-        fc2 = FC(fc1   , n_hidden_2, name_prefix = actor_name + '_fc_2', op='relu', initializer = 'truncated_normal', bias_const=0.03)
-        out = FC(fc2   , self.a_dim, name_prefix = actor_name + '_output', op='tanh', initializer = 'truncated_normal', bias_const=0.03)
+        inputs = tf.placeholder(tf.float32, [None, self.s_dim], name =  'state')
+        # type 1
+        # fc1 = FC(inputs, n_hidden_1, name_prefix = 'fc_1', op='relu', initializer = 'truncated_normal', bias_const=0.03)
+        # fc2 = FC(fc1   , n_hidden_2, name_prefix = 'fc_2', op='relu', initializer = 'truncated_normal', bias_const=0.03)
+        # out = FC(fc2   , self.a_dim, name_prefix = 'output', op='tanh', initializer = 'truncated_normal', bias_const=0.03)
+        # type 2
+        nn = NNcomponent(self.actor_NN, inputs)
+        out = FC(nn, self.a_dim, name_prefix = 'output', op='tanh', initializer = 'truncated_normal', bias_const=0.03)
 
         scaled_out = tf.multiply(out, self.action_bound)  # Scale output to -action_bound to action_bound
         return inputs, out, scaled_out
@@ -211,20 +218,27 @@ class CriticNetwork(object):
     The action must be obtained from the output of the Actor network.
     """
 
-    def __init__(self, sess, state_dim, action_dim, learning_rate, tau, num_actor_vars):
+    def __init__(self, sess, state_dim, action_dim, learning_rate, tau, num_actor_vars, critic_state_NN, critic_action_NN):
         self.sess = sess
         self.s_dim = state_dim
         self.a_dim = action_dim
         self.learning_rate = learning_rate
         self.tau = tau
 
+        self.critic_state_NN  = critic_state_NN
+        self.critic_action_NN = critic_action_NN
+
         # Create the critic network
-        self.inputs, self.action, self.out = self.create_critic_network('critic')
+        with tf.variable_scope('critic'):
+            self.inputs, self.action, self.out = self.create_critic_network()
+        # self.inputs, self.action, self.out = self.create_critic_network('critic')
 
         self.network_params = tf.trainable_variables()[num_actor_vars:]
 
         # Target Network
-        self.target_inputs, self.target_action, self.target_out = self.create_critic_network('critic_target')
+        with tf.variable_scope('critic_target'):
+            self.target_inputs, self.target_action, self.target_out = self.create_critic_network()
+        # self.target_inputs, self.target_action, self.target_out = self.create_critic_network('critic_target')
 
         self.target_network_params = tf.trainable_variables()[(len(self.network_params) + num_actor_vars):]
 
@@ -244,18 +258,36 @@ class CriticNetwork(object):
         # Get the gradient of the net w.r.t. the action
         self.action_grads = tf.gradients(self.out, self.action)
 
-    def create_critic_network(self, critic_name):
+    def create_critic_network(self):
         
-        state = tf.placeholder(tf.float32, [None, self.s_dim], name=critic_name + "_state")
-        action = tf.placeholder(tf.float32, [None, self.a_dim], name=critic_name + "_action")
-        # state -> fc1
-        fc1 = FC(state, n_hidden_1, name_prefix = critic_name + '_fc_1', op='relu', initializer = 'truncated_normal', bias_const=0.03)
-        # fc1*w2 +  fc_action (action-> fc_action)
-        w2 = weight_variable([n_hidden_1, n_hidden_2] , initializer='truncated_normal',normal_mean=0.0, normal_stddev=0.01, name=critic_name + '_w2')
-        fc_action = FC(action, n_hidden_2, name_prefix = critic_name + '_fc_action', op='none', initializer = 'truncated_normal', bias_const=0.03)
-        add_fc_s_a = tf.nn.relu(tf.matmul(fc1, w2) + fc_action)
+        state = tf.placeholder(tf.float32, [None, self.s_dim], name="state")
+        action = tf.placeholder(tf.float32, [None, self.a_dim], name= "action")
 
-        out = FC(add_fc_s_a, 1, name_prefix = critic_name + '_out', op='none', initializer = 'truncated_normal', bias_const=0.03)
+        # n_hidden_1 = 200
+        # n_hidden_2 = 100
+        # type 1
+        # # state -> fc1
+        # fc1 = FC(state, n_hidden_1, name_prefix = critic_name + '_fc_1', op='relu', initializer = 'truncated_normal', bias_const=0.03)
+        # # fc1*w2 +  fc_action (action-> fc_action)
+        # w2 = weight_variable([n_hidden_1, n_hidden_2] , initializer='truncated_normal',normal_mean=0.0, normal_stddev=0.01, name=critic_name + '_w2')
+        # fc_action = FC(action, n_hidden_2, name_prefix = critic_name + '_fc_action', op='none', initializer = 'truncated_normal', bias_const=0.03)
+        # add_fc_s_a = tf.nn.relu(tf.matmul(fc1, w2) + fc_action)
+
+        # type 2
+        # state -> fc1
+        # state_fc1 = FC(state, n_hidden_1, name_prefix = 'fc_1', op='relu', initializer = 'truncated_normal', bias_const=0.03)
+        # state_fc2 = FC(state_fc1, n_hidden_2, name_prefix =  'fc_2', op='relu', initializer = 'truncated_normal',normal_mean=0.0, normal_stddev=0.01,  bias_const=0.0)
+        # # fc1*w2 +  fc_action (action-> fc_action)
+        # # w2 = weight_variable([n_hidden_1, n_hidden_2] , initializer='truncated_normal',normal_mean=0.0, normal_stddev=0.01, name=critic_name + '_w2')
+        # action_fc = FC(action, n_hidden_2, name_prefix ='fc_action', op='none', initializer = 'truncated_normal', bias_const=0.03)
+        # add_fc_s_a = tf.nn.relu(state_fc2 + action_fc)
+
+        #type 3
+        state_nn = NNcomponent(self.critic_state_NN, state)
+        action_nn = NNcomponent(self.critic_action_NN, action)
+        add_fc_s_a = tf.nn.relu(state_nn + action_nn)
+
+        out = FC(add_fc_s_a, 1, name_prefix =  'out', op='none', initializer = 'truncated_normal', bias_const=0.03)
         
         return state, action, out
     

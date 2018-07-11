@@ -14,7 +14,8 @@ from DRL.DQN import DQN
 from DRL.Qlearning import Qlearning
 from DRL.component.reward import Reward
 from DRL.component.noise import Noise
-
+# for debug 
+from DRL.component.utils import print_tf_var
 
 class WorkerBase(object):
     def base_init(self, cfg, graph, sess, model_log_dir):
@@ -35,6 +36,8 @@ class WorkerBase(object):
                     self.RL = method_class(cfg, model_log_dir, self.sess )
     
                 self.RL.init_or_restore_model(self.sess)    # init or check model
+
+                # print_tf_var('worker after init DRL method')
         elif issubclass(method_class, RL):
             '''Use RL'''
             self.RL = method_class(cfg, model_log_dir, None)
@@ -44,6 +47,7 @@ class WorkerBase(object):
 
         print("({}) Worker Ready!".format(self.client_id))
 
+        
         #--------------setup var---------------#
         self.var_init(cfg)
 
