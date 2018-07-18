@@ -18,21 +18,21 @@ sudo pip install -r requirements.txt
 Test example which you want to play, for example, play gym
 
 ```
-python examples/gym_basic/gym_basic.py examples/gym_basic/DDPG.yaml
+python examples/gym_basic/gym_basic.py examples/gym_basic/DDPG_CartPole-v0.yaml
 ```
 
 Or you can
 
 ```
 cd examples/gym_basic
-python gym_basic.py DDPG.yaml
+python gym_basic.py DDPG_CartPole-v0.yaml
 ```
 
 
 ## Run with Server
 ```
 python server.py
-python examples/gym_basic/gym_basic_conn.py examples/gym_basic/DDPG.yaml
+python examples/gym_basic/gym_basic_conn.py examples/gym_basic/DDPG_CartPole-v0.yaml
 ```
 
 Or you can

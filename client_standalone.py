@@ -27,6 +27,13 @@ class EnvSpace(EnvBase, ServerBase):
 
 
     #--------------------------EnvSpace for standalone----------------------#
+    # GymBasic.send_state_get_action->
+    #   self.emit('predict',dic)
+    # EnvSpace.emit()
+    #   threading.Thread(target=(lambda: self.worker.on_predict(data))).start()
+    # worker.on_predict()
+    #   self.main_queue.put(action)
+
     def emit(self, event_name, data):
         if event_name=='train_and_predict':
             threading.Thread(target=(lambda: self.worker.on_train_and_predict(data))).start()
