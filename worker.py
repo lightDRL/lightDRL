@@ -361,22 +361,30 @@ class WorkerBase(object):
 
     
     def avg_ep_reward(self):
+        print('(%s) EP%5d | all_ep_reward: %lf ' % \
+                    (self.worker_nickname, self.ep, self.all_ep_reward) )
         return float(self.all_ep_reward) / float(self.ep)
 
     @property
-    def is_done(self):
-        return (self.ep > self.max_ep)
+    def is_max_ep(self):
+        return (self.ep >= self.max_ep)
 
 class WorkerStandalone(WorkerBase):
-    def __init__(self, cfg = None, main_queue = None,
+    def __init__(self, cfg = None,
                     model_log_dir = None, graph = None, sess = None):
 
-        self.main_queue = main_queue
+        # self.main_queue = main_queue
         self.lock = threading.Lock()
         self.client_id = "standalone"
 
         self.base_init(cfg, graph, sess, model_log_dir)
+
+        import Queue
+        self.main_queue = Queue.Queue()
         
+    def get_callback_queue(self):
+        return self.main_queue 
+
 
     def on_predict(self, data):
          

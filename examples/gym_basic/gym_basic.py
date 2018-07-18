@@ -7,7 +7,7 @@
 
 import sys, os
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
-from client_standalone import Client, EnvSpace
+from client_standalone import Client, EnvSpace, Server
 import gym
 import time
 from config import cfg, get_yaml_name
@@ -41,7 +41,7 @@ class GymBasic(EnvSpace):
             self.state =  self.env.reset()
             self.send_state_get_action(self.state)
 
-            if self.ep > self.cfg['misc']['max_ep']:
+            if self.ep >= self.cfg['misc']['max_ep']:
                 # exit()
                 return 
 
@@ -80,4 +80,5 @@ def gym_cfg(cfg):
     return cfg
 
 if __name__ == '__main__':
-    c = Client(GymBasic, i_cfg = gym_cfg(cfg) , project_name='gym-' + get_yaml_name() ,retrain_model= True).run()
+    # c = Client(GymBasic, i_cfg = gym_cfg(cfg) , project_name='gym-' + get_yaml_name() ,retrain_model= True).run()
+    s = Server(GymBasic, i_cfg = gym_cfg(cfg) , project_name='gym-' + get_yaml_name() ,retrain_model= True)
