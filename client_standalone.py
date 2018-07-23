@@ -10,6 +10,9 @@ import threading
 from worker import WorkerStandalone
 from server import ServerBase
 from client import EnvBase
+import copy
+
+from DRL.component.utils import print_tf_var
 
 # default dir is same path as server.py
 DATA_POOL = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data_pool')
@@ -94,43 +97,116 @@ class Client:
         self.env_space.set_callback_queue( i_cb_queue)
 
 
-   
-
 class Server(ServerBase):
     def __init__(self, target_env_class, i_cfg, project_name=None, retrain_model = False):
-        all_thread =[]
         if i_cfg['RL']['method']=='A3C':  # for multiple worker
-            pass
-            # for seed in range(1,100):  #39, 118
-            #     s = seed
-            #     t = ThreadWithReturnValue(target=gym_thread, args=(s,), name='t_'+ str(seed), )
-            #     t.start()
-            #     all_thread.append(t)
+            tf_graph, tf_sess = self.create_new_tf_graph_sess(i_cfg['misc']['gpu_memory_ratio'], i_cfg['misc']['random_seed'])
+            # build main_net
+            model_log_dir = self.server_create_log_dir(i_cfg, project_name, retrain_model)
+            main_worker = self.server_on_session( i_cfg, model_log_dir, tf_graph, tf_sess, i_cfg['A3C']['main_net_scope'])
+            
+            # self.cond_main_wait_other_ready = threading.Condition()
+            self.worker_ready = 0   
+            cond = threading.Condition()  
+
+            self.asyc_best_reward = -9999
+            self.threadLock = threading.Lock()
+            all_thread =[]
+            # print("i_cfg['A3C']['worker_num'] = ", i_cfg['A3C']['worker_num'])
+            for i in range(i_cfg['A3C']['worker_num']):  #39, 118
+                
+                net_scope = 'net_%03d' % i
+                sync_model_log_dir = model_log_dir + '_%03d' % i
+                t = threading.Thread(target=self.asyc_thread, 
+                                    args=(target_env_class,i_cfg, sync_model_log_dir, i, tf_graph, tf_sess, net_scope, cond, ),
+                                     name='t_'+ str(i))
+                t.start()
+                all_thread.append(t)
+            # wait all sub thread build ready
+            while True:
+                time.sleep(0.5)
+                print('main -> self.worker_ready = ', self.worker_ready)
+                if self.worker_ready>= i_cfg['A3C']['worker_num']:
+                    break
+            # print_tf_var(graph = tf_graph)  
+            with tf_graph.as_default():          
+                main_worker.RL.init_or_restore_model(tf_sess)
+            # run all asyc_thread
+            cond.acquire()
+            cond.notify_all()
+            cond.release()
+            
+            
+            for t in all_thread:
+                t.join()
+
+            print('Best ep avg reward = ', self.asyc_best_reward)
+
         else:
-            worker = self.server_on_session(project_name, i_cfg, retrain_model)
+            model_log_dir = self.server_create_log_dir(i_cfg, project_name, retrain_model)
+            worker = self.server_on_session(i_cfg, model_log_dir)
 
             c = Client(target_env_class, i_cfg = i_cfg, project_name=project_name)
             c.set_worker(worker)
             c.set_callback_queue(worker.get_callback_queue())
             c.run()
             
+    def asyc_thread(self, env_class, cfg, model_log_dir,  thread_id, tf_graph, tf_sess, net_scope, cond):
+        self.threadLock.acquire()
+        cfg_copy = copy.deepcopy(cfg) 
+        cfg_copy['misc']['worker_nickname'] += '-asyc-%03d' % (thread_id)
+        if cfg_copy['misc']['random_seed']!=None: # let use diff  seed
+            cfg_copy['misc']['random_seed'] += thread_id * 5
 
-
-    def server_on_session(self, *data):
-        print('[I] Standalone Server in on_session()')
-
-        prj_name = data[0]
-        cfg = data[1]
-        retrain_model = data[2]
+        print("cfg_copy['misc']['random_seed'] = ", cfg_copy['misc']['random_seed'])       
+        if thread_id == 0:
+            # only output the thread id = 0 to monitor
+            if cfg_copy['misc']['gym_monitor_path']!=None:
+                from config import set_gym_monitor_path
+                cfg_copy['misc']['gym_monitor_path'] = set_gym_monitor_path(cfg['misc']['gym_monitor_path'])
+                cfg_copy['misc']['gym_monitor_path'] += '%03d' % thread_id
+                print('monitor path = ', cfg_copy['misc']['gym_monitor_path'])
+        else:
+            cfg_copy['misc']['gym_monitor_path'] = None
+            cfg_copy['misc']['render'] = False
+        worker = self.server_on_session(cfg_copy, model_log_dir, tf_graph, tf_sess, net_scope)
+        self.worker_ready += 1
         
-        # create tf graph & tf session
-        tf_new_graph, tf_new_sess = self.create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'], cfg['misc']['random_seed'])
+        self.threadLock.release()
+        
+        prj_name = 'asyc-%03d' % (thread_id)
+        c = Client(env_class, project_name=prj_name, i_cfg = cfg_copy)
+        c.set_worker(worker)
+        c.set_callback_queue(worker.get_callback_queue())
+        # start wait
+        cond.acquire()
+        cond.wait()         # block here, wait all graph build finish
+        cond.release()    
+        # go run
+        c.run()
+        avg_r = c.env_space.worker.avg_ep_reward()
+        self.threadLock.acquire()
+        self.asyc_best_reward = avg_r if avg_r > self.asyc_best_reward else self.asyc_best_reward
+        self.threadLock.release()
+
+    def server_create_log_dir(self, cfg, dir_name, recreate_dir = True):
         # create logdir and save cfg
-        model_log_dir = self.create_model_log_dir(prj_name, recreate_dir = retrain_model)
+        model_log_dir = self.create_model_log_dir(dir_name, recreate_dir = recreate_dir)
         with open(os.path.join(model_log_dir, 'config.yaml') , 'w') as outfile:
             yaml.dump(cfg, outfile, default_flow_style=False)
+
+        return model_log_dir
         
+
+    def server_on_session(self, cfg, model_log_dir, tf_graph = None, tf_sess = None, net_scope = None):
+        print('[I] Standalone Server in on_session()')
+
+        # create tf graph & tf session
+        if tf_graph == None or tf_sess == None:
+            # create new graph & new session
+            tf_graph, tf_sess = self.create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'], cfg['misc']['random_seed'])
+             
         worker = WorkerStandalone(cfg,
-                    model_log_dir=model_log_dir, graph = tf_new_graph, sess = tf_new_sess)
+                    model_log_dir=model_log_dir, graph = tf_graph, sess = tf_sess, net_scope = net_scope)
 
         return worker

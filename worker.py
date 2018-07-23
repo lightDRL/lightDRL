@@ -11,6 +11,7 @@ from flask_socketio import Namespace, emit
 from DRL.Base import RL, DRL
 from DRL.DDPG import DDPG
 from DRL.DQN import DQN
+from DRL.A3C import A3C
 from DRL.Qlearning import Qlearning
 from DRL.component.reward import Reward
 from DRL.component.noise import Noise
@@ -18,7 +19,7 @@ from DRL.component.noise import Noise
 from DRL.component.utils import print_tf_var
 
 class WorkerBase(object):
-    def base_init(self, cfg, graph, sess, model_log_dir):
+    def base_init(self, cfg, graph, sess, model_log_dir, net_scope = None):
         self.graph = graph
         # RL or DRL Init
         np.random.seed( cfg['misc']['random_seed'])
@@ -31,11 +32,10 @@ class WorkerBase(object):
             # with tf.variable_scope(client_id): 
             with self.graph.as_default():
                 if cfg['RL']['method']=='A3C':  # for multiple worker
-                    self.RL = method_class(self.sess, self.client_id, main_net)
+                    self.RL = method_class(cfg, model_log_dir, self.sess, net_scope)
                 else:
                     self.RL = method_class(cfg, model_log_dir, self.sess )
-    
-                self.RL.init_or_restore_model(self.sess)    # init or check model
+                    self.RL.init_or_restore_model(self.sess)    # init or check model
 
                 # print_tf_var('worker after init DRL method')
         elif issubclass(method_class, RL):
@@ -45,7 +45,7 @@ class WorkerBase(object):
         else:
             print('E: Worker::__init__() say error method name={}'.format(cfg['RL']['method'] ))
 
-        print("({}) Worker Ready!".format(self.client_id))
+        # print("({}) Worker Ready!".format(self.client_id))
 
         
         #--------------setup var---------------#
@@ -150,6 +150,8 @@ class WorkerBase(object):
             # if the env has end position which could get reward, try to get the end position (like maze) as the done
             # else like cartpole which is no end position, so it use the default done
             train_done = False 
+
+        # print('done = {}, train_done={}'.format(done, train_done))
         self.train_add_data(state, action, reward, train_done, next_state )
 
         if self.all_step > self.exploration_step:
@@ -370,14 +372,14 @@ class WorkerBase(object):
         return (self.ep >= self.max_ep)
 
 class WorkerStandalone(WorkerBase):
-    def __init__(self, cfg = None,
-                    model_log_dir = None, graph = None, sess = None):
+    def __init__(self, cfg = None, model_log_dir = None, 
+                        graph = None, sess = None, net_scope = None):
 
         # self.main_queue = main_queue
         self.lock = threading.Lock()
         self.client_id = "standalone"
 
-        self.base_init(cfg, graph, sess, model_log_dir)
+        self.base_init(cfg, graph, sess, model_log_dir, net_scope)
 
         import Queue
         self.main_queue = Queue.Queue()
@@ -412,12 +414,13 @@ class WorkerStandalone(WorkerBase):
 
 class WorkerConn(WorkerBase, Namespace):  # if you want to standalone, you could use  Worker(object)
 
-    def __init__(self, ns = "", client_id="", cfg = None, model_log_dir = None, graph = None, sess = None):
+    def __init__(self, ns = "", client_id="", cfg = None, model_log_dir = None, 
+                                graph = None, sess = None, net_scope = None):
 
         super(WorkerConn, self).__init__(ns)
         self.client_id = client_id
             
-        self.base_init(cfg, graph, sess, model_log_dir)
+        self.base_init(cfg, graph, sess, model_log_dir, net_scope)
 
     def on_connect(self):
         print('{} Worker Connect'.format(self.client_id))

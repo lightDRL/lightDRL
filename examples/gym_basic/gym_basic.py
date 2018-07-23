@@ -13,6 +13,8 @@ import time
 from config import cfg, get_yaml_name
 import numpy as np
 
+print('gym version:', gym.__version__)
+
 class GymBasic(EnvSpace):
     def env_init(self):
         self.env = gym.make(self.cfg['misc']['gym_env'])

@@ -11,8 +11,8 @@ test/
 .vscode/
 log/
 log.txt
-
-DQN*
+Robot_*
+A3C_*
 #============== ignore from github default (by selecting python)=======# 
 # Byte-compiled / optimized / DLL files
 __pycache__/

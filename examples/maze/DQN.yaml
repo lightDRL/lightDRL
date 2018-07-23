@@ -1,0 +1,42 @@
+conn: 
+    server_worker_num: &ref_server_worker_num 1
+    server_ip: 127.0.0.1
+    server_frontend_port: 5555
+    server_backend_port: 5556
+    client_num: 4
+    client_retries: 3
+    client_timeout: 2500   #ms
+
+RL:
+    method: 'DQN'
+    # train_multi_steps: 1       # default: 1, param: 'if_down', 'steps(int)'-> train if down or train after steps    
+    reward_gamma: 0.9    
+    exploration: 500        # train after exploration step
+    action_noise: 'epsilon-greedy'
+
+DQN:
+    memory_capacity: 5000
+    memory_train_min: 500 
+    batch_size: 100
+    update_Q_target_times: 5
+    lr: 0.01
+
+epsilon-greedy:
+    value: 1.0
+    discount: 0.002   # each step discount it  
+
+NN:
+    fc_1:
+        type: 'fc'
+        size: 20
+        op: 'relu'
+        initializer: 'truncated_normal'
+        bias_const: 0.1
+
+misc:
+    model_save_cycle: 30
+    gpu_memory_ratio: 0.3
+    random_seed: 12             # t_82 get max reward = 114.10
+    max_ep:  300                       # defualt:1000, over the ep will auto exit()
+    render: yes                        # defualt: false, render the env 
+    render_after_ep: 1                # defualt: 0, render afet the ep 

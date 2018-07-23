@@ -2,7 +2,7 @@ import numpy as np
 from collections import deque
 import random
 
-class ReplayMemory(object):
+class SimpleBuffer(object):
 
     def __init__(self, memory_capacity, random_seed=1234):
         self.memory_capacity = memory_capacity
@@ -25,18 +25,12 @@ class ReplayMemory(object):
 
         
     def sample_batch(self, batch_size):
-        batch = []
 
-        if self.size() < batch_size:
-            batch = random.sample(self.memory, self.size() )
-        else:
-            batch = random.sample(self.memory, batch_size)
-
-        s_batch = np.array([_[0] for _ in batch])
-        a_batch = np.array([_[1] for _ in batch])
-        r_batch = np.array([_[2] for _ in batch])
-        t_batch = np.array([_[3] for _ in batch])
-        s2_batch = np.array([_[4] for _ in batch])
+        s_batch = np.array([_[0] for _ in self.memory])
+        a_batch = np.array([_[1] for _ in self.memory])
+        r_batch = np.array([_[2] for _ in self.memory])
+        t_batch = np.array([_[3] for _ in self.memory])
+        s2_batch = np.array([_[4] for _ in self.memory])
 
         # print('I: s_batch.shape={}, type(s_batch)={}'.format(np.shape(s_batch), type(s_batch)))
         # print('I: a_batch.shape={}, type(a_batch)={}'.format(np.shape(a_batch), type(a_batch)))
@@ -52,3 +46,6 @@ class ReplayMemory(object):
 
     def clear(self):
         self.memory.clear()
+
+    def get_last_done(self):
+        return self.memory[self.size() -1][3]

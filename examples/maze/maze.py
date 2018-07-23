@@ -6,7 +6,7 @@
 
 import sys, os
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
-from client_standalone import Client, EnvSpace
+from client_standalone import Server, EnvSpace
 from maze_env import Maze
 import time
 from config import cfg, get_yaml_name
@@ -49,4 +49,5 @@ def maze_cfg(cfg):
     return cfg
 
 if __name__ == '__main__':
-    c = Client(GymBasic, i_cfg = maze_cfg(cfg) , project_name='maze-' + get_yaml_name() ,retrain_model= True).run()
+    #c = Client(GymBasic, i_cfg = maze_cfg(cfg) , project_name='maze-' + get_yaml_name() ,retrain_model= True).run()
+    s = Server(GymBasic, i_cfg = maze_cfg(cfg) , project_name='maze-' + get_yaml_name() ,retrain_model= True)
