@@ -14,6 +14,7 @@ from config import cfg, get_yaml_name
 import numpy as np
 
 print('gym version:', gym.__version__)
+print('gym path = ', gym.__file__)
 
 class GymBasic(EnvSpace):
     def env_init(self):
@@ -27,7 +28,6 @@ class GymBasic(EnvSpace):
                     force=True, video_callable=lambda episode_id: episode_id % self.cfg['misc']['gym_monitor_episode']==0 ) 
                 
         self.env.seed(self.cfg['misc']['random_seed'])
-        
         self.state = self.env.reset()
         self.send_state_get_action(self.state)
 
@@ -40,12 +40,13 @@ class GymBasic(EnvSpace):
         if self.cfg['misc']['render'] and self.ep > self.cfg['misc']['render_after_ep']:
             self.env.render()   
         if done:
+            # print('client ep = ', self.ep)
+            if self.ep > (self.cfg['misc']['max_ep']):
+                return 
             self.state =  self.env.reset()
             self.send_state_get_action(self.state)
 
-            if self.ep >= self.cfg['misc']['max_ep']:
-                # exit()
-                return 
+            
 
 def gym_cfg(cfg):
     env = gym.make( cfg['misc']['gym_env'])

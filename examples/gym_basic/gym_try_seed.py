@@ -7,7 +7,7 @@
 
 import sys, os
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
-from client_standalone import Client, EnvSpace, Server
+from client_standalone import EnvSpace, Server
 import gym
 import time
 from config import cfg, get_yaml_name, set_gym_monitor_path
@@ -31,57 +31,56 @@ class ThreadWithReturnValue(Thread):
         Thread.join(self)
         return self._return
 
-class Server_try_seed(Server):
-    def __init__(self, target_env_class, i_cfg, project_name=None, retrain_model = False):
-        self.threadLock = Lock()
-        
-        all_t =[]
-        for seed in range(1,100):  #39, 118
-            s = seed
-            t = ThreadWithReturnValue(target=self.gym_thread, args=(s,), name='t_'+ str(seed), )
-            t.start()
-            all_t.append(t)
-            
-        max_avg_ep_r = -9999
-        max_t = None
-        for t in all_t:
-            avg_ep_r = t.join()
+threadLock = Lock()
 
-            if avg_ep_r > max_avg_ep_r:
-                max_t = t
-                max_avg_ep_r = avg_ep_r
-            
-        print('%s get max reward = %6.2f' % (max_t.name, max_avg_ep_r))
+def gym_thread(seed):
     
-    def gym_thread(self, seed):
+    threadLock.acquire()
+    # print('seed = ', seed)
+    cfg_copy = copy.deepcopy(cfg) #cfg.deepcopy()
+    threadLock.release()
+    cfg_copy = gym_cfg(cfg_copy)
+    # print('cfg_copy of seed=', seed)
     
-        self.threadLock.acquire()
-        # print('seed = ', seed)
-        cfg_copy = copy.deepcopy(cfg) #cfg.deepcopy()
-        self.threadLock.release()
-        cfg_copy = gym_cfg(cfg_copy)
-        # print('cfg_copy of seed=', seed)
-        
-        cfg_copy['misc']['random_seed'] = seed
-        cfg_copy['misc']['render'] = False
-        cfg_copy['misc']['gpu_memory_ratio'] = 0.76
-        cfg_copy['misc']['max_ep'] = 150
-        cfg_copy['misc']['worker_nickname'] = 'w_%03d' % (seed)
-        prj_name ='gym-%s_seed_%04d' % ( get_yaml_name(), seed)
-        
-        cfg_copy['misc']['gym_monitor_path'] = None
-        # cfg_copy['misc']['gym_monitor_path'] = set_gym_monitor_path(cfg_copy['misc']['gym_monitor_path_origin'], i_project_name=prj_name)
-        # print("cfg['misc']['gym_monitor_path'] = ", cfg_copy['misc']['gym_monitor_path'])    
-        worker = self.server_on_session(prj_name, cfg_copy, True)
-        c = Client(GymBasic, project_name=prj_name, i_cfg = cfg_copy)
-        c.set_worker(worker)
-        c.set_callback_queue(worker.get_callback_queue())
+    cfg_copy['misc']['random_seed'] = seed
+    cfg_copy['misc']['render'] = False
+    cfg_copy['misc']['gpu_memory_ratio'] = 0.76
+    cfg_copy['misc']['max_ep'] = 120
+    cfg_copy['misc']['worker_nickname'] = 'w_%03d' % (seed)
+    prj_name ='gym-%s_seed_%04d' % ( get_yaml_name(), seed)
+    
+    cfg_copy['misc']['gym_monitor_path'] = None
+    s = Server(GymBasic, i_cfg = cfg_copy , project_name=prj_name,retrain_model= True)
+    avg_r = s.best_avg_reward
+    return avg_r
 
-    
-        c.run()
-        avg_r = c.env_space.worker.avg_ep_reward()
-        return avg_r
-    
 if __name__ == '__main__':
-    s = Server_try_seed(GymBasic, i_cfg = gym_cfg(cfg) , project_name='gym-' + get_yaml_name() ,retrain_model= True)
+    all_t =[]
+    for seed in range(70,90):  #39, 118
+        s = seed
+        t = ThreadWithReturnValue(target=gym_thread, args=(s,), name='t_seed_%03d' % seed )
+        t.start()
+        all_t.append(t)
+        
+    max_avg_ep_r = -9999
+    max_t = None
+    for t in all_t:
+        avg_ep_r = t.join()
+
+        if avg_ep_r > max_avg_ep_r:
+            max_t = t
+            max_avg_ep_r = avg_ep_r
+        
+    print('%s get max reward = %6.2f' % (max_t.name, max_avg_ep_r))
     
+
+'''
+(w_009-asyc-003) EP  150 | all_ep_reward: 13660.000000
+(w_009-asyc-002) EP  149 | EP_Step:    45 | EP_Reward:    45.00 | MAX_R: 1.00  | EP_Time:   0m 0s | All_Time:   0h 8m11s
+(w_009-asyc-002) EP  150 | all_ep_reward: 13614.000000
+('Best ep avg reward = ', 91.06666666666666)
+t_seed_009 get max reward =  91.07
+
+('Best ep avg reward = ', 91.06666666666666)
+t_seed_009 get max reward =  60
+'''

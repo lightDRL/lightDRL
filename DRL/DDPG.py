@@ -32,7 +32,7 @@ class DDPG(DRL):
         # reward = Reward(REWARD_FACTOR, GAMMA)
         # replay memory 
         assert self.memory_capacity > self.memory_train_min, "Replay memory: memory_capacity < memory_train_min"
-        self.mem = ReplayMemory(self.memory_capacity)
+        self.mem = ReplayMemory(self.memory_capacity,  cfg['misc']['random_seed'])
 
         self.sum_q_max = 0
         self.train_count = 0

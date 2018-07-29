@@ -46,7 +46,7 @@ class WorkerBase(object):
             print('E: Worker::__init__() say error method name={}'.format(cfg['RL']['method'] ))
 
         # print("({}) Worker Ready!".format(self.client_id))
-
+        
         
         #--------------setup var---------------#
         self.var_init(cfg)
@@ -68,13 +68,13 @@ class WorkerBase(object):
         self.start_time = time.time()
         self.ep_s_time = time.time()
         self.train_s_time = self.ep_s_time
-        self.ep = 0
+        self.ep = 1#0
         self.ep_use_step = 0
         self.ep_reward = 0
         self.ep_max_reward = 0
         self.all_step = 0
         self.all_ep_reward = 0   # sum of all ep reward
-
+        self._is_max_ep =  False
         self.max_ep = cfg['misc']['max_ep']
         self.ep_max_step =  cfg['misc']['ep_max_step']                 # default: None -> unlimit steps, max steps in one episode
         self.a_discrete = cfg['RL']['action_discrete'] 
@@ -197,17 +197,36 @@ class WorkerBase(object):
             
             self.all_ep_reward+= self.ep_reward
             self.tf_summary(self.ep , self.ep_reward,self.ep_max_reward,self.ep_use_step, self.ep_s_time, log_dict)
-            self.ep+=1
+            
+            self.RL.notify_ep_done()
             self.ep_use_step = 0
             self.ep_reward = 0
             self.ep_max_reward = -99999
             
+            if self.ep >= self.max_ep:
+                # summary result
+                avg_ep_reward = self.all_ep_reward / float(self.ep)
+                avg_ep_step   = self.all_step   / float(self.ep) 
+                avg_ep_reward_str =  'average ep reward = ' + str(avg_ep_reward)
+                avg_ep_step_str =    'average ep step = ' + str(avg_ep_step)
+                self.tf_summary_text('EP Average', avg_ep_reward_str, self.ep)
+                self.tf_summary_text('EP Average', avg_ep_step_str, self.ep)
+                self.tf_writer.flush()
+                self._is_max_ep = True
+            # else:
+            self.ep+=1
             self.ep_s_time = time.time()  # update episode start time
-
-            self.RL.notify_ep_done()
+            
            
             
-            
+    def tf_summary_text(self, tag, text, ep):
+        text_tensor = tf.make_tensor_proto(text, dtype=tf.string)
+        meta = tf.SummaryMetadata()
+        meta.plugin_data.plugin_name = "text"
+        summary = tf.Summary()
+        summary.value.add(tag=tag, metadata=meta, tensor=text_tensor)
+        self.tf_writer.add_summary(summary, ep)
+
 
     def tf_summary(self, ep, ep_r, ep_max_r, ep_use_step, ep_s_time, log_dict):
         summary = tf.Summary()
@@ -362,14 +381,15 @@ class WorkerBase(object):
         return  '%3dh%2dm%2ds' % (use_secs/3600, (use_secs%3600)/60, use_secs % 60 )
 
     
-    def avg_ep_reward(self):
+    def avg_ep_reward_show(self):
         print('(%s) EP%5d | all_ep_reward: %lf ' % \
-                    (self.worker_nickname, self.ep, self.all_ep_reward) )
+                    (self.worker_nickname, self.ep-1, self.all_ep_reward) )
         return float(self.all_ep_reward) / float(self.ep)
 
     @property
     def is_max_ep(self):
-        return (self.ep >= self.max_ep)
+        return self._is_max_ep
+        #return (self.ep >= (self.max_ep) )
 
 class WorkerStandalone(WorkerBase):
     def __init__(self, cfg = None, model_log_dir = None, 
@@ -403,11 +423,20 @@ class WorkerStandalone(WorkerBase):
         self.train_process(data)
         self.lock.release()
 
+        # if not data['done']:
+        #     action = self.predict(data['next_state'])
+        #     action = self.add_action_noise(action)
+        #     # print('worker on_train_and_predict action = ' , action,', thread=' ,threading.current_thread().name )
+        #     self.main_queue.put(action)
+
+        action = self.predict(data['next_state'])
+        action = self.add_action_noise(action)
+        # print('worker on_train_and_predict action = ' , action,', thread=' ,threading.current_thread().name )
+        # Becareful here !!!
         if not data['done']:
-            action = self.predict(data['next_state'])
-            action = self.add_action_noise(action)
-            # print('worker on_train_and_predict action = ' , action,', thread=' ,threading.current_thread().name )
             self.main_queue.put(action)
+        else:
+            self.main_queue.put('WORKER_GET_DONE')
 
         
 

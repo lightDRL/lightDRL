@@ -7,6 +7,7 @@ class ReplayMemory(object):
     def __init__(self, memory_capacity, random_seed=1234):
         self.memory_capacity = memory_capacity
         self.memory = deque()
+        print('ReplayMemory seed = ' + str(random_seed) )
         random.seed(random_seed)
 
     def add(self, s, a, r, d, s2):

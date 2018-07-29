@@ -67,7 +67,7 @@ misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
     random_seed: 82             # t_82 get max reward = 114.10
-    max_ep:  200                       # defualt:1000, over the ep will auto exit()
+    max_ep:  120                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
     render_after_ep: 100                # defualt: 0, render afet the ep 
     gym_env: 'CartPole-v0'

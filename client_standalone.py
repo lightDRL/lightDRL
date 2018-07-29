@@ -54,7 +54,12 @@ class EnvSpace(EnvBase):
             
     def from_main_thread_blocking(self):
         callback_action = self.callback_queue.get() #blocks until an item is available
-        self.on_predict_response(callback_action)
+
+        # if self.ep <= (self.cfg['misc']['max_ep']):
+        if callback_action!='WORKER_GET_DONE':
+            self.on_predict_response(callback_action)
+        # else:
+        #     print('--------in WORKER_DONE----------')
 
     # def from_main_thread_nonblocking(self):
     #     while True:
@@ -73,6 +78,7 @@ class EnvSpace(EnvBase):
 
 class Client:
     def __init__(self, target_env_class, i_cfg, project_name):
+        # np.random.seed(i_cfg['misc']['random_seed'])
         self.target_env_class = target_env_class
         self.env_name = project_name
 
@@ -86,9 +92,15 @@ class Client:
     def run(self):
         self.env_space.env_init()
         while True:
+            # print('self.env_space.worker.is_max_ep= ', self.env_space.worker.is_max_ep)
+            # print('self.env_space.worker.ep= ', self.env_space.worker.ep)       
+            self.env_space.from_main_thread_blocking()
+            # print('self.env_space.worker.is_max_ep= ', self.env_space.worker.is_max_ep)
+            # print('self.env_space.worker.ep= ', self.env_space.worker.ep)
             if self.env_space.worker.is_max_ep:
                 break
-            self.env_space.from_main_thread_blocking()
+            # if self.env_space.ep > (self.env_space.cfg['misc']['max_ep']):
+            #     break 
 
     def set_worker(self, i_worker):
         self.env_space.set_worker(i_worker)
@@ -98,7 +110,8 @@ class Client:
 
 
 class Server(ServerBase):
-    def __init__(self, target_env_class, i_cfg, project_name=None, retrain_model = False):
+    def __init__(self, target_env_class, i_cfg, project_name=None, retrain_model = True):
+        self.best_avg_reward = -9999
         if i_cfg['RL']['method']=='A3C':  # for multiple worker
             tf_graph, tf_sess = self.create_new_tf_graph_sess(i_cfg['misc']['gpu_memory_ratio'], i_cfg['misc']['random_seed'])
             # build main_net
@@ -109,7 +122,7 @@ class Server(ServerBase):
             self.worker_ready = 0   
             cond = threading.Condition()  
 
-            self.asyc_best_reward = -9999
+            
             self.threadLock = threading.Lock()
             all_thread =[]
             # print("i_cfg['A3C']['worker_num'] = ", i_cfg['A3C']['worker_num'])
@@ -117,6 +130,7 @@ class Server(ServerBase):
                 
                 net_scope = 'net_%03d' % i
                 sync_model_log_dir = model_log_dir + '_%03d' % i
+                self.create_model_log_dir(sync_model_log_dir, recreate_dir = retrain_model)
                 t = threading.Thread(target=self.asyc_thread, 
                                     args=(target_env_class,i_cfg, sync_model_log_dir, i, tf_graph, tf_sess, net_scope, cond, ),
                                      name='t_'+ str(i))
@@ -140,7 +154,7 @@ class Server(ServerBase):
             for t in all_thread:
                 t.join()
 
-            print('Best ep avg reward = ', self.asyc_best_reward)
+            # print('Best ep avg reward = ', self.asyc_best_reward)
 
         else:
             model_log_dir = self.server_create_log_dir(i_cfg, project_name, retrain_model)
@@ -150,6 +164,8 @@ class Server(ServerBase):
             c.set_worker(worker)
             c.set_callback_queue(worker.get_callback_queue())
             c.run()
+            # print('finish ')
+            self.best_avg_reward = c.env_space.worker.avg_ep_reward_show()
             
     def asyc_thread(self, env_class, cfg, model_log_dir,  thread_id, tf_graph, tf_sess, net_scope, cond):
         self.threadLock.acquire()
@@ -184,9 +200,10 @@ class Server(ServerBase):
         cond.release()    
         # go run
         c.run()
-        avg_r = c.env_space.worker.avg_ep_reward()
+        avg_r = c.env_space.worker.avg_ep_reward_show()
         self.threadLock.acquire()
-        self.asyc_best_reward = avg_r if avg_r > self.asyc_best_reward else self.asyc_best_reward
+        # self.asyc_best_reward = avg_r if avg_r > self.asyc_best_reward else self.asyc_best_reward
+        self.best_avg_reward = avg_r if avg_r > self.best_avg_reward else self.best_avg_reward
         self.threadLock.release()
 
     def server_create_log_dir(self, cfg, dir_name, recreate_dir = True):
@@ -208,5 +225,5 @@ class Server(ServerBase):
              
         worker = WorkerStandalone(cfg,
                     model_log_dir=model_log_dir, graph = tf_graph, sess = tf_sess, net_scope = net_scope)
-
+        
         return worker

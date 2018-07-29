@@ -16,7 +16,7 @@ class EnvBase(object):
     def envbase_init(self):
         self.start_time = time.time()
         self.ep_s_time = time.time()
-        self.ep = 0
+        self.ep = 1#0
         self.ep_use_step = 0
         self.ep_reward = 0
 
