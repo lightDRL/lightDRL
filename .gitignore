@@ -12,7 +12,7 @@ test/
 log/
 log.txt
 Robot_*
-A3C_*
+A3C_other
 useful/
 #============== ignore from github default (by selecting python)=======# 
 # Byte-compiled / optimized / DLL files

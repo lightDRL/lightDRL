@@ -80,6 +80,7 @@ class Maze(tk.Tk, object):
         self.canvas.pack()
 
     def reset(self):
+        self.use_steps = 0
         self.update()
         time.sleep(0.1)
         self.canvas.delete(self.rect)
@@ -92,6 +93,58 @@ class Maze(tk.Tk, object):
         return (np.array(self.canvas.coords(self.rect)[:2]) - np.array(self.canvas.coords(self.oval)[:2]))/(MAZE_H*UNIT)
 
     def step(self, action):
+        self.use_steps +=1
+        s = self.canvas.coords(self.rect)
+        base_action = np.array([0, 0])
+
+        over_enclosure = False
+        if action == 0:   # up
+            if s[1] > UNIT:
+                base_action[1] -= UNIT
+            else:
+                over_enclosure = True
+        elif action == 1:   # down
+            if s[1] < (MAZE_H - 1) * UNIT:
+                base_action[1] += UNIT
+            else:
+                over_enclosure = True
+        elif action == 2:   # right
+            if s[0] < (MAZE_W - 1) * UNIT:
+                base_action[0] += UNIT
+            else:
+                over_enclosure = True
+        elif action == 3:   # left
+            if s[0] > UNIT:
+                base_action[0] -= UNIT
+            else:
+                over_enclosure = True
+
+        self.canvas.move(self.rect, base_action[0], base_action[1])  # move agent
+
+        next_coords = self.canvas.coords(self.rect)  # next state
+
+        # print('self.rect = ', self.rect)
+        # print('next_coords = ', next_coords )
+        # print('self.oval = ', self.oval)
+        # print('self.hell1 = ', self.hell1)
+
+        # reward function
+        if next_coords == self.canvas.coords(self.oval):
+            reward = 1
+            done = True
+        elif next_coords in [self.canvas.coords(self.hell1)]:
+            reward = -1
+            done = True
+        elif self.use_steps >=100:
+            reward = -0.8
+            done = True
+        else:
+            reward = 0 if not over_enclosure else  -0.5
+            done = False
+        s_ = (np.array(next_coords[:2]) - np.array(self.canvas.coords(self.oval)[:2]))/(MAZE_H*UNIT)
+        return s_, reward, done, None
+        '''
+        self.use_steps +=1
         s = self.canvas.coords(self.rect)
         base_action = np.array([0, 0])
         if action == 0:   # up
@@ -118,11 +171,15 @@ class Maze(tk.Tk, object):
         elif next_coords in [self.canvas.coords(self.hell1)]:
             reward = -1
             done = True
+        elif self.use_steps >=100:
+            reward = -0.5
+            done = True
         else:
             reward = 0
             done = False
         s_ = (np.array(next_coords[:2]) - np.array(self.canvas.coords(self.oval)[:2]))/(MAZE_H*UNIT)
         return s_, reward, done, None
+        '''
 
     def render(self):
         # time.sleep(0.01)

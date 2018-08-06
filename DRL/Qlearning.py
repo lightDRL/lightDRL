@@ -26,7 +26,11 @@ class Qlearning(RL):
 
     def choose_action(self, state):
         state = self.to_dic_key(state)
-        a = self.q_table[state]  if state  in self.q_table else np.zeros(self.a_discrete_n)
+        if state  in self.q_table:
+            a = self.q_table[state]
+        else:
+            a = np.zeros(self.a_discrete_n)
+            a[ np.random.randint(self.a_discrete_n) ] =1
         return a
 
     def train(self):

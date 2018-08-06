@@ -12,7 +12,7 @@ import gym
 import time
 from config import cfg, get_yaml_name, set_gym_monitor_path
 import numpy as np
-from gym_basic import gym_cfg, GymBasic
+from maze import maze_cfg, MazeBasic
 from threading import Thread, Lock
 import copy
 
@@ -39,24 +39,24 @@ def gym_thread(seed):
     # print('seed = ', seed)
     cfg_copy = copy.deepcopy(cfg) #cfg.deepcopy()
     threadLock.release()
-    cfg_copy = gym_cfg(cfg_copy)
+    cfg_copy = maze_cfg(cfg_copy)
     # print('cfg_copy of seed=', seed)
     
     cfg_copy['misc']['random_seed'] = seed
     cfg_copy['misc']['render'] = False
     cfg_copy['misc']['gpu_memory_ratio'] = 0.76
-    cfg_copy['misc']['max_ep'] = 80
+    cfg_copy['misc']['max_ep'] = 600
     cfg_copy['misc']['worker_nickname'] = 'w_%03d' % (seed)
-    prj_name ='gym-%s_seed_%04d' % ( get_yaml_name(), seed)
+    prj_name ='maze-%s_seed_%04d' % ( get_yaml_name(), seed)
     
-    cfg_copy['misc']['gym_monitor_path'] = None
-    s = Server(GymBasic, i_cfg = cfg_copy , project_name=prj_name,retrain_model= True)
+    # cfg_copy['misc']['gym_monitor_path'] = None
+    s = Server(MazeBasic, i_cfg = cfg_copy , project_name=prj_name,retrain_model= True)
     avg_r = s.best_avg_reward
     return avg_r
 
 if __name__ == '__main__':
     all_t =[]
-    for seed in range(70,90):  #39, 118
+    for seed in range(0,30):  #39, 118
         s = seed
         t = ThreadWithReturnValue(target=gym_thread, args=(s,), name='t_seed_%03d' % seed )
         t.start()
@@ -73,14 +73,3 @@ if __name__ == '__main__':
         
     print('%s get max reward = %6.2f' % (max_t.name, max_avg_ep_r))
     
-
-'''
-(w_009-asyc-003) EP  150 | all_ep_reward: 13660.000000
-(w_009-asyc-002) EP  149 | EP_Step:    45 | EP_Reward:    45.00 | MAX_R: 1.00  | EP_Time:   0m 0s | All_Time:   0h 8m11s
-(w_009-asyc-002) EP  150 | all_ep_reward: 13614.000000
-('Best ep avg reward = ', 91.06666666666666)
-t_seed_009 get max reward =  91.07
-
-('Best ep avg reward = ', 91.06666666666666)
-t_seed_009 get max reward =  60
-'''

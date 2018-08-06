@@ -15,16 +15,22 @@ RL:
     reward_reverse: yes           # dafault: False
     add_data_steps: 'if_down'     # dafault: 1 , param: 'if_down', 'steps(int)'    
     exploration: 300        # train after exploration step
-    action_noise: 'Uhlenbeck'
+    # action_noise: 'Uhlenbeck'
+    action_noise: 'epsilon-greedy'
 
 DDPG:
     lr_actor:  0.0001  # learning rate for actor (1e-4)
     lr_critic:  0.001  # learning rate for critic
-    memory_capacity: 5000
-    memory_train_min: 300 
+    memory_capacity: 3000
+    memory_train_min: 200 
     batch_size: 100          
-    tau: 0.001              # the factor about update network with target network
+    tau: 0.1              # the factor about update network with target network
     
+
+epsilon-greedy:
+    value: 1.0
+    discount: 0.02    # each step discount it  
+
 Uhlenbeck:   # Noise parameters - Ornstein Uhlenbeck
     max_ep: 500
     delta: 0.5  # The rate of change (time)
@@ -35,41 +41,41 @@ Uhlenbeck:   # Noise parameters - Ornstein Uhlenbeck
 actor_NN:
     actor_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
         type: 'fc'
-        size: 400
+        size: 60
         bias_const: 0.03
+        initializer: 'truncated_normal'
 
     actor_fc_2:
         type: 'fc'
-        size: 300
+        size: 60
         bias_const: 0.03
+        initializer: 'truncated_normal'
 
 critic_state_NN:
     state_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
         type: 'fc'
-        size: 400
+        size: 60
         bias_const: 0.03
+        initializer: 'truncated_normal'
 
     state_fc_2:
         type: 'fc'
-        size: 300
+        size: 60
         bias_const: 0.03
-        op: 'none'
+        initializer: 'truncated_normal'
 
 
 critic_action_NN:
     action_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
         type: 'fc'
-        size: 300
+        size: 60
         bias_const: 0.03
-        op: 'none'
+        initializer: 'truncated_normal'
         
 misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
-    random_seed: 82             # t_82 get max reward = 114.10
+    random_seed: 11             # t_82 get max reward = 114.10
     max_ep:  500                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
     render_after_ep: 100                # defualt: 0, render afet the ep 
-    gym_env: 'CartPole-v0'
-    gym_monitor_path: 'monitor/'        # will crate in data_pool/<project_name>/monitor/
-    gym_monitor_episode: 50             # record every 10 episode 

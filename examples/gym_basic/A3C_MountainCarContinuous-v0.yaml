@@ -1,0 +1,95 @@
+conn: 
+    server_worker_num: &ref_server_worker_num 4
+    server_ip: 127.0.0.1
+    server_frontend_port: 5555
+    server_backend_port: 5556
+    client_num: 4
+    client_retries: 3
+    client_timeout: 2500   #ms
+
+RL:
+    method: 'A3C'
+    # train_multi_steps: 1       # default: 1, param: 'if_down', 'steps(int)'-> train if down or train after steps    
+    # exploration: 3000        # train after exploration step
+    # action_noise: 'Uhlenbeck'
+
+A3C:
+    LR_A: 0.001  # learning rate for actor (1e-4)
+    LR_C: 0.002  # learning rate for critic
+    gamma: 0.9  # reward discount
+    ENTROPY_BETA: 0.01
+    main_net_scope: 'main_net'
+    worker_num: *ref_server_worker_num # refer to server_worker_num
+    batch_size: 50
+
+
+Uhlenbeck:   # Noise parameters - Ornstein Uhlenbeck
+    max_ep: 30
+    delta: 0.5  # The rate of change (time)
+    sigma: 0.5  # Volatility of the stochastic processes
+    ou_a: 3.0   # The rate of mean reversion
+    ou_mu: 0.0
+
+misc:
+    model_save_cycle: 30
+    gpu_memory_ratio: 0.3
+    random_seed: 82             # t_82 get max reward = 114.10
+    max_ep:  200                       # defualt:1000, over the ep will auto exit()
+    render: yes                        # defualt: false, render the env 
+    render_after_ep: 100                # defualt: 0, render afet the ep 
+    gym_env: 'MountainCarContinuous-v0'
+    gym_monitor_path: 'monitor/'        # will crate in data_pool/<project_name>/monitor/
+    gym_monitor_episode: 5             # record every 10 episode 
+    worker_nickname: 'w'               # heading of asyc thread of A3C
+
+
+actor_NN:
+    actor_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
+        type: 'fc'
+        size: 400
+        initializer: 'xavier'
+        bias_const: 0.01
+
+    actor_fc_2: # use default op:'relu' and initializer: 'truncated_normal'
+        type: 'fc'
+        size: 300
+        initializer: 'xavier'
+        bias_const: 0.01
+
+critic_NN:
+    critic_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
+        type: 'fc'
+        size: 400
+        initializer: 'xavier'
+        bias_const: 0.01
+        
+    critic_fc_2: # use default op:'relu' and initializer: 'truncated_normal'
+        type: 'fc'
+        size: 300
+        initializer: 'xavier'
+        bias_const: 0.01
+# actor_NN:
+#     actor_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
+#         type: 'fc'
+#         size: 200
+#         initializer: 'xavier'
+#         bias_const: 0.01
+
+#     actor_fc_2: # use default op:'relu' and initializer: 'truncated_normal'
+#         type: 'fc'
+#         size: 100
+#         initializer: 'xavier'
+#         bias_const: 0.01
+
+# critic_NN:
+#     critic_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
+#         type: 'fc'
+#         size: 200
+#         initializer: 'xavier'
+#         bias_const: 0.01
+        
+    # critic_fc_2: # use default op:'relu' and initializer: 'truncated_normal'
+    #     type: 'fc'
+    #     size: 100
+    #     initializer: 'xavier'
+    #     bias_const: 0.01

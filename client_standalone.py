@@ -142,7 +142,7 @@ class Server(ServerBase):
                 print('main -> self.worker_ready = ', self.worker_ready)
                 if self.worker_ready>= i_cfg['A3C']['worker_num']:
                     break
-            # print_tf_var(graph = tf_graph)  
+            print_tf_var(graph = tf_graph)  
             with tf_graph.as_default():          
                 main_worker.RL.init_or_restore_model(tf_sess)
             # run all asyc_thread

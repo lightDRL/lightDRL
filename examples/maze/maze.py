@@ -12,7 +12,7 @@ import time
 from config import cfg, get_yaml_name
 import numpy as np
 
-class GymBasic(EnvSpace):
+class MazeBasic(EnvSpace):
     def env_init(self):
         self.env = Maze()    
         # self.env.seed(self.cfg['misc']['random_seed'])
@@ -26,14 +26,15 @@ class GymBasic(EnvSpace):
         self.send_train_get_action(self.state, action, reward , done, next_state)
         self.state = next_state
     
-        if self.cfg['misc']['render'] and self.ep > self.cfg['misc']['render_after_ep']:
-            self.env.render()   
+        # if self.cfg['misc']['render'] and self.ep > self.cfg['misc']['render_after_ep']:
+        self.env.render()   
         if done:
+            if self.ep > self.cfg['misc']['max_ep']:
+                return 
             self.state =  self.env.reset()
             self.send_state_get_action(self.state)
 
-            if self.ep > self.cfg['misc']['max_ep']:
-                return 
+            
 
 def maze_cfg(cfg):
     # of course, you colud set following in .yaml
@@ -50,4 +51,4 @@ def maze_cfg(cfg):
 
 if __name__ == '__main__':
     #c = Client(GymBasic, i_cfg = maze_cfg(cfg) , project_name='maze-' + get_yaml_name() ,retrain_model= True).run()
-    s = Server(GymBasic, i_cfg = maze_cfg(cfg) , project_name='maze-' + get_yaml_name() ,retrain_model= True)
+    s = Server(MazeBasic, i_cfg = maze_cfg(cfg) , project_name='maze-' + get_yaml_name() ,retrain_model= True)

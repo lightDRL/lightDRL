@@ -71,7 +71,7 @@ class WorkerBase(object):
         self.ep = 1#0
         self.ep_use_step = 0
         self.ep_reward = 0
-        self.ep_max_reward = 0
+        self.ep_max_reward = -9999
         self.all_step = 0
         self.all_ep_reward = 0   # sum of all ep reward
         self._is_max_ep =  False
@@ -201,7 +201,7 @@ class WorkerBase(object):
             self.RL.notify_ep_done()
             self.ep_use_step = 0
             self.ep_reward = 0
-            self.ep_max_reward = -99999
+            self.ep_max_reward = -9999
             
             if self.ep >= self.max_ep:
                 # summary result
@@ -310,15 +310,18 @@ class WorkerBase(object):
 
         return a
 
-    def add_action_noise(self, a):
+    def add_action_noise(self, a, reward = None):
         # print('--------------%03d-%03d----------------' % ( self.ep, self.ep_use_step))
         # print('before a = ', a)
         if self.a_discrete==True:
             a_dim = self.RL.a_discrete_n
             if self.action_noise=='epsilon-greedy':
                 if np.random.rand() < self.epsilon_greedy_value:
+                    # print('in random choose')
                     a = np.zeros(a_dim)
                     a[ np.random.randint(self.RL.a_discrete_n) ] =1
+                    # print('self.RL.a_discrete_n = ', self.RL.a_discrete_n)
+                if self.epsilon_greedy_discount>0 and reward>0:  # maybe happen in done, and not return
                     self.epsilon_greedy_value -= self.epsilon_greedy_discount
 
 
@@ -414,6 +417,7 @@ class WorkerStandalone(WorkerBase):
         
         action = self.predict(data['state'])
         if self.action_noise != None:
+            # action = self.add_action_noise(action)
             action = self.add_action_noise(action)
         self.main_queue.put(action)
         self.lock.release()
@@ -430,7 +434,7 @@ class WorkerStandalone(WorkerBase):
         #     self.main_queue.put(action)
 
         action = self.predict(data['next_state'])
-        action = self.add_action_noise(action)
+        action = self.add_action_noise(action, data['reward'])
         # print('worker on_train_and_predict action = ' , action,', thread=' ,threading.current_thread().name )
         # Becareful here !!!
         if not data['done']:

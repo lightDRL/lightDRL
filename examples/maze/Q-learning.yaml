@@ -22,7 +22,7 @@ epsilon-greedy:
 misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
-    random_seed: 8
-    max_ep:  300                       #over the ep will auto exit
+    random_seed: 20
+    max_ep:  600                       #over the ep will auto exit
     render: yes                         
     

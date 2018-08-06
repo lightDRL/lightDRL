@@ -6,29 +6,41 @@ import tensorflow as tf
 import numpy as np
 from DRL.Base import DRL
 from component.simple_buffer import SimpleBuffer
+from component.NNcomponent import NNcomponent
 
 class A3C(DRL):
-    def __init__(self, cfg, model_log_dir, sess, scope):
+    def __init__(self, cfg, model_log_dir, sess, scope, main_A3C = None):
         super(A3C, self).rl_init(cfg, model_log_dir)
         super(A3C, self).drl_init(sess)
         self.OPT_A = tf.train.RMSPropOptimizer(cfg['A3C']['LR_A'], name='RMSPropA')
         self.OPT_C = tf.train.RMSPropOptimizer(cfg['A3C']['LR_C'], name='RMSPropC')
+        
+        # with tf.variable_scope(tf.get_variable_scope(), reuse=tf.AUTO_REUSE) as s:
+        #     tf.get_variable_scope().reuse_variables()
+            
         self.gamma = cfg['A3C']['gamma']
 
         self.simple_buf = SimpleBuffer(10)
 
         self.batch_size = cfg['A3C']['batch_size']
 
+        self.cfg_actor_NN  = cfg['actor_NN']
+        self.cfg_critic_NN = cfg['critic_NN']
         # print('self.a_bound = ', self.a_bound)
+        print('scope = ', scope)
         self.net_scope = scope
         if scope == cfg['A3C']['main_net_scope']:   # get global network
+            # self.OPT_A = tf.train.AdamOptimizer(cfg['A3C']['LR_A'], name='AdamOfActor')
+            # self.OPT_C = tf.train.AdamOptimizer(cfg['A3C']['LR_C'], name='AdamOfCritic')
             with tf.variable_scope(scope):
                 self.s = tf.placeholder(tf.float32, [None, self.s_dim], 'state')
                 self._build_net()
                 # self.a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
                 # self.c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
         else:   # local net, calculate losses
-            
+            # self.OPT_A = sess.graph.get_operation_by_name('AdamOfActor')
+            # self.OPT_C = sess.graph.get_operation_by_name('AdamOfCritic')
+
             main_net_scope = cfg['A3C']['main_net_scope']
             main_net_a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope= main_net_scope + '/actor')
             main_net_c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope= main_net_scope + '/critic')
@@ -48,9 +60,10 @@ class A3C(DRL):
                     mu, sigma = mu * self.a_bound, sigma + 1e-5
                     normal_dist = tf.contrib.distributions.Normal(mu, sigma)
 
-                td = tf.subtract(self.v_target, self.v, name='TD_error')
+                self.td = tf.subtract(self.v_target, self.v, name='TD_error')
                 with tf.name_scope('c_loss'):
-                    self.c_loss = tf.reduce_mean(tf.square(td))
+                    self.c_loss = tf.reduce_mean(tf.square(self.td))
+                    # self.c_loss = tf.reduce_mean(self.td))
 
                 # with tf.name_scope('wrap_a_out'):
                 #     self.test = sigma[0]
@@ -69,9 +82,10 @@ class A3C(DRL):
 
                     # print('log_prob = ', log_prob)
                     
-                    self.exp_v = log_prob * td
+                    self.exp_v = log_prob * self.td
                     
-                    self.exp_v = cfg['A3C']['ENTROPY_BETA'] * entropy + self.exp_v
+                    # self.exp_v = cfg['A3C']['ENTROPY_BETA'] * entropy + self.exp_v
+                    # self.a_loss = tf.reduce_mean(-self.exp_v)
                     self.a_loss = tf.reduce_mean(-self.exp_v)
 
                     # print('normal_dist',normal_dist)
@@ -94,14 +108,17 @@ class A3C(DRL):
                 # print('[%s]'% scope, 'self.c_params = ', self.c_params)
                 # print('[%s]'% scope, 'self.c_grads = ', self.c_grads)
 
-
-            with tf.name_scope('sync'):
-                with tf.name_scope('pull'):
-                    self.pull_a_params_op = [l_p.assign(g_p) for l_p, g_p in zip(self.a_params, main_net_a_params)]
-                    self.pull_c_params_op = [l_p.assign(g_p) for l_p, g_p in zip(self.c_params, main_net_c_params)]
-                with tf.name_scope('push'):
-                    self.update_a_op = self.OPT_A.apply_gradients(zip(self.a_grads, main_net_a_params))
-                    self.update_c_op = self.OPT_C.apply_gradients(zip(self.c_grads, main_net_c_params))
+            print('main_net_a_params = ', main_net_a_params)
+            print('main_net_c_params = ', main_net_c_params)
+            with tf.variable_scope(tf.get_variable_scope(), reuse=tf.AUTO_REUSE) :
+                with tf.name_scope('sync'):
+                    with tf.name_scope('pull'):
+                        self.pull_a_params_op = [l_p.assign(g_p) for l_p, g_p in zip(self.a_params, main_net_a_params)]
+                        self.pull_c_params_op = [l_p.assign(g_p) for l_p, g_p in zip(self.c_params, main_net_c_params)]
+                    with tf.name_scope('push'):
+                        self.update_a_op = self.OPT_A.apply_gradients(zip(self.a_grads, main_net_a_params))
+                        self.update_c_op = self.OPT_C.apply_gradients(zip(self.c_grads, main_net_c_params))
+                        # print('self.update_a_op = ', self.update_a_op)
 
             # print('----------tf.report_uninitialized_variables()----------')
             # print(self.sess.run(tf.report_uninitialized_variables()))
@@ -109,24 +126,27 @@ class A3C(DRL):
             #     [v for v in tf.global_variables() if v.name.split(':')[0] in set(sess.run(tf.report_uninitialized_variables()))
             # ])
             # self.sess.run(tf.global_variables_initializer())
-
+            
+            
             # print('--again--------tf.report_uninitialized_variables()----------')
 
     def _build_net(self):
         w_init = tf.contrib.layers.xavier_initializer()
         # w_init = tf.random_normal_initializer(0., .1)
         with tf.variable_scope('actor'):
-            l_a = tf.layers.dense(self.s, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
+            actor_NN = NNcomponent(self.cfg_actor_NN, self.s)
+            # actor_NN = tf.layers.dense(self.s, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             #l_a = tf.layers.dense(l_a, 300, tf.nn.relu6, kernel_initializer=w_init, name='la2')
             if self.a_discrete:
-                a_prob = tf.layers.dense(l_a, self.a_dim, tf.nn.softmax, kernel_initializer=w_init, name='ap')
+                a_prob = tf.layers.dense(actor_NN, self.a_dim, tf.nn.softmax, kernel_initializer=w_init, name='ap')
             else:
-                mu = tf.layers.dense(l_a, self.a_dim, tf.nn.tanh, kernel_initializer=w_init, name='mu')
-                sigma = tf.layers.dense(l_a, self.a_dim, tf.nn.softplus, kernel_initializer=w_init, name='sigma')
+                mu = tf.layers.dense(actor_NN, self.a_dim, tf.nn.tanh, kernel_initializer=w_init, name='mu')
+                sigma = tf.layers.dense(actor_NN, self.a_dim, tf.nn.softplus, kernel_initializer=w_init, name='sigma')
         with tf.variable_scope('critic'):
-            l_c = tf.layers.dense(self.s, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            critic_NN = NNcomponent(self.cfg_critic_NN, self.s)
+            # critic_NN = tf.layers.dense(self.s, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
             #l_c = tf.layers.dense(l_c, 200, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
-            v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
+            v = tf.layers.dense(critic_NN, 1, kernel_initializer=w_init, name='v')  # state value
         
         if self.a_discrete:
             return a_prob, v
@@ -154,11 +174,11 @@ class A3C(DRL):
     def add_data(self, s, a, r, d, s_):
         ''' self, states, actions, rewards, done, next_state''' 
         # print('---Before add_data----')
-        # print('I: train get s.shape={}, type(s)={}'.format(np.shape(s), type(s)))
+        # print('I: train get s.shape={}, type(s)={}, s ={}'.format(np.shape(s), type(s), s ))
         # print('I: train get a.shape={}, type(a)={}, a = {}'.format(np.shape(a), type(a), a))
         # print('I: train get r.shape={}, type(r)={}'.format(np.shape(r), type(r)))
         # print('I: train get d.shape={}, type(d)={}'.format(np.shape(d), type(d)))
-        # print('I: train get s_.shape={}, type(s_)={}'.format(np.shape(s_), type(s_)))
+        # print('I: train get s_.shape={}, type(s_)={}, s_ ={}'.format(np.shape(s_), type(s_),s_))
         # self.last_done = d
         self.simple_buf.add(s, a, r, d, s_)
 
@@ -177,7 +197,19 @@ class A3C(DRL):
             last_s2 = s2_batch[len(s2_batch)-1]
             last_s2 = [last_s2] # same as last_s2[np.newaxis, :]
             if done:
-                v_s_ = -5   # terminal
+                v_s_ = 0
+                # if r_batch[-1] > 0:
+                #     v_s_ =  r_batch[-1]*50
+                # elif r_batch[-1] < 0:
+                #     v_s_ = r_batch[-1]*50
+                # else : # 0
+                #     v_s_ = -30
+                # v_s_ = 0
+                # v_s_ =  r_batch[-1]*50
+                # if r_batch[-1] == 0:
+                #     v_s_ = -0.5
+                # v_s_ = r_batch[len(r_batch)-1]
+                #v_s_ = -5   # terminal
             else:
                 #v_s_ = self.sess.run(self.v, {self.s: s2_batch[np.newaxis, :]})[0, 0]
                 # run_one = self.sess.run(self.v, {self.s: last_s2})
@@ -185,6 +217,7 @@ class A3C(DRL):
                 v_s_ = self.sess.run(self.v, {self.s: last_s2})[0, 0]
             buffer_v_target = []
 
+            
             # print('[%s]'% self.net_scope, 'v_s_ = ', v_s_)
 
             for r in r_batch[::-1]:    # reverse buffer r
@@ -192,8 +225,9 @@ class A3C(DRL):
                 buffer_v_target.append(v_s_)
             buffer_v_target.reverse()
             
-            buffer_s, buffer_a, buffer_v_target = np.vstack(s_batch), np.vstack(a_batch), np.vstack(buffer_v_target)
-            # buffer_v_target = np.vstack(s_batch), np.vstack(a_batch), np.vstack(buffer_v_target)
+            # buffer_s, buffer_a, buffer_v_target = np.vstack(s_batch), np.vstack(a_batch), np.vstack(buffer_v_target)
+            buffer_v_target = np.vstack(buffer_v_target)
+            
             # print('s_batch = ', s_batch, ', s_batch.shape = ', s_batch.shape)
             # print('buffer_s = ', buffer_s, ', np.shape(buffer_s) = ', np.shape(buffer_s) )
 
@@ -203,13 +237,32 @@ class A3C(DRL):
                 self.v_target: buffer_v_target,
             }
 
-            self.update_global(feed_dict)
+            # self.update_global(feed_dict)
+            td, v ,_,_ = self.sess.run([self.td, self.v, self.update_a_op, self.update_c_op], feed_dict)
+            # if r_batch[len(r_batch)-1] > 0:
+            #     print('s_batch = ', s_batch)
+            #     print('last reward = ', r_batch[len(r_batch)-1])
+            #     print('buffer_v_target = ', buffer_v_target)
+            #     print('v = ', v)
+            #     print('td = ', td)
+            # elif self.train_times %100==0:
+            #     print('mod50==0, last reward = ', r_batch[len(r_batch)-1])
+            #     print('buffer_v_target = ', buffer_v_target)
+            #     print('v = ', v)
+            #     print('td = ', td)
+
+
             self.pull_global()
 
             self.simple_buf.clear()
 
     def get_log_dic(self):
         return None
+
+    # def get_log_dic(self):
+    #     log_dic = {'ep_avg_Q':self.get_avg_q() }
+    #     log_dic['critic avg loss'] = self.train_sum_critic_loss /self.train_count if self.train_count!=0 else 0
+    #     return log_dic
 
     def notify_ep_done(self):
         pass

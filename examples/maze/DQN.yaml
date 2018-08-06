@@ -23,7 +23,7 @@ DQN:
 
 epsilon-greedy:
     value: 1.0
-    discount: 0.002   # each step discount it  
+    discount: 0.01   # each step discount it  
 
 NN:
     fc_1:
@@ -37,6 +37,6 @@ misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
     random_seed: 12             # t_82 get max reward = 114.10
-    max_ep:  300                       # defualt:1000, over the ep will auto exit()
+    max_ep:  600                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
-    render_after_ep: 1                # defualt: 0, render afet the ep 
+    render_after_ep: 200                # defualt: 0, render afet the ep 
