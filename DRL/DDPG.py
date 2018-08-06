@@ -24,7 +24,7 @@ class DDPG(DRL):
 
         self.sess = sess
 
-        self.actor = ActorNetwork(sess, self.s_dim, self.a_dim, self.a_bound, self.lr_actor, self.tau, cfg['actor_NN'])
+        self.actor = ActorNetwork(sess, self.s_dim, self.a_dim, self.a_discrete, self.a_bound, self.lr_actor, self.tau, cfg['actor_NN'])
         self.critic = CriticNetwork(sess, self.s_dim, self.a_dim,
                             self.lr_critic, self.tau, self.actor.get_num_trainable_vars(),  cfg['critic_state_NN'],  cfg['critic_action_NN'])
 
@@ -52,7 +52,7 @@ class DDPG(DRL):
         ''' self, states, actions, rewards, done, next_state''' 
         # print('---Before add_data----')
         # print('I: train get s.shape={}, type(s)={}'.format(np.shape(s), type(s)))
-        # print('I: train get a.shape={}, type(a)={}'.format(np.shape(a), type(a)))
+        # print('I: train get a.shape={}, type(a)={}, a={}'.format(np.shape(a), type(a), a ))
         # print('I: train get r.shape={}, type(r)={}'.format(np.shape(r), type(r)))
         # print('I: train get d.shape={}, type(d)={}'.format(np.shape(d), type(d)))
         # print('I: train get s_.shape={}, type(s_)={}'.format(np.shape(s_), type(s_)))
@@ -84,7 +84,7 @@ class DDPG(DRL):
             # print('shape(a_batch) = ', np.shape(a_batch) )
             # print('shape(y_i) = ', np.shape(y_i) )
             # print(" np.reshape(y_i, (self.batch_size, 1)=",  np.reshape(y_i, (self.batch_size, 1)).shape)
-            
+            # print('a_batch = ' , a_batch)
             # Update the critic given the targets
             predicted_q_value, c_loss, _ = self.critic.train(s_batch, a_batch, np.reshape(y_i, (self.batch_size, 1)))
 
@@ -126,10 +126,11 @@ class DDPG(DRL):
         return log_dic
 
 class ActorNetwork(object):
-    def __init__(self, sess, state_dim, action_dim, action_bound, learning_rate, tau, actor_NN):
+    def __init__(self, sess, state_dim, action_dim, action_discrete, action_bound, learning_rate, tau, actor_NN):
         self.sess = sess
         self.s_dim = state_dim
         self.a_dim = action_dim
+        self.a_discrete = action_discrete
         self.action_bound = action_bound
         self.learning_rate = learning_rate
         self.tau = tau
@@ -137,14 +138,17 @@ class ActorNetwork(object):
 
         # Actor Network
         with tf.variable_scope('actor'):
-            self.inputs, self.out, self.scaled_out = self.create_actor_network()
+            # self.inputs, self.out, self.scaled_out = self.create_actor_network()
+            self.inputs, self.scaled_out = self.create_actor_network()
         # self.inputs, self.out, self.scaled_out = self.create_actor_network('actor')
 
         self.network_params = tf.trainable_variables()
 
+        # print(' self.network_params = ',  self.network_params)
+
         # Target Network
         with tf.variable_scope('actor_target'):
-            self.target_inputs, self.target_out, self.target_scaled_out = self.create_actor_network()
+            self.target_inputs, self.target_scaled_out = self.create_actor_network()
         #self.target_inputs, self.target_out, self.target_scaled_out = self.create_actor_network('actor_target')
 
         self.target_network_params = tf.trainable_variables()[len(self.network_params):]
@@ -179,10 +183,16 @@ class ActorNetwork(object):
         # out = FC(fc2   , self.a_dim, name_prefix = 'output', op='tanh', initializer = 'truncated_normal', bias_const=0.03)
         # type 2
         nn = NNcomponent(self.actor_NN, inputs)
-        out = FC(nn, self.a_dim, name_prefix = 'output', op='tanh', initializer = 'truncated_normal', bias_const=0.03)
-
-        scaled_out = tf.multiply(out, self.action_bound)  # Scale output to -action_bound to action_bound
-        return inputs, out, scaled_out
+        # out = FC(nn, self.a_dim, name_prefix = 'output', op='tanh', initializer = 'truncated_normal', bias_const=0.03)
+        
+        if self.a_discrete:
+            # out = FC(nn, self.a_dim, name_prefix = 'output', op='relu', bias_const=0.01)
+            out = tf.layers.dense(nn, self.a_dim, tf.nn.softmax, kernel_initializer=tf.contrib.layers.xavier_initializer(), name='prob')
+        else:
+            out = FC(nn, self.a_dim, name_prefix = 'output', op='tanh', initializer = 'truncated_normal', bias_const=0.03)
+            out = tf.multiply(out, self.action_bound)  # Scale output to -action_bound to action_bound
+        
+        return inputs, out
 
     def train(self, inputs, a_gradient):
         self.sess.run(self.optimize, feed_dict={
@@ -219,15 +229,15 @@ class CriticNetwork(object):
     The action must be obtained from the output of the Actor network.
     """
 
-    def __init__(self, sess, state_dim, action_dim, learning_rate, tau, num_actor_vars, critic_state_NN, critic_action_NN):
+    def __init__(self, sess, state_dim, action_dim, learning_rate, tau, num_actor_vars, critic_state_NN_cfg, critic_action_NN_cfg):
         self.sess = sess
         self.s_dim = state_dim
         self.a_dim = action_dim
         self.learning_rate = learning_rate
         self.tau = tau
 
-        self.critic_state_NN  = critic_state_NN
-        self.critic_action_NN = critic_action_NN
+        self.critic_state_NN_cfg  = critic_state_NN_cfg
+        self.critic_action_NN_cfg = critic_action_NN_cfg
 
         # Create the critic network
         with tf.variable_scope('critic'):
@@ -284,11 +294,12 @@ class CriticNetwork(object):
         # add_fc_s_a = tf.nn.relu(state_fc2 + action_fc)
 
         #type 3
-        state_nn = NNcomponent(self.critic_state_NN, state)
-        action_nn = NNcomponent(self.critic_action_NN, action)
+        state_nn = NNcomponent(self.critic_state_NN_cfg, state)
+        action_nn = NNcomponent(self.critic_action_NN_cfg, action)
         add_fc_s_a = tf.nn.relu(state_nn + action_nn)
+        add_fc_s_a_fc = FC(add_fc_s_a, 100, name_prefix ='add_fc_s_a_fc', op='relu', initializer = 'xavier', bias_const=0.01)
 
-        out = FC(add_fc_s_a, 1, name_prefix =  'out', op='none', initializer = 'truncated_normal', bias_const=0.03)
+        out = FC(add_fc_s_a_fc, 1, name_prefix =  'out', op='none')
         
         return state, action, out
     

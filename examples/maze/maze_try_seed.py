@@ -45,7 +45,7 @@ def gym_thread(seed):
     cfg_copy['misc']['random_seed'] = seed
     cfg_copy['misc']['render'] = False
     cfg_copy['misc']['gpu_memory_ratio'] = 0.76
-    cfg_copy['misc']['max_ep'] = 600
+    cfg_copy['misc']['max_ep'] = 300
     cfg_copy['misc']['worker_nickname'] = 'w_%03d' % (seed)
     prj_name ='maze-%s_seed_%04d' % ( get_yaml_name(), seed)
     

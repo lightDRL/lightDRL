@@ -41,41 +41,30 @@ Uhlenbeck:   # Noise parameters - Ornstein Uhlenbeck
 actor_NN:
     actor_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
         type: 'fc'
-        size: 60
-        bias_const: 0.03
-        initializer: 'truncated_normal'
+        size: 200
+        bias_const: 0.01
+        initializer: 'xavier'
 
-    actor_fc_2:
-        type: 'fc'
-        size: 60
-        bias_const: 0.03
-        initializer: 'truncated_normal'
 
 critic_state_NN:
     state_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
         type: 'fc'
-        size: 60
+        size: 100
         bias_const: 0.03
-        initializer: 'truncated_normal'
-
-    state_fc_2:
-        type: 'fc'
-        size: 60
-        bias_const: 0.03
-        initializer: 'truncated_normal'
+        initializer: 'xavier'
 
 
 critic_action_NN:
     action_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
         type: 'fc'
-        size: 60
-        bias_const: 0.03
-        initializer: 'truncated_normal'
+        size: 100
+        bias_const: 0.01
+        initializer: 'xavier'
         
 misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
-    random_seed: 11             # t_82 get max reward = 114.10
+    random_seed: 0             # t_82 get max reward = 114.10
     max_ep:  500                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
     render_after_ep: 100                # defualt: 0, render afet the ep 

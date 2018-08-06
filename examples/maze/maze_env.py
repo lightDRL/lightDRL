@@ -136,7 +136,7 @@ class Maze(tk.Tk, object):
             reward = -1
             done = True
         elif self.use_steps >=100:
-            reward = -0.8
+            reward = 0
             done = True
         else:
             reward = 0 if not over_enclosure else  -0.5
