@@ -15,7 +15,7 @@ RL:
     add_data_steps: 'if_down'     # dafault: 1 , param: 'if_down', 'steps(int)'    
     reward_reverse: yes           # dafault: False
     exploration: 3000        # train after exploration step
-    action_noise: 'Uhlenbeck'
+#    action_noise: 'Uhlenbeck'
 
 DDPG:
     lr_actor:  0.0001  # learning rate for actor (1e-4)
@@ -37,7 +37,7 @@ misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
     random_seed: 44
-    max_ep:  200                       # defualt:1000, over the ep will auto exit()
+    max_ep:  100                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
     render_after_ep: 20                # defualt: 0, render afet the ep 
     gym_env: 'MountainCarContinuous-v0'

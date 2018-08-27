@@ -385,9 +385,10 @@ class WorkerBase(object):
 
     
     def avg_ep_reward_show(self):
-        print('(%s) EP%5d | all_ep_reward: %lf ' % \
-                    (self.worker_nickname, self.ep-1, self.all_ep_reward) )
-        return float(self.all_ep_reward) / float(self.ep)
+        avg_ep_reward = float(self.all_ep_reward) / float(self.ep-1)
+        print('(%s) EP%5d | all_ep_reward: %lf | avg_ep_reward: %lf' % \
+                    (self.worker_nickname, self.ep-1, self.all_ep_reward, avg_ep_reward) )
+        return avg_ep_reward
 
     @property
     def is_max_ep(self):

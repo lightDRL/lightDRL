@@ -11,7 +11,7 @@ RL:
     method: 'A3C'
     # train_multi_steps: 1       # default: 1, param: 'if_down', 'steps(int)'-> train if down or train after steps    
     # exploration: 3000        # train after exploration step
-    # action_noise: 'Uhlenbeck'
+    action_noise: 'Uhlenbeck'
 
 A3C:
     LR_A: 0.001  # learning rate for actor (1e-4)
@@ -24,7 +24,7 @@ A3C:
 
 
 Uhlenbeck:   # Noise parameters - Ornstein Uhlenbeck
-    max_ep: 30
+    max_ep: 50
     delta: 0.5  # The rate of change (time)
     sigma: 0.5  # Volatility of the stochastic processes
     ou_a: 3.0   # The rate of mean reversion
@@ -33,8 +33,8 @@ Uhlenbeck:   # Noise parameters - Ornstein Uhlenbeck
 misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
-    random_seed: 82             # t_82 get max reward = 114.10
-    max_ep:  200                       # defualt:1000, over the ep will auto exit()
+    random_seed: 79             # t_82 get max reward = 114.10
+    max_ep:  100                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
     render_after_ep: 100                # defualt: 0, render afet the ep 
     gym_env: 'MountainCarContinuous-v0'
@@ -68,28 +68,3 @@ critic_NN:
         size: 300
         initializer: 'xavier'
         bias_const: 0.01
-# actor_NN:
-#     actor_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
-#         type: 'fc'
-#         size: 200
-#         initializer: 'xavier'
-#         bias_const: 0.01
-
-#     actor_fc_2: # use default op:'relu' and initializer: 'truncated_normal'
-#         type: 'fc'
-#         size: 100
-#         initializer: 'xavier'
-#         bias_const: 0.01
-
-# critic_NN:
-#     critic_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
-#         type: 'fc'
-#         size: 200
-#         initializer: 'xavier'
-#         bias_const: 0.01
-        
-    # critic_fc_2: # use default op:'relu' and initializer: 'truncated_normal'
-    #     type: 'fc'
-    #     size: 100
-    #     initializer: 'xavier'
-    #     bias_const: 0.01

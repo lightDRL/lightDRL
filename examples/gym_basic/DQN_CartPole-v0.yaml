@@ -26,24 +26,24 @@ DQN:
 
 epsilon-greedy:
     value: 1.0
-    discount: 0.01   # each step discount it  
+    discount: 0.005   # each step discount it  
 
 NN:
     fc_1: # use default op:'relu' and initializer: 'truncated_normal'
         type: 'fc'
         size: 200
-        bias_const: 0.03
+        bias_const: 0.01
 
     fc_2:
         type: 'fc'
-        size: 100
-        bias_const: 0.03
+        size: 200
+        bias_const: 0.01
 
 misc:
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
-    random_seed: 78             
-    max_ep:  200                       # defualt:1000, over the ep will auto exit()
+    random_seed: 24             
+    max_ep:  1000                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
     render_after_ep: 100                # defualt: 0, render afet the ep 
     gym_env: 'CartPole-v0'

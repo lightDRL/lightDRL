@@ -139,7 +139,8 @@ class Maze(tk.Tk, object):
             reward = 0
             done = True
         else:
-            reward = 0 if not over_enclosure else  -0.5
+            #reward = 0 if not over_enclosure else  -0.5
+            reward = 0
             done = False
         s_ = (np.array(next_coords[:2]) - np.array(self.canvas.coords(self.oval)[:2]))/(MAZE_H*UNIT)
         return s_, reward, done, None
