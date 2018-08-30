@@ -4,10 +4,10 @@ Modify from: https://github.com/floodsung/DRL-FlappyBird
 """
 import tensorflow as tf
 import numpy as np
-from Base import DRL
-from component.replay_memory import ReplayMemory
-from component.DNN_v3 import FC
-from component.NNcomponent import NNcomponent
+from .Base import DRL
+from .component.replay_memory import ReplayMemory
+from .component.DNN_v3 import FC
+from .component.NNcomponent import NNcomponent
 # Network Parameters - Hidden layers
 
 class DQN(DRL):
@@ -30,8 +30,11 @@ class DQN(DRL):
         self.notify_ep_done()  # only  for reset variable
 
     def choose_action(self, s):
+        # self.log_time('before choose_action')
         q_value = self.sess.run( self.QValue, feed_dict={self.stateInput:[s]})
         action = q_value[0]
+
+        # self.log_time('choose_action')
 
         return action
 
@@ -49,17 +52,27 @@ class DQN(DRL):
 
         self.mem.add(s, a, r, d, s_)
         # print('self.mem.size()= ' , self.mem.size())
+    def log_time(self, s):
+        import time
+        if hasattr(self, 'ts'):
+            print(s + ' use time = ' + str( time.time() - self.ts  ))
+        self.ts = time.time()
 
     def train(self):
         # print(' self.mem.size() = ',  self.mem.size())
         # if self.mem.size() > self.exploration_step : #MINIBATCH_SIZE:
+        self.sess.as_default()
+        self.log_time('before train')
         if self.mem.size() > self.memory_train_min:
             # print('DQN in train')
             s_batch, a_batch, r_batch, d_batch, s2_batch = self.mem.sample_batch(self.batch_size)
-
+            self.log_time('sample_batch')
             # Calculate targets
             q_target_value = self.sess.run( self.QValueT, feed_dict={self.stateInputT:s2_batch})
-            
+            self.log_time('sess.run q_target_value ')
+            q_target_value = self.QValueT.eval(feed_dict={self.stateInputT:s2_batch})
+            self.log_time('eval q_target_value ')
+
             y_i = []
             for k in range(self.batch_size):
                 if d_batch[k]:
@@ -68,6 +81,8 @@ class DQN(DRL):
                     y_i.append(r_batch[k] + self.gamma * np.max(q_target_value[k] ))
 
             y_i = np.array(y_i)
+
+            self.log_time('y_i')
             # print('s_batch = ', s_batch)
             # print('I: s_batch.shape={}, type(s_batch)={}'.format(s_batch.shape, type(s_batch)))
             # print('a_batch = ', a_batch)
@@ -82,11 +97,25 @@ class DQN(DRL):
                 self.stateInput : s_batch
             })
 
+            self.log_time('train & q_loss')
+
+
+            self.train_op.run(feed_dict={
+                self.yInput : y_i,
+                self.actionInput : a_batch,
+                self.stateInput : s_batch
+            })
+
+            self.log_time('train_op.run')
+
             self.sum_q_loss += q_loss
             self.train_count += 1
 
             if self.train_count % self.update_Q_target_times == 0:
                 self.sess.run(self.copy_Q_2_Qtarget)
+
+
+        self.log_time('train')
 
      # override
     def _build_net(self):
@@ -110,16 +139,16 @@ class DQN(DRL):
         self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.q_loss)
 
     def build_q_net(self):
-        state = tf.placeholder("float",[None, self.s_dim])
-        # maze
-        # fc1 = FC(state, 20, name_prefix = 'q_fc_1', op='relu', initializer = 'truncated_normal', bias_const=0.1)
-        # cartpole
-        # fc1 = FC(state, 200, name_prefix = 'q_fc_1', op='relu', initializer = 'truncated_normal', bias_const=0.03)
-        # fc2 = FC(fc1   , 100, name_prefix = 'q_fc_2', op='relu', initializer = 'truncated_normal', bias_const=0.03)
-        nn = NNcomponent(self.cfg_network, state)
-        q_value = FC(nn , self.a_dim, name_prefix =  'q_value', op='tanh', initializer = 'truncated_normal', bias_const=0.03)
+        # state = tf.placeholder("float",[None, self.s_dim])
+        state = tf.placeholder("float",np.concatenate( ([None], self.s_dim) ))
 
-        return state, q_value
+        print('self.s_dim = {}, state={}'.format(self.s_dim, state))
+        nn = NNcomponent(self.cfg_network, state)
+        #q_value = FC(nn , self.a_dim, name_prefix =  'q_value', op='none', bias_const=0.01)
+        # q_value = FC(nn , self.a_dim, name_prefix =  'q_value', op='tanh', initializer = 'truncated_normal', bias_const=0.03)
+        # print('nn = ', nn)
+        # print('q_value = ', q_value)
+        return state, nn # q_value #nn
 
     def notify_ep_done(self):
         self.train_count = 0

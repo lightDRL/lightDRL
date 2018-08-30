@@ -4,10 +4,11 @@ Modify from: https://github.com/liampetti/DDPG/blob/master/ddpg.py
 """
 import tensorflow as tf
 import numpy as np
-from Base import DRL
-from component.replay_memory import ReplayMemory
-from component.DNN_v3 import *
-from component.NNcomponent import NNcomponent
+
+from .Base import DRL
+from .component.replay_memory import ReplayMemory
+from .component.DNN_v3 import *
+from .component.NNcomponent import NNcomponent
 
 class DDPG(DRL):
     def __init__(self, cfg, model_log_dir="", sess = None):

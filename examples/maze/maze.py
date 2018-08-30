@@ -38,14 +38,13 @@ class MazeBasic(EnvSpace):
 
 def maze_cfg(cfg):
     # of course, you colud set following in .yaml
-    cfg['RL']['state_discrete'] = False     # very special for continous x, y 
+    cfg['RL']['state_discrete'] = True     # very special for continous x, y 
     cfg['RL']['state_shape']  = (2,)        # (x, y)
     #cfg['RL']['state_discrete_n'] = env.observation_space.n
     
     # action
     cfg['RL']['action_discrete'] = True 
     cfg['RL']['action_shape'] = (4,)
-    cfg['RL']['action_discrete_n'] = 4
    
     return cfg
 

@@ -12,7 +12,7 @@ RL:
     # train_multi_steps: 1       # default: 1, param: 'if_down', 'steps(int)'-> train if down or train after steps    
     # exploration: 300        # train after exploration step
     action_noise: 'epsilon-greedy'
-    # action_noise: 'Uhlenbeck'
+
 A3C:
     LR_A: 0.01  # learning rate for actor (1e-4)
     LR_C: 0.01  # learning rate for critic
@@ -21,7 +21,6 @@ A3C:
     main_net_scope: 'main_net'
     worker_num: *ref_server_worker_num # refer to server_worker_num
     batch_size: 120
-
 
 
 misc:
@@ -36,13 +35,6 @@ misc:
 epsilon-greedy:
     value: 1.0
     discount: 0.02    # each step discount it  
-
-Uhlenbeck:   # Noise parameters - Ornstein Uhlenbeck
-    max_ep: 500
-    delta: 0.5  # The rate of change (time)
-    sigma: 0.5  # Volatility of the stochastic processes
-    ou_a: 3.0   # The rate of mean reversion
-    ou_mu: 0.0
 
 actor_NN:
     actor_fc_1: # use default op:'relu' and initializer: 'truncated_normal'

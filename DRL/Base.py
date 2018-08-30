@@ -19,7 +19,7 @@ class RL(object):
         self.set_rl_basic_from_config(cfg)
 
         # print('rl_init() model_log_dir = ' + self.model_log_dir)
-        # self.check_s_a_dim()
+        self.check_s_a_dim()
         
     def set_rl_basic_from_config(self, cfg):
         # self.a_dim = np.squeeze(cfg['RL']['action_shape'])   # continuous-> OK, discrete: onehost
@@ -28,9 +28,12 @@ class RL(object):
         self.a_discrete = cfg['RL']['action_discrete']  # true -> discrete, false-> continuous
 
         if  cfg['RL']['action_discrete']:    
-            self.a_discrete_n = cfg['RL']['action_discrete_n']
+            
             self.a_bound = 1.
-            self.a_dim = self.a_discrete_n
+            if len(self.a_shape) > 1:
+                print('[Error] False action dimension!!')
+            self.a_dim = self.a_shape[0]        
+            self.a_discrete_n = self.a_dim
         else:
             self.a_bound = cfg['RL']['action_bound']
             self.a_dim = np.squeeze(np.array(self.a_shape))
@@ -41,8 +44,8 @@ class RL(object):
         self.s_shape = cfg['RL']['state_shape']
         self.s_dim =  np.squeeze(np.array(self.s_shape))
         self.s_discrete = cfg['RL']['state_discrete']
-        if self.s_discrete:
-            self.s_discrete_n = cfg['RL']['state_discrete_n']
+        # if self.s_discrete:
+            # self.s_discrete_n = cfg['RL']['state_discrete_n']
         
         # self.r_discount = self.reward_discount = cfg['DRL']['reward_discount']
         # self.r_reverse_norm =  self.reward_reverse_norm = cfg['RL']['reward_reverse_norm']
@@ -55,15 +58,13 @@ class RL(object):
         print('self.a_dim = ', self.a_dim)
         print('self.a_bound = ', self.a_bound)
         print('self.action_discrete = ', self.a_discrete)
-        if self.a_discrete:
-            print('self.a_discrete_n = ', self.a_discrete_n )
         
 
         print('self.s_shape = ', self.s_shape)
         print('self.s_dim = ', self.s_dim)
         print('self.s_discrete = ', self.s_discrete)
-        if self.s_discrete:
-            print('self.s_discrete_n = ', self.s_discrete_n)
+        # if self.s_discrete:
+        # print('self.s_discrete_n = ', self.s_discrete_n)
 
     @abstractmethod
     def choose_action(self, state):

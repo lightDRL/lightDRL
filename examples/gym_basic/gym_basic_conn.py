@@ -13,7 +13,7 @@ import time
 from config import cfg, get_yaml_name
 import numpy as np
 import threading
-from gym_basic import modify_cfg
+from gym_basic import gym_cfg
 
 MAX_EPISODES = 1000
 RENDER = True
@@ -57,4 +57,4 @@ class GymBasic(EnvSpace):
 #     return cfg
 
 if __name__ == '__main__':
-    c = Client(GymBasic, project_name='gym-'+ ENV_NAME + '-' + get_yaml_name(), i_cfg = modify_cfg(), retrain_model= True)
+    c = Client(GymBasic, project_name='gym-'+ ENV_NAME + '-' + get_yaml_name(), i_cfg = gym_cfg(cfg), retrain_model= True)

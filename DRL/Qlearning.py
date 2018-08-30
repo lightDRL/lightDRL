@@ -1,6 +1,6 @@
 
 import numpy as np
-from Base import RL
+from .Base import RL
 
 
 class Qlearning(RL):

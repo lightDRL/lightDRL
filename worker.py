@@ -18,6 +18,8 @@ from DRL.component.noise import Noise
 # for debug 
 from DRL.component.utils import print_tf_var
 
+
+
 class WorkerBase(object):
     def base_init(self, cfg, graph, sess, model_log_dir, net_scope = None):
         self.graph = graph
@@ -297,8 +299,11 @@ class WorkerBase(object):
     def predict(self, state):
         # print('--------------%03d-%03d----------------' % ( self.ep, self.ep_use_step))
         # print("I: predict() state.shape: {}, type(state)= {}, state={} ".format(np.shape(state), type(state), state) )
+        self.log_time('predict() before predict')
         state = np.array(state)
+        self.log_time('predict() predict state')
         a =  self.RL.choose_action(state)
+        self.log_time('predict() RL.choose_action')
        
         # if self.noise!=None and self.ep < self.noise_max_ep:
         #     self.ou_level = self.noise.ornstein_uhlenbeck_level(self.ou_level)
@@ -368,7 +373,8 @@ class WorkerBase(object):
 
     def train(self):
         with self.graph.as_default():
-            self.RL.train()
+            with self.sess.as_default():
+                self.RL.train()
 
 
     def to_py_native(self, obj):
@@ -394,6 +400,12 @@ class WorkerBase(object):
     def is_max_ep(self):
         return self._is_max_ep
         #return (self.ep >= (self.max_ep) )
+
+    def log_time(self, s):
+        
+        if hasattr(self, 'ts'):
+            print(s + ' use time = ' + str( time.time() - self.ts  ))
+        self.ts = time.time()
 
 class WorkerStandalone(WorkerBase):
     def __init__(self, cfg = None, model_log_dir = None, 
@@ -465,6 +477,7 @@ class WorkerConn(WorkerBase, Namespace):  # if you want to standalone, you could
 
     def on_predict(self, data):
         action = self.predict(data['state'])
+
         # print('worker on_predict action = ' , action,', type=', type(action))
         # for socketio_client (if dont use, error: is not JSON serializable)
         action = action.tolist() if type(action) == np.ndarray else action
@@ -480,3 +493,9 @@ class WorkerConn(WorkerBase, Namespace):  # if you want to standalone, you could
             action = self.predict(data['next_state'])
             action = action.tolist() if type(action) == np.ndarray else action
             emit('predict_response', action)
+
+    def log_time(self, s):
+        
+        if hasattr(self, 'ts'):
+            print(s + ' use time = ' + str( time.time() - self.ts  ))
+        self.ts = time.time()

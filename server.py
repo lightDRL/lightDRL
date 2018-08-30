@@ -9,12 +9,14 @@ import yaml
 # from config import cfg
 from worker import WorkerConn
 from dashboard import Dashboard
-
+import tensorflow as tf
+# from DRL import RL, DRL
+# from DRL import Base.RL, Base.DRL
 from DRL.Base import RL,DRL
+from DRL.DQN import DQN
 from DRL.A3C import A3C
 from DRL.DDPG import DDPG
-from DRL.TD import SARSA, QLearning
-import tensorflow as tf
+
 #-------set log level--------#
 # import logging
 # log = logging.getLogger('werkzeug')

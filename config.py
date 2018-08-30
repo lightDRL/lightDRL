@@ -47,7 +47,8 @@ def set_none_if_not_exist():
     cfg['misc']['render'] = False if  not 'render' in cfg['misc'] else cfg['misc']['render']
     cfg['misc']['render_after_ep'] = 0 if  not 'render_after_ep' in cfg['misc'] else cfg['misc']['render_after_ep']
     cfg['misc']['max_ep'] = 1000  if  not 'max_ep' in cfg['misc'] else cfg['misc']['max_ep']
-    cfg['misc']['ep_max_step'] = sys.maxint  if  not 'ep_max_step' in cfg['misc'] else cfg['misc']['ep_max_step']
+    # py2: sys.maxint=9223372036854775807, py3: sys.maxsize 9223372036854775807
+    cfg['misc']['ep_max_step'] = 922337203685477580  if  not 'ep_max_step' in cfg['misc'] else cfg['misc']['ep_max_step']
     cfg['misc']['worker_nickname'] ='worker'  if  not 'worker_nickname' in cfg['misc'] else cfg['misc']['worker_nickname']
     cfg['misc']['gym_monitor_path'] = None  if 'gym_monitor_path' not in cfg['misc'] else cfg['misc']['gym_monitor_path']
     cfg['misc']['gym_monitor_episode'] = 1  if 'gym_monitor_episode' not in cfg['misc'] else cfg['misc']['gym_monitor_episode']

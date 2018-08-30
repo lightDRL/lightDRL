@@ -21,7 +21,7 @@ class SimpleBuffer(object):
             self.memory.append(transition)
 
         while len(self.memory) > self.memory_capacity:
-			self.memory.popleft()
+            self.memory.popleft()
 
         
     def sample_batch(self, batch_size):

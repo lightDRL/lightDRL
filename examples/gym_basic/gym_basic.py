@@ -71,8 +71,8 @@ def gym_cfg(cfg):
     # print("cfg['RL']['action_discrete'] = ", cfg['RL']['action_discrete'])
 
     if cfg['RL']['action_discrete']:
-        cfg['RL']['action_shape'] = (1,)
-        cfg['RL']['action_discrete_n'] = env.action_space.n
+        cfg['RL']['action_shape'] = (env.action_space.n,)
+        #cfg['RL']['action_discrete_n'] = env.action_space.n
     else:
         assert len(env.action_space.shape) == 1, 'NOT support >= 2D action,  len(env.action_space.shape)=%d' %  len(env.action_space.shape)
         assert (env.action_space.high == -env.action_space.low), 'NOT support action high low, only support high=-low'        

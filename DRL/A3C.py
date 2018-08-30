@@ -4,9 +4,9 @@ Modify from: https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflo
 """
 import tensorflow as tf
 import numpy as np
-from DRL.Base import DRL
-from component.simple_buffer import SimpleBuffer
-from component.NNcomponent import NNcomponent
+from .Base import DRL
+from .component.simple_buffer import SimpleBuffer
+from .component.NNcomponent import NNcomponent
 
 class A3C(DRL):
     def __init__(self, cfg, model_log_dir, sess, scope, main_A3C = None):
