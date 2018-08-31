@@ -24,7 +24,7 @@ def NNcomponent(cfg_nn, input_layer):
             initializer   = 'truncated_normal' if 'initializer' not in com else com['initializer']
             bias_const    = 0.01 if 'bias_const' not in com else com['bias_const']
 
-            # print('build "{}" layer-> size={}, op={}, initializer={}, bias_const={}'.format(key, size, op, initializer, bias_const) )
+            print('build "{}" layer-> size={}, op={}, initializer={}, bias_const={}, pre_layer={}'.format(key, size, op, initializer, bias_const, pre_layer) )
             out_layer = FC(pre_layer, size, name_prefix = key , op=op, initializer = initializer, bias_const=bias_const)
         elif  com['type'] == 'flatten':
             out_layer = Flaten (pre_layer)
@@ -37,6 +37,6 @@ def NNcomponent(cfg_nn, input_layer):
         pre_com = com
         layer_list.append(pre_layer)
     # show all layer
-    print(layer_list)
+    # print(f'layer_list = {layer_list}')
     
     return out_layer

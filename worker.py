@@ -6,7 +6,7 @@ import threading
 import time
 
 # for connect to server
-from flask_socketio import Namespace, emit
+# from flask_socketio import Namespace, emit
 # DRL import 
 from DRL.Base import RL, DRL
 from DRL.DDPG import DDPG
@@ -54,7 +54,7 @@ class WorkerBase(object):
         self.var_init(cfg)
 
         # tf_summary_init
-        print('model_log_dir = ', model_log_dir)
+        # print('model_log_dir = ', model_log_dir)
         self.tf_writer = tf.summary.FileWriter(model_log_dir)
         
 
@@ -121,15 +121,15 @@ class WorkerBase(object):
         self.none_over_pos_count = 0 
 
         self.worker_nickname = cfg['misc']['worker_nickname']
-        print('worker_nickname = ', self.worker_nickname)
+        print('[I] worker_nickname = ', self.worker_nickname)
 
     def train_process(self, data):
         
-        state = data['state']
-        action = data['action']
-        reward = data['reward']
-        done = data['done']
-        next_state = data['next_state']
+        state = data['s']
+        action = data['a']
+        reward = data['r']
+        done = data['d']
+        next_state = data['s_']
 
         self.all_step += 1
         self.ep_use_step += 1
@@ -238,7 +238,7 @@ class WorkerBase(object):
         summary.value.add(tag='EP Time', simple_value=float(time.time() - ep_s_time))
         summary.value.add(tag='All Time', simple_value=float(time.time() - self.train_s_time))
         if log_dict != None:
-            for key, value in log_dict.iteritems():
+            for key, value in log_dict.items(): #iteritems():
                 # print('{} -> {} '.format(key, value))
                 summary.value.add(tag=key, simple_value=float(value))
 
@@ -299,11 +299,11 @@ class WorkerBase(object):
     def predict(self, state):
         # print('--------------%03d-%03d----------------' % ( self.ep, self.ep_use_step))
         # print("I: predict() state.shape: {}, type(state)= {}, state={} ".format(np.shape(state), type(state), state) )
-        self.log_time('predict() before predict')
+        # self.log_time('predict() before predict')
         state = np.array(state)
-        self.log_time('predict() predict state')
+        # self.log_time('predict() predict state')
         a =  self.RL.choose_action(state)
-        self.log_time('predict() RL.choose_action')
+        # self.log_time('predict() RL.choose_action')
        
         # if self.noise!=None and self.ep < self.noise_max_ep:
         #     self.ou_level = self.noise.ornstein_uhlenbeck_level(self.ou_level)
@@ -326,7 +326,8 @@ class WorkerBase(object):
                     a = np.zeros(a_dim)
                     a[ np.random.randint(self.RL.a_discrete_n) ] =1
                     # print('self.RL.a_discrete_n = ', self.RL.a_discrete_n)
-                if self.epsilon_greedy_discount>0 and reward>0:  # maybe happen in done, and not return
+                # print('self.epsilon_greedy_discount = ', self.epsilon_greedy_discount)
+                if self.epsilon_greedy_discount > 0.0 and reward > 0:  # maybe happen in done, and not return
                     self.epsilon_greedy_value -= self.epsilon_greedy_discount
 
 
@@ -456,46 +457,3 @@ class WorkerStandalone(WorkerBase):
             self.main_queue.put('WORKER_GET_DONE')
 
         
-
-
-class WorkerConn(WorkerBase, Namespace):  # if you want to standalone, you could use  Worker(object)
-
-    def __init__(self, ns = "", client_id="", cfg = None, model_log_dir = None, 
-                                graph = None, sess = None, net_scope = None):
-
-        super(WorkerConn, self).__init__(ns)
-        self.client_id = client_id
-            
-        self.base_init(cfg, graph, sess, model_log_dir, net_scope)
-
-    def on_connect(self):
-        print('{} Worker Connect'.format(self.client_id))
-
-    def on_disconnect(self):
-        print('{} Worker Disconnect'.format(self.client_id))
-        
-
-    def on_predict(self, data):
-        action = self.predict(data['state'])
-
-        # print('worker on_predict action = ' , action,', type=', type(action))
-        # for socketio_client (if dont use, error: is not JSON serializable)
-        action = action.tolist() if type(action) == np.ndarray else action
-        # print('worker on_predict action after = ' , action,', type=', type(action))
-        
-        emit('predict_response', action)
-
-    
-
-    def on_train_and_predict(self, data):
-        self.train_process(data)
-        if not data['done']:
-            action = self.predict(data['next_state'])
-            action = action.tolist() if type(action) == np.ndarray else action
-            emit('predict_response', action)
-
-    def log_time(self, s):
-        
-        if hasattr(self, 'ts'):
-            print(s + ' use time = ' + str( time.time() - self.ts  ))
-        self.ts = time.time()

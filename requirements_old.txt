@@ -1,0 +1,11 @@
+numpy
+six
+flask
+flask_restful
+flask_socketio
+gevent-websocket
+shortuuid
+tqdm>4.11.1
+socketIO_client
+tensorflow
+numpy<=1.14.5,>=1.13.3

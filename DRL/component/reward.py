@@ -57,7 +57,7 @@ class Reward(object):
         return ep_batch
 
     def discount_ori_print(self, ep_batch):
-        print('START---------in discount-----------')
+        # print('START---------in discount-----------')
         print('factor={}, gamma={}'.format(self.factor, self.gamma))
         x = ep_batch[:,2]
 
