@@ -1,28 +1,23 @@
-# from flask import Flask
-# from flask_restful import  Api
-# from flask_socketio import SocketIO, send, emit, Namespace
-
 import os
 # import shortuuid
 import yaml
+import numpy as np
+import time
+import sys
+from worker import WorkerBase
 
-# from config import cfg
-# from worker import WorkerConn
-# from dashboard import Dashboard
+import asyncio
+import websockets
+import pickle
+
 import tensorflow as tf
-# from DRL import RL, DRL
-# from DRL import Base.RL, Base.DRL
+
 from DRL.Base import RL,DRL
 from DRL.DQN import DQN
 from DRL.A3C import A3C
 from DRL.DDPG import DDPG
 
-#-------set log level--------#
-# import logging
-# log = logging.getLogger('werkzeug')
-# log.setLevel(logging.ERROR)
 
-# default dir is same path as server.py
 DATA_POOL = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data_pool')
 #------ check data_pool/ exist -------#
 if not os.path.isdir(DATA_POOL):
@@ -30,8 +25,7 @@ if not os.path.isdir(DATA_POOL):
 
 class ServerBase(object):
         # def check_output_graph(self):
-    #     if 'misc' in cfg and cfg['misc']['output_tf']:
-    #         import os, shutil
+    #     if 'misc' in cfg and cfg['misc']['output_tf']:create_new_tf_graph_sess
     #         log_dir = cfg['misc']['output_tf_dir']
     #         if os.path.exists(log_dir):
     #             shutil.rmtree(log_dir)
@@ -62,66 +56,80 @@ class ServerBase(object):
                     rmtree(model_log_dir)
                     os.mkdir(model_log_dir)
                     print('[I] REcreate model_log_dir:' + model_log_dir)
-
-
-        
+                    
         return model_log_dir
 
-# #------ Dynamic Namespce Predict -------#
-# class SocketServer(Namespace, ServerBase):
-#     def __init__(self, namespace = '/',  sock = None):
-#         super(SocketServer, self).__init__(namespace=namespace)
-#         self.socketio = sock
-#         # self.init_method()
-#         print('[I] Server is ready!')
+    def build_worker(self, prj_name, cfg):
+        # create tf graph & tf session
+        tf_new_graph, tf_new_sess = self.create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'], cfg['misc']['random_seed'])
+        # create logdir and save cfg
+        recreate_dir = cfg['misc']['model_retrain']
+        model_log_dir = self.create_model_log_dir(prj_name, recreate_dir = recreate_dir)
+        with open(os.path.join(model_log_dir, 'config.yaml') , 'w') as outfile:
+            yaml.dump(cfg, outfile, default_flow_style=False)
 
-#     #------- for connect and get id------#
-#     def on_connect(self):
-#         print('[I] In Server\'s on_connect()')
+        self.worker = WorkerBase()
+        self.worker.base_init(cfg, tf_new_graph, tf_new_sess, model_log_dir )
+        print('[I] worker ready!')
 
-#     def on_session(self, *data):
-#         print('[I] Server in on_session()')
+class Server(ServerBase):
+      
+    async def core(self, websocket, path):
+        print(f'path={path}')
+        sys.stdout.flush() 
+        async for data in websocket:
+            # data = await websocket.recv()
+            p = pickle.loads(data)
+            if p['cmd']=='new_session':
+                self.build_worker(p['project_name'], p['config'])
+                await websocket.send('Worker Ready')
+            elif p['cmd']=='predict':
+                predict = self.on_predict(p)
+                predict_p = pickle.dumps(predict, -1) 
+                await websocket.send(predict_p)
+            elif p['cmd']=='train_predict':
+                predict = self.on_train_and_predict(p)
+                predict_p = pickle.dumps(predict, -1) 
+                await websocket.send(predict_p)
+            
+    def run(self):
+        start_server = websockets.serve(self.core, 'localhost', 8765)
+        print('[I] Server is ready!')
+        asyncio.get_event_loop().run_until_complete(start_server)
+        asyncio.get_event_loop().run_forever()
 
-#         prj_name = data[0]
-#         cfg = data[1]
-#         retrain_model = data[2]
 
-#         # get method class
-#         method_class = globals()[cfg['RL']['method'] ]
-#         self.use_DRL = True if issubclass(method_class, DRL) else False
-#         # uuid & namespace
-#         new_uuid = shortuuid.uuid()
-#         ns = '/' + new_uuid + '/rl_session' 
 
-#         # create tf graph & tf session
-#         tf_new_graph, tf_new_sess = self.create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'], cfg['misc']['random_seed'])
-#         # create logdir and save cfg
-#         model_log_dir = self.create_model_log_dir(prj_name, recreate_dir = retrain_model)
-#         with open(os.path.join(model_log_dir, 'config.yaml') , 'w') as outfile:
-#             yaml.dump(cfg, outfile, default_flow_style=False)
-        
-#         print('Build server RL session socket withs ns: {}'.format(ns))
-#         if self.use_DRL and cfg['RL']['method']=='A3C':
-#             self.socketio.on_namespace(WorkerConn(ns, new_uuid, tf_new_sess, None) )
-#         elif self.use_DRL :
-#             self.socketio.on_namespace(WorkerConn(ns, new_uuid, cfg, model_log_dir=model_log_dir, graph = tf_new_graph, sess = tf_new_sess) )
-#         # else:
-#         #     self.socketio.on_namespace(Worker(ns, new_uuid) )
-        
-#         emit('session_response', new_uuid)
+
+    def on_predict(self, data):
+        action = self.worker.predict(data['s'])
+
+        # print('type(action) = ', type(action))
+        # action = action.tolist() if type(action) == np.ndarray else action
+        return action
+
+    def on_train_and_predict(self, data):
+        # self.log_time('(S) [H]------get train data-------')
+        self.worker.train_process(data)
+        if not data['d']:
+            action = self.worker.predict(data['s_'])
+            action = self.worker.add_action_noise(action, data['r'])
+            # action = action.tolist() if type(action) == np.ndarray else action
+            # print('type(action) = ', type(action))
+            # self.log_time('(S) train finish')
+            return action
+        else:
+            # self.log_time('(S) train finish')
+            return None
+
+
+    def log_time(self, s):
+        if hasattr(self, 'ts'):
+            print(s + ' use time = ' + str( time.time() - self.ts  ) + ', time=' + str(time.time()))
+        self.ts = time.time()
     
-  
-# if __name__ == '__main__':
-#     #-------Flask Init--------#
-#     app = Flask(__name__, static_folder='static', static_url_path='')
-#     api = Api(app)
-#     # you can try on http://localhost:5000/dashboard
-#     api.add_resource(Dashboard,'/dashboard')
-
-#     #init socketio 
-#     socketio = SocketIO(app)
-#     socketio.on_namespace(SocketServer(namespace = '/',  sock =socketio))
-#     socketio.run(app, host='0.0.0.0')
-
+if __name__ == '__main__':
+    s = Server()
+    s.run()
 
     

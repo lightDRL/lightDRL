@@ -6,13 +6,13 @@
 
 import sys, os
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
-from client import Client
+from standalone import Standalone
 from maze_env import Maze
 import time
 from config import cfg, get_yaml_name
 import numpy as np
 
-class MazeClient(Client):
+class MazeStandalone(Standalone):
     def env_init(self):
         self.env = Maze()    
     
@@ -25,7 +25,7 @@ class MazeClient(Client):
         next_state, reward, done, _ = self.env.step(action)
         now_state = self.state
         self.state = next_state
-        # self.env.render()   
+        self.env.render()   
 
         return now_state, reward, done, next_state
 
@@ -35,8 +35,7 @@ def maze_cfg(cfg):
     # of course, you colud set following in .yaml
     cfg['RL']['state_discrete'] = True     # very special for continous x, y 
     cfg['RL']['state_shape']  = (2,)        # (x, y)
-    #cfg['RL']['state_discrete_n'] = env.observation_space.n
-    
+
     # action
     cfg['RL']['action_discrete'] = True 
     cfg['RL']['action_shape'] = (4,)
@@ -44,5 +43,5 @@ def maze_cfg(cfg):
     return cfg
 
 if __name__ == '__main__':
-    c = MazeClient(maze_cfg(cfg), project_name='maze-' + get_yaml_name())
+    c = MazeStandalone(maze_cfg(cfg), project_name='maze-' + get_yaml_name())
     c.run()

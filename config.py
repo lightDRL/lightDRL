@@ -55,6 +55,9 @@ def set_none_if_not_exist():
     cfg['misc']['gym_monitor_path_origin'] =  cfg['misc']['gym_monitor_path']
     cfg['misc']['gym_monitor_path'] = set_gym_monitor_path(cfg['misc']['gym_monitor_path'])
 
+    cfg['misc']['model_retrain'] = True  if 'model_retrain' not in cfg['misc'] else cfg['misc']['model_retrain']
+
+
 def set_gym_monitor_path(gym_monitor_path, i_project_name = None):
     if gym_monitor_path==None:
         return None

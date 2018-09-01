@@ -7,7 +7,6 @@
 import six
 from abc import ABCMeta,abstractmethod
 import numpy as np
-import tensorflow as tf
 import os 
 
 @six.add_metaclass(ABCMeta)
@@ -42,7 +41,9 @@ class RL(object):
         # print("cfg['RL']['state_shape']=", cfg['RL']['state_shape'])
         # self.s_dim = np.squeeze(cfg['RL']['state_shape'])
         self.s_shape = cfg['RL']['state_shape']
-        self.s_dim =  np.squeeze(np.array(self.s_shape))
+        print(f'self.s_shape={ self.s_shape}')
+        # self.s_dim =  np.squeeze(np.array(self.s_shape))
+        self.s_dim =  np.array(self.s_shape)
         self.s_discrete = cfg['RL']['state_discrete']
         # if self.s_discrete:
             # self.s_discrete_n = cfg['RL']['state_discrete_n']
@@ -91,13 +92,9 @@ class DRL(RL):
     @abstractmethod
     # def train(self,  s, a, r, done, s_):
     def train(self):
-        self.train_times+=1
-        
-        # if done and self.model_save_cycle!=None:
-        #     self.ep +=1
-        #     if self.ep % self.model_save_cycle ==0:
-        #         self.save_model(self.model_log_dir, self.ep)
-            # print('----------------EP=%d--------' % self.ep)
+        pass
+    
+    
 
     @abstractmethod
     def add_data(self, states, actions, rewards, done, next_state):
@@ -105,38 +102,7 @@ class DRL(RL):
 
 
     def drl_init(self, sess):
-        self.train_times = 0
         self.sess = sess
-
-    def save_model(self, save_model_dir, g_step):
-        saver = tf.train.Saver()
-        save_path = os.path.join(self.model_log_dir , 'model.ckpt') 
-        save_ret = saver.save(self.sess, save_path, global_step = g_step)
-
-        print('Save Model to ' + save_ret  + ' !')
-
-
-    def init_or_restore_model(self, sess,  model_dir = None ):
-        if model_dir == None:
-            model_dir = self.model_log_dir
-        assert model_dir != None, 'init_or_restore_model model_dir = None'
-        model_file = tf.train.latest_checkpoint(model_dir)
-        start_ep = 0
-        if model_file is not None:
-            #-------restore------#e 
-            ind1 = model_file.index('model.ckpt')
-            start_ep = int(model_file[ind1 +len('model.ckpt-'):]) + 1
-            saver = tf.train.Saver()
-            saver.restore(sess, model_file)
-
-            print('[I] Use model_file = ' + str(model_file) + ' ! Train from epoch = %d' % start_ep )
-            
-        else:
-            print('[I] Initialize all variables')
-            sess.run(tf.global_variables_initializer())
-            print('[I] Initialize all variables Finish')
-
-    
 
     def onehot(self, argmax_ary):
         assert self.a_dim != 0, 'self.a_dim == 0 or None'

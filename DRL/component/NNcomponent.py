@@ -11,7 +11,7 @@ def NNcomponent(cfg_nn, input_layer):
         com = cfg_nn[key]        #component
         if com['type'] == 'conv':
             # note: in_channel is pre_layer last index
-            initializer   = 'xavier' if 'initializer' not in com else com['initializer']
+            initializer   = 'truncated_normal' if 'initializer' not in com else com['initializer']
             kernel_size   = 3  if 'kernel_size' not in com else com['kernel_size']
             stride        = 2  if 'stride' not in com else com['stride']
             out_channel   = 32 if 'out_channel' not in com else com['out_channel']

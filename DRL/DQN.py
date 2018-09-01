@@ -63,11 +63,12 @@ class DQN(DRL):
     def train(self):
         # print(' self.mem.size() = ',  self.mem.size())
         # if self.mem.size() > self.exploration_step : #MINIBATCH_SIZE:
-        self.sess.as_default()
+        # self.sess.as_default()
         # self.log_time('before train')
         if self.mem.size() > self.memory_train_min:
             # print('DQN in train')
             s_batch, a_batch, r_batch, d_batch, s2_batch = self.mem.sample_batch(self.batch_size)
+            
             # self.log_time('sample_batch')
             # Calculate targets
             q_target_value = self.sess.run( self.QValueT, feed_dict={self.stateInputT:s2_batch})
@@ -91,30 +92,20 @@ class DQN(DRL):
             # print('y_i = ', y_i)
             # print('I: y_i.shape={}, type(y_i)={}'.format(y_i.shape, type(y_i)))
             
-            q_loss, _ = self.sess.run([self.q_loss,  self.train_op], feed_dict={
+            q_action, q_loss, _ = self.sess.run([self.q_action, self.q_loss,  self.train_op], feed_dict={
                 self.yInput : y_i,
                 self.actionInput : a_batch,
                 self.stateInput : s_batch
             })
 
-            # self.log_time('train & q_loss')
-
-
-            self.train_op.run(feed_dict={
-                self.yInput : y_i,
-                self.actionInput : a_batch,
-                self.stateInput : s_batch
-            })
-
-            # self.log_time('train_op.run')
-
+            self.ep_sum_q_action += np.mean(q_action)
             self.ep_sum_q_loss += q_loss
             self.ep_train_count += 1
             self.update_target_count+=1
 
             # print(f'train_count ={self.ep_train_count}')
             if self.update_target_count >= self.update_Q_target_times:
-                print('Update to Q target')
+                # print('Update to Q target')
                 self.sess.run(self.copy_Q_2_Qtarget)
                 self.update_target_count = 0
 
@@ -138,13 +129,24 @@ class DQN(DRL):
 
         self.actionInput = tf.placeholder("float",[None,self.a_dim])
         self.yInput = tf.placeholder("float", [None]) 
-        Q_Action = tf.reduce_sum(tf.multiply(self.QValue, self.actionInput), reduction_indices = 1)
-        self.q_loss = tf.reduce_mean(tf.square(self.yInput - Q_Action))
+        self.q_action = tf.reduce_sum(tf.multiply(self.QValue, self.actionInput), reduction_indices = 1)
+        self.q_loss = tf.reduce_mean(tf.square(self.yInput - self.q_action))
         self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.q_loss)
 
     def build_q_net(self):
         # state = tf.placeholder("float",[None, self.s_dim])
-        state = tf.placeholder("float",np.concatenate( ([None], self.s_dim) ))
+        # if np.isscalar(self.s_dim):
+        #     print('isscalar')
+        # else:
+        #     print(f'self.s_dim.shape={self.s_dim.shape}')
+        #     print(f'type(self.s_dim)={type(self.s_dim)}')
+        #     print('not scalar')
+        # print(f'self.s_dim={self.s_dim}')
+        # s_dim = [self.s_dim] if np.isscalar(self.s_dim) else self.s_dim
+        # print(f's_dim={s_dim}')
+        # np_con =  np.concatenate( ([None], self.s_dim) )
+        # print(f'np_con = {np_con}')
+        state = tf.placeholder("float",  np.concatenate( ([None], self.s_dim) ))
 
         # print('self.s_dim = {}, state={}'.format(self.s_dim, state))
         nn = NNcomponent(self.cfg_network, state)
@@ -157,9 +159,10 @@ class DQN(DRL):
     def notify_ep_done(self):
         self.ep_train_count = 0
         self.ep_sum_q_loss = 0
-        self.train_sum_critic_loss = 0
+        self.ep_sum_q_action = 0
 
     def get_log_dic(self):
         avg_q_loss = self.ep_sum_q_loss /self.ep_train_count if self.ep_train_count!=0 else 0
-        log_dic = {'ep_avg_Q_loss':avg_q_loss }
+        avg_q_action = self.ep_sum_q_action /self.ep_train_count if self.ep_train_count!=0 else 0
+        log_dic = {'ep_avg_Q_loss':avg_q_loss,'ep_avg_Q_action':avg_q_action}
         return log_dic

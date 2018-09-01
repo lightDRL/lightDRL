@@ -22,12 +22,12 @@ DQN:
     memory_capacity: 5000
     memory_train_min: 500 
     batch_size: 100
-    update_Q_target_times: 5
+    update_Q_target_times: 50
     lr: 0.01
 
 epsilon-greedy:
     value: 1.0
-    discount: 0.01   # each step discount it  
+    discount: 0.001   # each step discount it  
 
 NN:
     1_fc:
@@ -45,6 +45,7 @@ NN:
         bias_const: 0.01
 
 misc:
+    model_retrain: no
     model_save_cycle: 30
     gpu_memory_ratio: 0.3
     random_seed: 12             # t_82 get max reward = 114.10

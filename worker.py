@@ -2,7 +2,7 @@
 import tensorflow as tf
 import numpy as np
 import yaml
-import threading
+import os
 import time
 
 # for connect to server
@@ -18,8 +18,6 @@ from DRL.component.noise import Noise
 # for debug 
 from DRL.component.utils import print_tf_var
 
-
-
 class WorkerBase(object):
     def base_init(self, cfg, graph, sess, model_log_dir, net_scope = None):
         self.graph = graph
@@ -28,6 +26,11 @@ class WorkerBase(object):
         #----------------------------setup RL method--------------------------#
         method_class = globals()[cfg['RL']['method'] ]
         self.method_class = method_class
+
+        #--------------setup var---------------#
+        self.model_log_dir = model_log_dir
+        self.var_init(cfg)
+
         if issubclass(method_class, DRL):
             '''Use DRL'''
             self.sess = sess
@@ -37,8 +40,8 @@ class WorkerBase(object):
                     self.RL = method_class(cfg, model_log_dir, self.sess, net_scope)
                 else:
                     self.RL = method_class(cfg, model_log_dir, self.sess )
-                    self.RL.init_or_restore_model(self.sess)    # init or check model
-
+                    #self.RL.init_or_restore_model(self.sess)    # init or check model
+                    self.init_or_restore_model(self.sess)
                 # print_tf_var('worker after init DRL method')
         elif issubclass(method_class, RL):
             '''Use RL'''
@@ -47,14 +50,6 @@ class WorkerBase(object):
         else:
             print('E: Worker::__init__() say error method name={}'.format(cfg['RL']['method'] ))
 
-        # print("({}) Worker Ready!".format(self.client_id))
-        
-        
-        #--------------setup var---------------#
-        self.var_init(cfg)
-
-        # tf_summary_init
-        # print('model_log_dir = ', model_log_dir)
         self.tf_writer = tf.summary.FileWriter(model_log_dir)
         
 
@@ -121,7 +116,11 @@ class WorkerBase(object):
         self.none_over_pos_count = 0 
 
         self.worker_nickname = cfg['misc']['worker_nickname']
-        print('[I] worker_nickname = ', self.worker_nickname)
+
+        # about model save
+        self.model_save_cycle = cfg['misc']['model_save_cycle'] if ('misc' in cfg) and ('model_save_cycle' in cfg['misc']) else None
+        self.model_retrain = cfg['misc']['model_retrain'] #if ('misc' in cfg) and ('model_retrain' in cfg['misc']) else True
+        print('[I] worker_nickname = ' +  self.worker_nickname + 'ready')
 
     def train_process(self, data):
         
@@ -218,9 +217,10 @@ class WorkerBase(object):
             # else:
             self.ep+=1
             self.ep_s_time = time.time()  # update episode start time
-            
-           
-            
+
+            if self.ep % self.model_save_cycle==0 and issubclass(self.method_class, DRL):
+                self.save_model(self.model_log_dir, self.ep)
+               
     def tf_summary_text(self, tag, text, ep):
         text_tensor = tf.make_tensor_proto(text, dtype=tf.string)
         meta = tf.SummaryMetadata()
@@ -280,15 +280,6 @@ class WorkerBase(object):
                 next_states = np.array(self.next_state_buf) 
 
                 self.RL.add_data(states, actions, rewards, dones, next_states)
-                # if self.ep_max_reward > 0:
-                #     self.RL.add_data(states, actions, rewards, dones, next_states)
-                #     self.none_over_pos_count = 0 
-                # else:
-                #     self.none_over_pos_count += 1
-                #     if self.none_over_pos_count <= 2:
-                #         self.RL.add_data(states, actions, rewards, dones, next_states)
-
-                # print('self.none_over_pos_count = ', self.none_over_pos_count)
 
                 self.state_buf  = []
                 self.action_buf = []
@@ -297,21 +288,8 @@ class WorkerBase(object):
                 self.next_state_buf  = []
 
     def predict(self, state):
-        # print('--------------%03d-%03d----------------' % ( self.ep, self.ep_use_step))
-        # print("I: predict() state.shape: {}, type(state)= {}, state={} ".format(np.shape(state), type(state), state) )
-        # self.log_time('predict() before predict')
         state = np.array(state)
-        # self.log_time('predict() predict state')
         a =  self.RL.choose_action(state)
-        # self.log_time('predict() RL.choose_action')
-       
-        # if self.noise!=None and self.ep < self.noise_max_ep:
-        #     self.ou_level = self.noise.ornstein_uhlenbeck_level(self.ou_level)
-        #     a = a + self.ou_level
-            # print('ou_level = ' , self.ou_level)
-        # action = a[0]
-
-        # print('send action = ', action)
 
         return a
 
@@ -327,7 +305,8 @@ class WorkerBase(object):
                     a[ np.random.randint(self.RL.a_discrete_n) ] =1
                     # print('self.RL.a_discrete_n = ', self.RL.a_discrete_n)
                 # print('self.epsilon_greedy_discount = ', self.epsilon_greedy_discount)
-                if self.epsilon_greedy_discount > 0.0 and reward > 0:  # maybe happen in done, and not return
+                if self.epsilon_greedy_discount > 0.0:
+                # if self.epsilon_greedy_discount > 0.0 and reward > 0:  # maybe happen in done, and not return
                     self.epsilon_greedy_value -= self.epsilon_greedy_discount
 
 
@@ -337,46 +316,12 @@ class WorkerBase(object):
             # print('in ornstein_uhlenbeck ou_level = ' , self.ou_level)
         # print('after a = ', a)
         return a
-        '''
-        if self.noise!=None and self.ep < self.noise_max_ep:
-            self.ou_level = self.noise.ornstein_uhlenbeck_level(self.ou_level)
-            a = a + self.ou_level
-            # print('in ornstein_uhlenbeck ou_level = ' , self.ou_level)
-        
-        a_dim = a.shape[0]
-        #------replace original action-----#
-        if self.all_step < self.exploration_step:
-            if self.action_discrete==True:
-                
-                if self.exploration_action_noise=='np_random':
-                    # print('in np_random')
-                    a = np.zeros(a_dim)
-                    a[ np.random.randint(a_dim) ] =1
-                elif self.exploration_action_noise=='dirichlet':
-                    # print('in dirichlet')
-                    a = np.random.dirichlet(np.ones(a_dim) )       # random, and sum is 1 
-            
-        
-        if  self.action_epsilon!=None and self.all_step > self.exploration_step:
-            if np.random.rand(1)[0] > self.action_epsilon:
-                a = np.zeros(a_dim)
-                a[ np.random.randint(a_dim) ] =1
-
-                
-        # if self.ep_max_reward > 0: 
-            # print('iniiniin  self.ep_max_reward > 0')
-        
-        # print('self.action_epsilon = ' , self.action_epsilon)
-        # print('after a=', a )
-        # print('worker use action = ', np.argmax(a))
-        '''
         
 
     def train(self):
         with self.graph.as_default():
-            with self.sess.as_default():
-                self.RL.train()
-
+            # with self.sess.as_default():
+            self.RL.train()
 
     def to_py_native(self, obj):
         if type(obj) == np.ndarray:
@@ -408,52 +353,34 @@ class WorkerBase(object):
             print(s + ' use time = ' + str( time.time() - self.ts  ))
         self.ts = time.time()
 
-class WorkerStandalone(WorkerBase):
-    def __init__(self, cfg = None, model_log_dir = None, 
-                        graph = None, sess = None, net_scope = None):
+    # -----------------model save or restore------------------#
 
-        # self.main_queue = main_queue
-        self.lock = threading.Lock()
-        self.client_id = "standalone"
+    def save_model(self, save_model_dir, g_step):
+        with self.graph.as_default():
+            saver = tf.train.Saver()
+            save_path = os.path.join(self.model_log_dir , 'model.ckpt') 
+            save_ret = saver.save(self.sess, save_path, global_step = g_step)
 
-        self.base_init(cfg, graph, sess, model_log_dir, net_scope)
-
-        import Queue
-        self.main_queue = Queue.Queue()
-        
-    def get_callback_queue(self):
-        return self.main_queue 
+            print('Save Model to ' + save_ret  + ' !')
 
 
-    def on_predict(self, data):
-         
-        self.lock.acquire()
-        
-        action = self.predict(data['state'])
-        if self.action_noise != None:
-            # action = self.add_action_noise(action)
-            action = self.add_action_noise(action)
-        self.main_queue.put(action)
-        self.lock.release()
-    
-    def on_train_and_predict(self, data):
-        self.lock.acquire()
-        self.train_process(data)
-        self.lock.release()
-
-        # if not data['done']:
-        #     action = self.predict(data['next_state'])
-        #     action = self.add_action_noise(action)
-        #     # print('worker on_train_and_predict action = ' , action,', thread=' ,threading.current_thread().name )
-        #     self.main_queue.put(action)
-
-        action = self.predict(data['next_state'])
-        action = self.add_action_noise(action, data['reward'])
-        # print('worker on_train_and_predict action = ' , action,', thread=' ,threading.current_thread().name )
-        # Becareful here !!!
-        if not data['done']:
-            self.main_queue.put(action)
+    def init_or_restore_model(self, sess,  model_dir = None ):
+        if model_dir == None:
+            model_dir = self.model_log_dir
+        assert model_dir != None, 'init_or_restore_model model_dir = None'
+        model_file = tf.train.latest_checkpoint(model_dir)
+        print(f'model_file = {model_file}')
+        start_ep = 1
+        if model_file is None or self.model_retrain:
+            print('[I] Initialize all variables')
+            sess.run(tf.global_variables_initializer())
+            print('[I] Initialize all variables Finish')
         else:
-            self.main_queue.put('WORKER_GET_DONE')
+            #-------restore------#e 
+            ind1 = model_file.index('model.ckpt')
+            start_ep = int(model_file[ind1 +len('model.ckpt-'):]) + 1
+            self.ep = start_ep
+            saver = tf.train.Saver()
+            saver.restore(sess, model_file)
 
-        
+            print('[I] Use model_file = ' + str(model_file) + ' ! Train from epoch = %d' % start_ep )

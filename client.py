@@ -1,74 +1,37 @@
-
-import sys, os, time
 import numpy as np
-import json
-# from config import cfg
-from threading import Thread
-import signal                   # for ctrl+C
-import sys                      # for ctrl+C
-from socketIO_client import SocketIO, BaseNamespace
+import asyncio
+import websockets
+import pickle 
+import time
 
-# import six
-# from abc import ABCMeta,abstractmethod
-# from socketIO_client import SocketIO, BaseNamespace
+class LogRL:   
+    def log_init(self, i_cfg , project_name=None):
+        self.project_name = project_name
+        self.cfg = i_cfg
+        self.log_data_init()
 
-class EnvBase(object):
-    def envbase_init(self):
+        
+    def log_data_init(self):
         self.start_time = time.time()
         self.ep_s_time = time.time()
         self.ep = 1#0
         self.ep_use_step = 0
         self.ep_reward = 0
 
-        self.env_name =''
-        
-    def set_cfg(self, cfg):
-        self.cfg = cfg
-    
-    def on_predict_response(self, callback_action):
-        self.server_action =  callback_action
-        
-        # print('server_action: {},type ={}, shape={}'.format(callback_action, type(callback_action), np.shape(callback_action)))
-        action  = np.argmax(callback_action) if  self.cfg['RL']['action_discrete'] else callback_action
-        # print('use action: ', action)
-        # action = self.to_py_native(action)
-        self.on_action_response(action)
-
-    def send_state_get_action(self, state):
-        state       = state.tolist()  if type(state) == np.ndarray else state # if type(state) != list else state
-        dic ={'state': state}
-
-        self.emit('predict',dic)
-        
-    
-    def send_train_get_action(self, state, action, reward, done,next_state):
+    def log_data_step(self, r):
         self.ep_use_step += 1
-        self.ep_reward += reward
-        state      = state.tolist() if type(state) == np.ndarray else state
-        # sever_action = self.server_action.tolist() if type(self.server_action) == np.ndarray else self.server_action
-        next_state = next_state.tolist() if type(next_state) == np.ndarray else next_state
+        self.ep_reward += r
 
-        dic ={'state': state, 
-                        'action': self.server_action, #action, 
-                        'reward': reward, 
-                        'done'  : done,
-                        'next_state': next_state}
-        self.emit('train_and_predict',dic)
-
-        if done:
-            # self.log()
-            self.ep+=1
-            self.ep_use_step = 0
-            self.ep_reward = 0
-            self.ep_s_time = time.time()  # update episode start time
+    def log_data_done(self):
+        self.ep+=1
+        self.ep_use_step = 0
+        self.ep_reward = 0
+        self.ep_s_time = time.time()  # update episode start time
+        
     
     def log(self):
         print('EP:%5d, STEP:%4d, r: %7.2f, ep_t:%s, all_t:%s' % \
             ( self.ep,  self.ep_use_step, self.ep_reward, self.time_str(self.ep_s_time, True), self.time_str(self.start_time)))
-        
-    def set_name(self,name):
-        # print('set_name  = ', name)
-        self.env_name = name
 
     def time_str(self, start_time, min=False):
         use_secs = time.time() - start_time
@@ -76,78 +39,73 @@ class EnvBase(object):
             return '%3dm%2ds' % (use_secs/60, use_secs % 60 )
         return  '%3dh%2dm%2ds' % (use_secs/3600, (use_secs%3600)/60, use_secs % 60 )
 
-    # @abstractmethod
-    # def emit(self, cmd, dic):
-    #     pass   
+    def log_time(self, s):
+        if hasattr(self, 'ts'):
+            print(s + ' use time = ' + str( time.time() - self.ts  ) + ', time=' + str(time.time()))
+        self.ts = time.time()
 
+    
 
-#--------------Alread have id, connect again -------------#
-class EnvSpace(EnvBase, BaseNamespace):
+class Client(LogRL):
+    def __init__(self, i_cfg , project_name=None):
+        self.log_init(i_cfg , project_name)
 
-    def on_connect(self):
-        print('EnvSpace say connect')
-        self.envbase_init()
-        self.env_init()
-       
+    async def loop_step(self):
+        async with websockets.connect('ws://localhost:8765') as websocket:
+            print('[I] Client Init finish')
+            await self.create_session(websocket)
+            while True:
+                state = self.env_init()
+                a = await self.send_state_get_action(websocket, state)
 
-    def on_disconnect(self):
-        print('{} env say disconnect'.format(self.env_name))
+                while True:
+                    step_action = np.argmax(a) if  self.cfg['RL']['action_discrete'] else a
+                    s, r, d, s_ = self.on_action_response(step_action)
+                    a = await self.send_train_get_action(websocket, s, a, r, d, s_)
+                    self.log_data_step(r)
+                    if d:
+                        self.log_data_done()
+                        break
 
-        
-    # def env_init(self):
-    #     pass
+                if self.ep > self.cfg['misc']['max_ep']:
+                    break 
+    def run(self):
+        print('in run')
+        asyncio.get_event_loop().run_until_complete(self.loop_step())
 
+    async def create_session(self, ws):
+        dic ={'cmd':'new_session', 'project_name': self.project_name, 'config': self.cfg}
+        dic_p = pickle.dumps(dic, -1) 
+        await ws.send(dic_p)
+        recv = await ws.recv()
+        print(f"[I] Server's say {recv} !")
 
-class Client:
-    def __init__(self, target_env_class, i_cfg , project_name=None, retrain_model = False):
-        # Thread.__init__(self)
-        
-        self.env_name = project_name
-        self.socketIO = SocketIO('127.0.0.1', 5000)
-        self.socketIO.on('connect', self.on_connect)
-        self.socketIO.on('disconnect', self.on_disconnect)
-        self.socketIO.on('reconnect', self.on_reconnect)
-        self.socketIO.on('session_response', self.on_session_response)
+    async def send_state_get_action(self, ws, state):
+        # state       = state.tolist()  if type(state) == np.ndarray else state # if type(state) != list else state
+        dic ={'cmd':'predict', 's': state}
+        dic_p = pickle.dumps(dic, -1) 
+        # self.log_time('before send')
+        await ws.send(dic_p)
+        recv = await ws.recv()
+        action = pickle.loads(recv)
+        return action
 
-        # for ctrl+C
-        signal.signal(signal.SIGINT, self.signal_handler)
+    async def send_train_get_action(self, ws, state, action, reward, done,next_state):
+        dic ={'cmd':'train_predict',
+                's': state, 
+                'a': action, #action, 
+                'r': reward, 
+                'd'  : done,
+                's_': next_state}
+        # self.log_time('before pickle')
+        dic_p = pickle.dumps(dic, -1) 
+        # self.log_time('pickle')
+        # self.log_time('before send')
+        await ws.send(dic_p)
+        # self.log_time('before recv')
+        recv = await ws.recv()
+        action = pickle.loads(recv)
+        # self.log_time('recv')
+        return action
 
-        # send_cfg = cfg if i_cfg == None else cfg
-        
-        self.send_cfg = i_cfg
-        self.target_env_class = target_env_class
-
-        #self.socketIO.emit('session', project_name, cfg)  
-        self.socketIO.emit('session', project_name, self.send_cfg, retrain_model)  
-        self.socketIO.wait()
-        
-
-    def signal_handler(self, signal, frame):
-        #print(signal)
-        print('You pressed Ctrl+C!')
-        self.target_env_class.close()
-        self.socketIO.disconnect()
-        
-        sys.exit(0)
-
-    def on_connect(self):
-        print('[I] Client connect')
-
-    def on_reconnect(self):
-        print('[I] Client reconnect')
-
-    def on_disconnect(self):
-        print('[I] Client disconnect')
-
-    def on_session_response(self, new_id):
-        print('[I] Get id = {}'.format(new_id ))
-        new_ns = '/' + str(new_id)  + '/rl_session'
-        self.connect_with_ns(new_ns)
-
-    def connect_with_ns(self,ns):
-        # print('get ns ={}'.format(ns))
-        new_env = self.socketIO.define(self.target_env_class, ns)
-        new_env.set_cfg(self.send_cfg)
-        new_env.set_name(self.env_name)
-        # method_to_call = getattr(new_env, self.env_call_fun)
-        # result = method_to_call()
+    
