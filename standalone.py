@@ -21,9 +21,14 @@ class Standalone(LogRL, ServerBase):
 
             while True: # loop 2
                 step_action = np.argmax(a) if  self.cfg['RL']['action_discrete'] else a
+                # self.log_time('before step')
                 s, r, d, s_ = self.on_action_response(step_action) 
+                # self.log_time('step')
+                # self.log_time('before dic')
                 dic ={'s': s, 'a': a, 'r': r, 'd': d, 's_': s_}
+                # self.log_time('after dic')
                 self.worker.train_process(dic)
+                # self.log_time('train')
                 if d:
                     self.log_data_done()    # loop 2 done
                     break

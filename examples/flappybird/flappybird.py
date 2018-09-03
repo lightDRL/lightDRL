@@ -67,5 +67,5 @@ def flappybird_cfg(cfg):
     return cfg
 
 if __name__ == '__main__':
-    c = FlappyBird(flappybird_cfg(cfg), project_name='flappybird2'+ '-' + get_yaml_name())
+    c = FlappyBird(flappybird_cfg(cfg), project_name='flappybird-' + get_yaml_name())
     c.run()

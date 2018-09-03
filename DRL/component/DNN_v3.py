@@ -28,7 +28,7 @@ def weight_variable(shape, name="w", initializer = 'xavier', normal_mean=0.0, no
     else:
         assert False, 'weight_variable() say Error initializer'
 
-def bias_variable(shape, name = "b", const = 0.0):
+def bias_variable(shape, name = "b", const = 0.01):
     if const ==0:
         init = tf.zeros(shape, dtype=tf.float32)
     else:
@@ -39,7 +39,7 @@ def bias_variable(shape, name = "b", const = 0.0):
     # return tf.Variable(inital, name = name)
 
 def Conv2D(x , kernel_size = 3, out_channel = 32, in_channel = None, name_prefix = "conv", 
-            w = None, b = None, initializer= 'xavier',strides = [1,2,2,1]):
+            w = None, b = None, initializer= 'xavier',strides = [1,2,2,1], op='relu'):
     if in_channel is None:
         assert len(x.shape) == 4, 'Conv2D() say the len of input shape is not 4 %s' % name_prefix
         in_channel = int(x.shape[3])
@@ -54,6 +54,7 @@ def Conv2D(x , kernel_size = 3, out_channel = 32, in_channel = None, name_prefix
     #Combine
     #return tf.nn.relu(tf.nn.conv2d(x, w, strides=strides, padding='SAME')+ b, name = name_prefix) #output size 28x28x32
     layer = tf.nn.conv2d(x, w, strides=strides, padding='SAME')+ b
+    return choose_op(layer, op, name_prefix)
     # try:
     #     layer = tf.nn.relu(tf.contrib.layers.layer_norm(layer, center=True,
     #         scale=False)) # updates_collections=None
@@ -61,9 +62,8 @@ def Conv2D(x , kernel_size = 3, out_channel = 32, in_channel = None, name_prefix
     #     print('in layer_norm Value Error')
     #     layer = tf.nn.relu(tf.contrib.layers.layer_norm(layer, center=True,
     #         scale=False, reuse=True))
-    
-    # return layer
-    return norm(layer = layer, norm_type='layer_norm', name = name_prefix)
+
+    # return norm(layer = layer, norm_type='layer_norm', name = name_prefix)
 
 def MaxPool2D(x, pool_size = 2):
     return tf.nn.max_pool(x, ksize=[1, pool_size, pool_size, 1],
@@ -75,7 +75,7 @@ def Flaten(x):
     # print('flat num = %d' % num)
     return tf.reshape(x, [-1, num]) 
 
-def FC(x, fc_size = 1024, name_prefix = 'fc', w = None, b = None, initializer='xavier', op='relu', bias_const=0):
+def FC(x, fc_size = 1024, name_prefix = 'fc', w = None, b = None, initializer='xavier', op='relu', bias_const=0.1):
     assert len(x.shape) == 2, 'FC() say the len of input shape is not 2'
     num = int(x.shape[1]) 
 
@@ -84,18 +84,37 @@ def FC(x, fc_size = 1024, name_prefix = 'fc', w = None, b = None, initializer='x
     if b == None:
         b = bias_variable([fc_size], name = name_prefix + '_b', const=bias_const) 
     
-    if op=='relu':
-        return tf.nn.relu(tf.matmul(x, w) + b, name = name_prefix+ "_relu")
-    elif op=='softmax':
-        return tf.nn.softmax(tf.matmul(x, w) + b, name = name_prefix+ "_softmax")
-    elif op=='tanh':
-        return tf.nn.tanh(tf.matmul(x, w) + b, name = name_prefix+ "_tanh")
-    elif op=='none':
-        return tf.matmul(x, w) + b
-    else:
-        print('error op ==' + op)
-        assert False, 'FC() say Error op'
+    layer = tf.matmul(x, w) + b
+    return choose_op(layer, op, name_prefix)
+
+    # if op=='relu':
+    #     return tf.nn.relu(tf.matmul(x, w) + b, name = name_prefix+ "_relu")
+    # elif op=='softmax':
+    #     return tf.nn.softmax(tf.matmul(x, w) + b, name = name_prefix+ "_softmax")
+    # elif op=='tanh':
+    #     return tf.nn.tanh(tf.matmul(x, w) + b, name = name_prefix+ "_tanh")
+    # elif op=='none':
+    #     return tf.matmul(x, w) + b
+    # else:
+    #     print('error op ==' + op)
+    #     assert False, 'FC() say Error op'
    
+def choose_op(x, op_str, name_prefix):
+    print('---> is choose op')
+    if op_str=='relu':
+        return tf.nn.relu(x, name = name_prefix+ "_relu")
+    elif op_str=='softmax':
+        return tf.nn.softmax(x, name = name_prefix+ "_softmax")
+    elif op_str=='tanh':
+        return tf.nn.tanh(x, name = name_prefix+ "_tanh")
+    elif op_str=='none':
+        return x
+    else:
+        print('error op ==' + op_str)
+        assert False, 'FC() say Error op'
+
+    return 
+    
 
 def norm(layer, norm_type='batch_norm', decay=0.9, id=0, is_training=True, activation_fn=tf.nn.relu, name='conv_'):
     # from https://github.com/tianheyu927/mil/blob/master/tf_utils.py

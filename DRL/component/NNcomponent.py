@@ -37,6 +37,7 @@ def NNcomponent(cfg_nn, input_layer):
         pre_com = com
         layer_list.append(pre_layer)
     # show all layer
-    # print(f'layer_list = {layer_list}')
+    # for l in layer_list:
+    #     print(l)
     
     return out_layer

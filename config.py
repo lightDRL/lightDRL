@@ -55,7 +55,9 @@ def set_none_if_not_exist():
     cfg['misc']['gym_monitor_path_origin'] =  cfg['misc']['gym_monitor_path']
     cfg['misc']['gym_monitor_path'] = set_gym_monitor_path(cfg['misc']['gym_monitor_path'])
 
-    cfg['misc']['model_retrain'] = True  if 'model_retrain' not in cfg['misc'] else cfg['misc']['model_retrain']
+    cfg['misc']['model_retrain'] = False  if 'model_retrain' not in cfg['misc'] else cfg['misc']['model_retrain']
+    cfg['misc']['gpu_memory_ratio'] = None  if 'gpu_memory_ratio' not in cfg['misc'] else cfg['misc']['gpu_memory_ratio']
+
 
 
 def set_gym_monitor_path(gym_monitor_path, i_project_name = None):

@@ -68,11 +68,11 @@ class ReplayMemory(object):
 
         # self.log_time('to diff batch')
 
-        print('I: s_batch.shape={}, type(s_batch)={}'.format(np.shape(s_batch), type(s_batch)))
-        print('I: a_batch.shape={}, type(a_batch)={}'.format(np.shape(a_batch), type(a_batch)))
-        print('I: r_batch.shape={}, type(r_batch)={}'.format(np.shape(r_batch), type(r_batch)))
-        print('I: t_batch.shape={}, type(t_batch)={}'.format(np.shape(t_batch), type(t_batch)))
-        print('I: s2_batch.shape={}, type(s2_batch)={}'.format(np.shape(s2_batch), type(s2_batch)))
+        # print('I: s_batch.shape={}, type(s_batch)={}'.format(np.shape(s_batch), type(s_batch)))
+        # print('I: a_batch.shape={}, type(a_batch)={}'.format(np.shape(a_batch), type(a_batch)))
+        # print('I: r_batch.shape={}, type(r_batch)={}'.format(np.shape(r_batch), type(r_batch)))
+        # print('I: t_batch.shape={}, type(t_batch)={}'.format(np.shape(t_batch), type(t_batch)))
+        # print('I: s2_batch.shape={}, type(s2_batch)={}'.format(np.shape(s2_batch), type(s2_batch)))
         
 
         return s_batch, a_batch, r_batch, t_batch, s2_batch

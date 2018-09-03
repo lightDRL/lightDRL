@@ -31,14 +31,17 @@ class ServerBase(object):
     #             shutil.rmtree(log_dir)
     #         tf.summary.FileWriter(log_dir, self.sess.graph)
 
-    def create_new_tf_graph_sess(self, gpu_memory_ratio = 0.2, random_seed=1234):
+    def create_new_tf_graph_sess(self, gpu_memory_ratio = None, random_seed=1234):
         tf_new_graph = tf.Graph()
         tf_new_graph.seed = random_seed
 
-        config = tf.ConfigProto()
-        config.gpu_options.per_process_gpu_memory_fraction = gpu_memory_ratio
-        tf_new_sess = tf.Session(config=config, graph=tf_new_graph)
-        print('[I] Create session with gpu memory raito: '+  str(gpu_memory_ratio) )
+        if gpu_memory_ratio != None:
+            config = tf.ConfigProto()
+            config.gpu_options.per_process_gpu_memory_fraction = gpu_memory_ratio
+            tf_new_sess = tf.Session(config=config, graph=tf_new_graph)
+            print('[I] Create session with gpu memory raito: '+  str(gpu_memory_ratio) )
+        else:
+            tf_new_sess = tf.Session(graph=tf_new_graph)
 
         return tf_new_graph, tf_new_sess
 

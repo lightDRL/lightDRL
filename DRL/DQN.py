@@ -32,13 +32,20 @@ class DQN(DRL):
         self.update_target_count = 0 
 
     def choose_action(self, s):
-        # self.log_time('before choose_action')
+        # q_value = self.sess.run( self.QValue, feed_dict={self.stateInput:[s]})
+        # action = q_value[0]
+
+        # return action
         q_value = self.sess.run( self.QValue, feed_dict={self.stateInput:[s]})
-        action = q_value[0]
+        # action = q_value[0]
 
-        # self.log_time('choose_action')
+        action = np.zeros(len(q_value[0]))
+        action_index = np.argmax(q_value[0])
+        action[action_index] = 1
 
+        # print('action = ', action)
         return action
+
 
 
     
