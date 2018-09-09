@@ -157,11 +157,12 @@ class DQN(DRL):
 
         # print('self.s_dim = {}, state={}'.format(self.s_dim, state))
         nn = NNcomponent(self.cfg_network, state)
+        q_value = FC(nn, self.a_dim, name_prefix = 'q_value', op='none', initializer = 'truncated_normal', bias_const=0.01)
         #q_value = FC(nn , self.a_dim, name_prefix =  'q_value', op='none', bias_const=0.01)
         # q_value = FC(nn , self.a_dim, name_prefix =  'q_value', op='tanh', initializer = 'truncated_normal', bias_const=0.03)
         # print('nn = ', nn)
         # print('q_value = ', q_value)
-        return state, nn # q_value #nn
+        return state, q_value #nn
 
     def notify_ep_done(self):
         self.ep_train_count = 0

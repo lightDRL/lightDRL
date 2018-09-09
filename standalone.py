@@ -45,10 +45,10 @@ class Standalone(LogRL, ServerBase):
         
 
     def __del__(self):
-        if hasattr(self.env, 'close') and callable(getattr(self.env, 'close')):
+        if hasattr(self, 'env') and hasattr(self.env, 'close') and callable(getattr(self.env, 'close')):
             print('[I] env.close')
             self.env.close()
-        if hasattr(self.env.env, 'close') and callable(getattr(self.env.env, 'close')):
-            print('[I] env.env.close')
-            self.env.env.close()
+            if hasattr(self.env.env, 'close') and callable(getattr(self.env.env, 'close')):
+                print('[I] env.env.close')
+                self.env.env.close()
         

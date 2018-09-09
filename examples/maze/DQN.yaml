@@ -37,13 +37,6 @@ NN:
         initializer: 'truncated_normal'
         bias_const: 0.1
 
-    2_predict:
-        type: 'fc'
-        size: 4
-        op: 'none'
-        initializer: 'truncated_normal'
-        bias_const: 0.01
-
 misc:
     model_retrain: no
     model_save_cycle: 30
