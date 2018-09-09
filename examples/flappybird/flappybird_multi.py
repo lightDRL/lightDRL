@@ -29,7 +29,7 @@ def process_func(p_index, yaml_path):
     print('random_seed = ', cfg['misc']['random_seed'])
     print('yaml_name = ', yaml_name)
 
-    from flappybird import FlappyBird   # for io problem
+    from flappybird_standalone import FlappyBird   # for io problem
     c = FlappyBird(cfg, project_name='flappy-' + yaml_name + '-' + str(p_index), redirect_stdout=True )
     c.run()
 

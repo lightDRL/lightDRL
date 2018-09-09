@@ -3,7 +3,7 @@ import sys, os
 import time
 from ctypes import c_bool
 from os.path import basename, splitext
-from config_selfload import load_config
+from config import load_config
 
 '''
 # def process_func(p_index, yaml_path, check, step, lock):

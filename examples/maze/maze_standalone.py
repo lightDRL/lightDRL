@@ -9,7 +9,7 @@ import time
 import numpy as np
 from maze_env import Maze
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
-from config import cfg, get_yaml_name
+from config import load_config_from_arg, get_yaml_name_from_arg
 from standalone import Standalone
 
 
@@ -31,4 +31,4 @@ class MazeStandalone(Standalone):
 
 
 if __name__ == '__main__':
-    c = MazeStandalone(cfg, project_name='maze-' + get_yaml_name()).run()
+    c = MazeStandalone(load_config_from_arg(), project_name='maze-' + get_yaml_name_from_arg()).run()

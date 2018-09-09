@@ -1,9 +1,9 @@
 import yaml
 import sys
 
-DATA_POOL = 'data_pool/'
+# DATA_POOL = 'data_pool/'
 
-cfg = []
+# cfg = []
 
 """ For loader tuple"""
 class YAMLPatch(yaml.SafeLoader):
@@ -12,26 +12,8 @@ class YAMLPatch(yaml.SafeLoader):
 
 YAMLPatch.add_constructor(u'tag:yaml.org,2002:python/tuple', YAMLPatch.construct_python_tuple)
 
-def load_config(f_name = "config/default.yaml"):
-    global cfg
-    print("[I] Load {}".format(f_name))
-    """ Load File"""
-    with open(f_name, 'r') as stream:
-        try:
-            cfg = yaml.load(stream, Loader=YAMLPatch)
-            # print(yaml.dump(cfg))
-        except yaml.YAMLError as exc:
-            print(exc)
 
-
-if len(sys.argv) >= 2 and sys.argv[1].endswith('.yaml'):
-    load_config(sys.argv[1])
-else:
-    load_config()
-
-
-
-def set_none_if_not_exist():
+def set_none_if_not_exist(cfg):
     cfg['RL']['train_multi_steps'] = cfg['RL']['train_multi_steps'] if 'train_multi_steps' in cfg['RL'] else 1
     cfg['RL']['add_data_steps'] = cfg['RL']['add_data_steps'] if 'add_data_steps' in cfg['RL'] else 1
     cfg['RL']['reward_reverse'] = cfg['RL']['reward_reverse'] if 'reward_reverse' in cfg['RL'] else False
@@ -57,7 +39,7 @@ def set_none_if_not_exist():
 
     cfg['misc']['model_retrain'] = False  if 'model_retrain' not in cfg['misc'] else cfg['misc']['model_retrain']
     cfg['misc']['gpu_memory_ratio'] = None  if 'gpu_memory_ratio' not in cfg['misc'] else cfg['misc']['gpu_memory_ratio']
-
+    cfg['misc']['redirect_stdout_2_file'] = False  if 'redirect_stdout_2_file' not in cfg['misc'] else cfg['misc']['redirect_stdout_2_file']
 
 
 def set_gym_monitor_path(gym_monitor_path, i_project_name = None):
@@ -74,17 +56,31 @@ def set_gym_monitor_path(gym_monitor_path, i_project_name = None):
         # print('DATA_POOL=%s, project_name=%s')
         return monitor_path
 
-
-def get_yaml_name():
+def get_yaml_name_from_arg():
     from os.path import basename, splitext
     f_name = basename(sys.argv[1])
     f_name = splitext(f_name)[0]
     # print('f_name = ' , f_name)
     return f_name
 
-set_none_if_not_exist()
 
+def load_config(f_name = "config/default.yaml"):
+    cfg=[]
+    print("[I] Load {}".format(f_name))
+    """ Load File"""
+    with open(f_name, 'r') as stream:
+        try:
+            cfg = yaml.load(stream, Loader=YAMLPatch)
+            # print(yaml.dump(cfg))
+        except yaml.YAMLError as exc:
+            print('in load_config: yaml.YAMLError -> '+exc)
+    set_none_if_not_exist(cfg)
+    return cfg
 
-# print(cfg['RL']['action_shape'])
-# print(type(cfg['RL']['action_shape']))
-
+def load_config_from_arg():
+    if len(sys.argv) >= 2 and (sys.argv[1].endswith('.yaml') or sys.argv[1].endswith('.yml')) :
+        return load_config(sys.argv[1])
+    else:
+        print("Please specific arg[2] with [f_name].yaml")
+        return None
+    

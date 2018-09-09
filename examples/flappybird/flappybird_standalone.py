@@ -5,16 +5,16 @@
 # modify from https://github.com/yenchenlin/DeepLearningFlappyBird/blob/master/deep_q_network.py and https://github.com/floodsung/DRL-FlappyBird/blob/master/FlappyBirdDQN.py        
 
 import sys, os
-sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
-from standalone import Standalone
 import time
-from config import cfg, get_yaml_name
 import numpy as np
 import cv2
 import sys
+
+sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
+from standalone import Standalone
+from config import load_config_from_arg, get_yaml_name_from_arg
 sys.path.append("flappybird_env/")
 import wrapped_flappy_bird as game
-import time
 
 # state preprocess to 80*80 gray image
 def state_preprocess(state):
@@ -56,16 +56,17 @@ class FlappyBird(Standalone):
         return now_state_4pic, reward, done, next_state_4pic
 
             
-def flappybird_cfg(cfg):
-    # of course, you colud set following in .yaml
-    cfg['RL']['state_discrete'] = True     
-    cfg['RL']['state_shape']  = (80,80,4)         
-    # action
-    cfg['RL']['action_discrete'] = True 
-    cfg['RL']['action_shape'] = (2,)
+# def flappybird_cfg(cfg):
+#     # of course, you colud set following in .yaml
+#     cfg['RL']['state_discrete'] = True     
+#     cfg['RL']['state_shape']  = (80,80,4)         
+#     # action
+#     cfg['RL']['action_discrete'] = True 
+#     cfg['RL']['action_shape'] = (2,)
    
-    return cfg
+#     return cfg
 
 if __name__ == '__main__':
-    c = FlappyBird(flappybird_cfg(cfg), project_name='flappybird-' + get_yaml_name())
-    c.run()
+    cfg = load_config_from_arg()
+    print(cfg)
+    FlappyBird(cfg, project_name='flappybird-' + get_yaml_name_from_arg()).run()
