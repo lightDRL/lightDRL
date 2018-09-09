@@ -48,7 +48,7 @@ class ServerBase(object):
     def create_model_log_dir(self, project_name, recreate_dir = False):
         # self.model_log_dir = '{}/{}/'.format(DATA_POOL, project_name)   if project_name != None else None
         model_log_dir = os.path.join(DATA_POOL, project_name) if project_name != None else None
-        
+
         if model_log_dir !=None:
             if not os.path.isdir(model_log_dir):
                 os.mkdir(model_log_dir)
@@ -59,10 +59,10 @@ class ServerBase(object):
                     rmtree(model_log_dir)
                     os.mkdir(model_log_dir)
                     print('[I] REcreate model_log_dir:' + model_log_dir)
-                    
+
         return model_log_dir
 
-    def build_worker(self, prj_name, cfg):
+    def build_worker(self, prj_name, cfg): 
         # create tf graph & tf session
         tf_new_graph, tf_new_sess = self.create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'], cfg['misc']['random_seed'])
         # create logdir and save cfg
@@ -73,6 +73,10 @@ class ServerBase(object):
 
         self.worker = WorkerBase()
         self.worker.base_init(cfg, tf_new_graph, tf_new_sess, model_log_dir )
+
+        if cfg['misc']['redirect_stdout_2_file']:
+            sys.stdout = open(model_log_dir +'/stdout.log', 'w')
+
         print('[I] worker ready!')
 
 class Server(ServerBase):

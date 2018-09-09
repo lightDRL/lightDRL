@@ -100,7 +100,6 @@ def FC(x, fc_size = 1024, name_prefix = 'fc', w = None, b = None, initializer='x
     #     assert False, 'FC() say Error op'
    
 def choose_op(x, op_str, name_prefix):
-    print('---> is choose op')
     if op_str=='relu':
         return tf.nn.relu(x, name = name_prefix+ "_relu")
     elif op_str=='softmax':
@@ -113,7 +112,7 @@ def choose_op(x, op_str, name_prefix):
         print('error op ==' + op_str)
         assert False, 'FC() say Error op'
 
-    return 
+    return None
     
 
 def norm(layer, norm_type='batch_norm', decay=0.9, id=0, is_training=True, activation_fn=tf.nn.relu, name='conv_'):
