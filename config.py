@@ -50,7 +50,7 @@ def set_gym_monitor_path(gym_monitor_path, i_project_name = None):
         # from server.py
         DATA_POOL = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data_pool')
         # from gym_basic.py
-        project_name='gym-' + get_yaml_name() if i_project_name==None else i_project_name
+        project_name='gym-' + get_yaml_name_from_arg() if i_project_name==None else i_project_name
         monitor_path = os.path.join(DATA_POOL, project_name, gym_monitor_path)
         # print('monitor_path= ', monitor_path)
         # print('DATA_POOL=%s, project_name=%s')

@@ -49,7 +49,7 @@ class DQN(DRL):
 
 
     
-    def add_data(self, s, a, r, d, s_):
+    def add_data(self, s, a, r, d, s_, add_multiple = False):
         ''' self, states, actions, rewards, done, next_state''' 
         # print('---Before add_data----')
         # print('I: train get s.shape={}, type(s)={}'.format(np.shape(s), type(s)))
@@ -59,7 +59,7 @@ class DQN(DRL):
         # print('I: train get s_.shape={}, type(s_)={}'.format(np.shape(s_), type(s_)))
         
 
-        self.mem.add(s, a, r, d, s_)
+        self.mem.add(s, a, r, d, s_, add_multiple)
         # print('self.mem.size()= ' , self.mem.size())
     def log_time(self, s):
         import time

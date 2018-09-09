@@ -9,7 +9,7 @@ import time
 import numpy as np
 import gym
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
-from config import cfg, get_yaml_name
+from config import load_config_from_arg, get_yaml_name_from_arg
 from standalone import Standalone
 
 print('gym version:', gym.__version__)
@@ -78,5 +78,5 @@ def gym_cfg(cfg):
     return cfg
 
 if __name__ == '__main__':
-    c = GymStandalone(gym_cfg(cfg), project_name='gym-' + get_yaml_name())
-    c.run()
+    cfg = gym_cfg( load_config_from_arg()  )
+    GymStandalone(cfg , project_name='gym-' + get_yaml_name_from_arg()).run()

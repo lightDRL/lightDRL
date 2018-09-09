@@ -75,7 +75,7 @@ class ServerBase(object):
         self.worker.base_init(cfg, tf_new_graph, tf_new_sess, model_log_dir )
 
         if cfg['misc']['redirect_stdout_2_file']:
-            sys.stdout = open(model_log_dir +'/stdout.log', 'w')
+            sys.stdout = open(model_log_dir +'/_stdout.log', 'w')
 
         print('[I] worker ready!')
 

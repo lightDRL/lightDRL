@@ -42,3 +42,13 @@ class Standalone(LogRL, ServerBase):
             if self.ep > self.cfg['misc']['max_ep']: # loop 1 done
                 break 
 
+        
+
+    def __del__(self):
+        if hasattr(self.env, 'close') and callable(getattr(self.env, 'close')):
+            print('[I] env.close')
+            self.env.close()
+        if hasattr(self.env.env, 'close') and callable(getattr(self.env.env, 'close')):
+            print('[I] env.env.close')
+            self.env.env.close()
+        

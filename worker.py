@@ -252,6 +252,7 @@ class WorkerBase(object):
             # print('in add_data_steps ==1')
             self.RL.add_data( state, action, reward, done, next_state)
         else:
+            # print('USE multi_add')
             go_multi_add = False
             self.state_buf.append(state)
             self.action_buf.append(action)
@@ -266,6 +267,9 @@ class WorkerBase(object):
             elif self.add_data_steps=='if_down' and done:
                 go_multi_add = True
 
+            # print(' self.add_data_steps = ',  self.add_data_steps,', done = ', done)
+
+
             if go_multi_add:
                 tmp_reward_buf = self.reward_buf
                 if self.reward_reverse:
@@ -279,7 +283,7 @@ class WorkerBase(object):
                 dones = np.array(self.done_buf) 
                 next_states = np.array(self.next_state_buf) 
 
-                self.RL.add_data(states, actions, rewards, dones, next_states)
+                self.RL.add_data(states, actions, rewards, dones, next_states, add_multiple = True)
 
                 self.state_buf  = []
                 self.action_buf = []

@@ -13,17 +13,16 @@ class ReplayMemory(object):
         # print('ReplayMemory seed = ' + str(random_seed) )
         random.seed(random_seed)
 
-    def add(self, s, a, r, d, s2):
+    def add(self, s, a, r, d, s2, add_multiple = False):
         # self.log_time('replay memory before add ')
-        # print('type(s) = ', type(s))
-        # if type(s) == np.ndarray and s.shape[0]>1:
-        #     assert s.shape[0] == a.shape[0] == r.shape[0] == d.shape[0] == s2.shape[0], 's, a, r, d, s2 not all length same'
-        #     for ind in range(s.shape[0]):
-        #         transition = (s[ind], a[ind], r[ind], d[ind], s2[ind])
-        #         self.memory.append(transition)
-        # else:
-        transition = (s, a, r, d, s2)
-        self.memory.append(transition)
+        if add_multiple:
+            assert s.shape[0] == a.shape[0] == r.shape[0] == d.shape[0] == s2.shape[0], 's, a, r, d, s2 not all length same'
+            for ind in range(s.shape[0]):
+                transition = (s[ind], a[ind], r[ind], d[ind], s2[ind])
+                self.memory.append(transition)
+        else:
+            transition = (s, a, r, d, s2)
+            self.memory.append(transition)
 
         while len(self.memory) > self.memory_capacity:
             self.memory.popleft()
