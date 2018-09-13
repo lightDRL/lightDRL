@@ -31,6 +31,7 @@ class Standalone(LogRL, ServerBase):
                 # self.log_time('train')
                 if d:
                     self.log_data_done()    # loop 2 done
+                    self.ep_done_cb(ep = self.worker.ep, ep_reward = self.worker.ep_reward, all_ep_sum_reward =  self.worker.all_ep_reward)
                     break
                 else:
                     action = self.worker.predict(s_)
@@ -42,7 +43,8 @@ class Standalone(LogRL, ServerBase):
             if self.ep > self.cfg['misc']['max_ep']: # loop 1 done
                 break 
 
-        
+    def set_ep_done_cb(self, cb):
+        self.ep_done_cb = cb
 
     def __del__(self):
         if hasattr(self, 'env') and hasattr(self.env, 'close') and callable(getattr(self.env, 'close')):

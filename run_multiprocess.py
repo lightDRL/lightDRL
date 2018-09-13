@@ -74,8 +74,8 @@ def basic_multiprocess_from_arg(process_func):
         p_list[j].join()
 
     
-    '''
-def basic_multiprocess_from_arg(process_func):
+
+def choose_best_from_arg(process_func):
     yaml_list = cmd_get_all_yaml()
     p_num = len(yaml_list)
     p_list = []
@@ -98,11 +98,9 @@ def basic_multiprocess_from_arg(process_func):
     for i in range(len(p_list)):
         p_list[i].start()
 
-    for j in range(len(p_list)):
-        p_list[j].join()
 
     while True:
-        time.sleep(3)
+        time.sleep(5)
 
         print('---------set all check to True-----------')
         for i in range(len(p_check_list)):
@@ -112,19 +110,19 @@ def basic_multiprocess_from_arg(process_func):
         
         start = time.time()
    
+        # check all is ready to get data
         while True:
-            # time.sleep(0.1)
+            time.sleep(0.1)
             one_not_ready = False
             for i in range(len(p_check_list)):
                 if p_list[i] !=None and p_check_list[i].value:
                     print(f'{i} not ready')
                     one_not_ready = True
             if not one_not_ready:
-                break
-
-            
+                break 
         
         print('check use time= ', time.time() - start)
+        # get min reward
         last_i = -1
         now_min = 9999999999999999999
         for i in range(len(p_step_list)):
@@ -135,18 +133,18 @@ def basic_multiprocess_from_arg(process_func):
                 
                 print(f'{i} step: {p_step_list[i].value}')
 
-        
+        # terminate min reward agent
         print('p_list.count(None) = ', p_list.count(None))
-        if (P_NUM - p_list.count(None) )> 1:
+        if (p_num - p_list.count(None) )> 1:
             print('KILL last_i=', last_i)
             p_list[last_i].terminate()
             p_list[last_i] = None
 
 
-
-    # for j in range(len(p_list)):
-    #     p_list[j].join()
+    # check again
+    for j in range(len(p_list)):
+        p_list[j].join()
 
     print("------------------------")
-    print('main process id:', os.getpid())
-    '''
+    print('main process pid:', os.getpid())
+    
