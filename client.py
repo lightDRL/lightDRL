@@ -17,17 +17,22 @@ class LogRL:
         self.ep = 1#0
         self.ep_use_step = 0
         self.ep_reward = 0
+        self.all_ep_reward = 0
 
     def log_data_step(self, r):
         self.ep_use_step += 1
         self.ep_reward += r
+        self.all_ep_reward += r
 
     def log_data_done(self):
+        ret_ep, ret_use_step, ret_reward, ret_all_ep_reward = self.ep, self.ep_use_step, self.ep_reward, self.all_ep_reward
         self.ep+=1
         self.ep_use_step = 0
         self.ep_reward = 0
         self.ep_s_time = time.time()  # update episode start time
-        
+
+        return ret_ep, ret_use_step, ret_reward, ret_all_ep_reward
+      
     
     def log(self):
         print('EP:%5d, STEP:%4d, r: %7.2f, ep_t:%s, all_t:%s' % \

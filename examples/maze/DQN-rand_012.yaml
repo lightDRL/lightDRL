@@ -39,9 +39,9 @@ NN:
 
 misc:
     model_retrain: no
-    model_save_cycle: 100
+    model_save_cycle: 30
     model_retrain: yes
-    gpu_memory_ratio: 0.03
+    gpu_memory_ratio: 0.1
     random_seed: 12             # t_82 get max reward = 114.10
     max_ep:  600                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 

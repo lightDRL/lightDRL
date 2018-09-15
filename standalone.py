@@ -28,10 +28,12 @@ class Standalone(LogRL, ServerBase):
                 dic ={'s': s, 'a': a, 'r': r, 'd': d, 's_': s_}
                 # self.log_time('after dic')
                 self.worker.train_process(dic)
+                self.log_data_step(r)
                 # self.log_time('train')
                 if d:
-                    self.log_data_done()    # loop 2 done
-                    self.ep_done_cb(ep = self.worker.ep, ep_reward = self.worker.ep_reward, all_ep_sum_reward =  self.worker.all_ep_reward)
+                    ep, ep_use_steps, ep_reward, all_ep_sum_reward = self.log_data_done()    # loop 2 done
+                    if hasattr(self, 'ep_done_cb'):
+                        self.ep_done_cb(ep = ep, ep_reward = ep_reward, all_ep_sum_reward =  all_ep_sum_reward)
                     break
                 else:
                     action = self.worker.predict(s_)

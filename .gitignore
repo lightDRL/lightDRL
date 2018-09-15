@@ -5,7 +5,7 @@ train/
 backup/
 data_pool*/
 test/
-
+examples/gym_maze/
 # other
 .ipynb_checkpoints/
 .vscode/
