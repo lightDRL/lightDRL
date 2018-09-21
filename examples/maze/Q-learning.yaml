@@ -21,7 +21,7 @@ Q-learning:
     
 epsilon-greedy:
     value: 1.0
-    discount: 0.005    # each step discount it  
+    discount: 0.001    # each step discount it  
 
 misc:
     model_save_cycle: 30

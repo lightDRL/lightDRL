@@ -44,7 +44,6 @@ class WorkerBase(object):
                     self.init_or_restore_model(self.sess)
                 # print_tf_var('worker after init DRL method')
         elif issubclass(method_class, RL):
-            print('--------------Use RL--------')
             '''Use RL'''
             self.RL = method_class(cfg, model_log_dir, None)
             pass
@@ -324,6 +323,9 @@ class WorkerBase(object):
         
 
     def train(self):
+        if self.method_class == Qlearning:
+            return
+        
         with self.graph.as_default():
             # with self.sess.as_default():
             self.RL.train()
