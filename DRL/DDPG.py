@@ -44,6 +44,12 @@ class DDPG(DRL):
         # print('choose_action() shape = ', np.shape(s), ', type = ', type(s),', s=', s)
         # a = self.actor.predict(np.reshape(s, (1, self.actor.s_dim)))
         a = self.actor.predict([s])
+        
+        # if self.a_discrete:
+        #     action = np.zeros(len(a[0]))
+        #     action_index = np.argmax(a[0])
+        #     action[action_index] = 1
+        # else:
         action = a[0]
         # print('action = ', action)
         return action

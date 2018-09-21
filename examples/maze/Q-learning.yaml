@@ -10,6 +10,10 @@ conn:
 RL:
     method: 'Q-learning'
     action_noise: 'epsilon-greedy'
+    state_discrete: yes
+    state_shape: [2,]
+    action_discrete: yes
+    action_shape: [4,]
     
 Q-learning:
     lr:  0.01               # Q-learning learning rate

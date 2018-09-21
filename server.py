@@ -12,10 +12,10 @@ import pickle
 
 import tensorflow as tf
 
-from DRL.Base import RL,DRL
-from DRL.DQN import DQN
-from DRL.A3C import A3C
-from DRL.DDPG import DDPG
+# from DRL.Base import RL,DRL
+# from DRL.DQN import DQN
+# from DRL.A3C import A3C
+# from DRL.DDPG import DDPG
 
 
 DATA_POOL = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data_pool')
@@ -63,8 +63,6 @@ class ServerBase(object):
         return model_log_dir
 
     def build_worker(self, prj_name, cfg): 
-        # create tf graph & tf session
-        tf_new_graph, tf_new_sess = self.create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'], cfg['misc']['random_seed'])
         # create logdir and save cfg
         recreate_dir = cfg['misc']['model_retrain']
         model_log_dir = self.create_model_log_dir(prj_name, recreate_dir = recreate_dir)
@@ -72,7 +70,14 @@ class ServerBase(object):
             yaml.dump(cfg, outfile, default_flow_style=False)
 
         self.worker = WorkerBase()
-        self.worker.base_init(cfg, tf_new_graph, tf_new_sess, model_log_dir )
+        print("cfg['RL']['method']=", cfg['RL']['method'])
+        if cfg['RL']['method'] =='Q-learning' or cfg['RL']['method'] =='Qlearning' :
+            print("-----------cfg['RL']['method'] =='Q-learning'--------")
+            self.worker.base_init(cfg, None, None, model_log_dir )
+        else:
+            # create tf graph & tf session
+            tf_new_graph, tf_new_sess = self.create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'], cfg['misc']['random_seed'])
+            self.worker.base_init(cfg, tf_new_graph, tf_new_sess, model_log_dir )
 
         if cfg['misc']['redirect_stdout_2_file']:
             sys.stdout = open(model_log_dir +'/_stdout.log', 'w')

@@ -19,7 +19,7 @@ class Standalone(LogRL, ServerBase):
             state = self.env_reset()
             a = self.worker.predict(state)
 
-            while True: # loop 2
+            while True: # loop 2, break when ep done
                 step_action = np.argmax(a) if  self.cfg['RL']['action_discrete'] else a
                 # self.log_time('before step')
                 s, r, d, s_ = self.on_action_response(step_action) 
@@ -32,6 +32,7 @@ class Standalone(LogRL, ServerBase):
                 # self.log_time('train')
                 if d:
                     ep, ep_use_steps, ep_reward, all_ep_sum_reward = self.log_data_done()    # loop 2 done
+                    # print(f'[] ep = {ep}, ep_reward = {ep_reward},  all_ep_sum_reward = {all_ep_sum_reward}')                  
                     if hasattr(self, 'ep_done_cb'):
                         self.ep_done_cb(ep = ep, ep_reward = ep_reward, all_ep_sum_reward =  all_ep_sum_reward)
                     break
@@ -40,7 +41,6 @@ class Standalone(LogRL, ServerBase):
                     # print('before actoin  =', action)
                     a = self.worker.add_action_noise(action, r)
                     # print('a  =', a)
-                self.log_data_step(r)
 
             if self.ep > self.cfg['misc']['max_ep']: # loop 1 done
                 break 

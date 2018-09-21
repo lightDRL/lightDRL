@@ -17,7 +17,11 @@ RL:
     exploration: 300        # train after exploration step
     # action_noise: 'Uhlenbeck'
     action_noise: 'epsilon-greedy'
-
+    state_discrete: yes
+    state_shape: [2,]
+    action_discrete: yes
+    action_shape: [4,]
+    
 DDPG:
     lr_actor:  0.0001  # learning rate for actor (1e-4)
     lr_critic:  0.001  # learning rate for critic
@@ -56,8 +60,10 @@ critic_action_NN:
         
 misc:
     model_save_cycle: 30
-    gpu_memory_ratio: 0.3
-    random_seed: 0             # t_82 get max reward = 114.10
-    max_ep:  600                       # defualt:1000, over the ep will auto exit()
+    model_retrain: yes
+    gpu_memory_ratio: 0.03
+    random_seed: 1             # t_82 get max reward = 114.10
+    max_ep:  2000                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
     render_after_ep: 100                # defualt: 0, render afet the ep 
+    redirect_stdout_2_file: no
