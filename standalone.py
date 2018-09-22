@@ -31,7 +31,7 @@ class Standalone(LogRL, ServerBase):
                 self.log_data_step(r)
                 # self.log_time('train')
                 if d:
-                    ep, ep_use_steps, ep_reward, all_ep_sum_reward = self.log_data_done()    # loop 2 done
+                    ep, ep_use_steps, ep_reward, all_ep_sum_reward, is_success = self.log_data_done()    # loop 2 done
                     # print(f'[] ep = {ep}, ep_reward = {ep_reward},  all_ep_sum_reward = {all_ep_sum_reward}')                  
                     if hasattr(self, 'ep_done_cb'):
                         self.ep_done_cb(ep = ep, ep_reward = ep_reward, all_ep_sum_reward =  all_ep_sum_reward)
@@ -42,7 +42,7 @@ class Standalone(LogRL, ServerBase):
                     a = self.worker.add_action_noise(action, r)
                     # print('a  =', a)
 
-            if self.ep > self.cfg['misc']['max_ep']: # loop 1 done
+            if self.ep > self.cfg['misc']['max_ep'] or is_success: # loop 1 done
                 break 
 
     def set_ep_done_cb(self, cb):

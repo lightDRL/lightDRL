@@ -130,7 +130,7 @@ class Maze(tk.Tk, object):
 
         # reward function
         if next_coords == self.canvas.coords(self.oval):
-            reward = 1
+            reward = 1.3
             done = True
         elif next_coords in [self.canvas.coords(self.hell1)]:
             reward = -1
@@ -140,8 +140,8 @@ class Maze(tk.Tk, object):
             done = True
         else:
             #reward = 0 if not over_enclosure else  -0.5
-            reward = 0
-            # reward = -0.1  # converage for DDPG
+            # reward = 0
+            reward = -0.1  # converage for DDPG
             done = False
         s_ = (np.array(next_coords[:2]) - np.array(self.canvas.coords(self.oval)[:2]))/(MAZE_H*UNIT)
         return s_, reward, done, None

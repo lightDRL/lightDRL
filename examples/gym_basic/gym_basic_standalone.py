@@ -79,4 +79,6 @@ def gym_cfg(cfg):
 
 if __name__ == '__main__':
     cfg = gym_cfg( load_config_from_arg()  )
-    GymStandalone(cfg , project_name='gym-' + get_yaml_name_from_arg()).run()
+    c = GymStandalone(cfg , project_name='gym-' + get_yaml_name_from_arg())
+    c.set_success(threshold_r = 200, threshold_successvie_count = 20)
+    c.run()

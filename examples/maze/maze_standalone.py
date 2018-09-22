@@ -31,4 +31,6 @@ class MazeStandalone(Standalone):
 
 
 if __name__ == '__main__':
-    c = MazeStandalone(load_config_from_arg(), project_name='maze-' + get_yaml_name_from_arg()).run()
+    c = MazeStandalone(load_config_from_arg(), project_name='maze-' + get_yaml_name_from_arg())
+    c.set_success(threshold_r = 1, threshold_successvie_count = 20)
+    c.run()

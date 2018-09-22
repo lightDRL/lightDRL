@@ -176,7 +176,7 @@ def log_one_ready(l, ts):#p_dic_list, any_one_ready):
     print(f"[{name:>20}] a={ts.a:6.2f}, b={ts.b:6.2f}, n={ts.n:5d}, ep={ep:5d}, ep_r={ep_r:8.2f}, suc_max={successvie_count_max:3d}, all_time={use_time:6.2f}")
 
 def thompson_sample(process_func, p_num = 100, pool_max = 4):
-    np.random.seed(2)
+    np.random.seed(3)
     threads = []
     p_ready_list = []
     p_parent_conn_list = []
@@ -224,7 +224,7 @@ def thompson_sample(process_func, p_num = 100, pool_max = 4):
 
             sample_t+=1
             sample_str = [f'{i:.2f}' for i in sample_result]
-            print(f'({sample_t:>2}) sample_result = {sample_str}, choose={play_id}' )
+            # print(f'({sample_t:>2}) sample_result = {sample_str}, choose={play_id}' )
             
             with p_lock_list[play_id]:
                 p_ready_list[play_id].value = False

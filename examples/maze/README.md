@@ -3,14 +3,18 @@
 
 1. Play maze with DQN 
 ```
-python maze.py DQN.yaml
+python maze_standalone.py DQN.yaml
 ```
 
 2. Play maze with Q-learning 
 ```
-python maze.py Q-learning.yaml
+python maze_standalone.py Q-learning.yaml
 ```
 
+3. Play maze with DDPG.yaml 
+```
+python maze_standalone.py DDPG.yaml
+```
 
 ## Acknowledgement
 

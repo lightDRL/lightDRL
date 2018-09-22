@@ -26,12 +26,21 @@ class LogRL:
 
     def log_data_done(self):
         ret_ep, ret_use_step, ret_reward, ret_all_ep_reward = self.ep, self.ep_use_step, self.ep_reward, self.all_ep_reward
+        
+        is_success = False
+        if hasattr(self, 'threshold_r'):
+            successvie_count_max, first_over_threshold_ep = self.check_success(self.ep, self.ep_reward)
+            if first_over_threshold_ep:
+                is_success = True
+
+            print(f'successvie_count_max = {successvie_count_max}, first_over_threshold_ep = {first_over_threshold_ep}')
+
         self.ep+=1
         self.ep_use_step = 0
         self.ep_reward = 0
         self.ep_s_time = time.time()  # update episode start time
 
-        return ret_ep, ret_use_step, ret_reward, ret_all_ep_reward
+        return ret_ep, ret_use_step, ret_reward, ret_all_ep_reward, is_success
       
     
     def log(self):
@@ -48,6 +57,38 @@ class LogRL:
         if hasattr(self, 'ts'):
             print(s + ' use time = ' + str( time.time() - self.ts  ) + ', time=' + str(time.time()))
         self.ts = time.time()
+
+
+    def set_success(self, threshold_r, threshold_successvie_count):
+        self.threshold_r = threshold_r
+        self.threshold_successvie_count = threshold_successvie_count
+        self.reward_list=[]
+
+    def check_success(self, ep, ep_reward):
+        assert hasattr(self, 'reward_list'), 'LogRL Object no reward_list property'
+        successvie_count = 0
+        successvie_count_max = 0
+        first_over_threshold_ep = -1
+        self.reward_list.append(ep_reward)
+
+        # print(f'ep = {ep}, len(self.reward_list)={len(self.reward_list)}')
+
+        for i, r in enumerate(self.reward_list):
+            if r >= self.threshold_r:
+                successvie_count+=1
+            else:
+                successvie_count = 0
+
+            if successvie_count > successvie_count_max:
+                successvie_count_max = successvie_count
+            if successvie_count >= self.threshold_successvie_count and first_over_threshold_ep==-1:
+                first_over_threshold_ep = i
+
+            
+        if successvie_count_max >= self.threshold_successvie_count:
+            return successvie_count_max, first_over_threshold_ep
+        else:
+            return successvie_count_max, 0
 
     
 
