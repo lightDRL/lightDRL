@@ -66,12 +66,12 @@ critic_action_NN:
 misc:
     model_save_cycle: 100
     model_retrain: yes
-    gpu_memory_ratio: 0.3
+    gpu_memory_ratio: 0.04
     random_seed: 60             # t_82 get max reward = 114.10
-    max_ep:  6000                       # defualt:1000, over the ep will auto exit()
+    max_ep:  10                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
-    render_after_ep: 100                # defualt: 0, render afet the ep 
+    render_after_ep: 10                # defualt: 0, render afet the ep 
     gym_env: 'CartPole-v0'
     gym_monitor_path: 'monitor/'        # will crate in data_pool/<project_name>/monitor/
     gym_monitor_episode: 50             # record every 10 episode 
-    redirect_stdout_2_file: no
+    redirect_stdout_2_file: yes

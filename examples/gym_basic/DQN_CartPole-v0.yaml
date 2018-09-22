@@ -41,10 +41,11 @@ NN:
 
 misc:
     model_save_cycle: 30
-    gpu_memory_ratio: 0.3
+    model_retrain: yes
+    gpu_memory_ratio: 0.02
     random_seed: 24             
-    max_ep:  1000                       # defualt:1000, over the ep will auto exit()
-    render: yes                        # defualt: false, render the env 
+    max_ep:  100                       # defualt:1000, over the ep will auto exit()
+    render: no                        # defualt: false, render the env 
     render_after_ep: 100                # defualt: 0, render afet the ep 
     gym_env: 'CartPole-v0'
     gym_monitor_path: 'monitor/'        # will crate in data_pool/<project_name>/monitor/

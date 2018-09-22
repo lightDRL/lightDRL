@@ -46,5 +46,5 @@ misc:
     max_ep:  600                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
     render_after_ep: 200                # defualt: 0, render afet the ep 
-    redirect_stdout_2_file: yes
+    redirect_stdout_2_file: no
     

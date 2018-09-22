@@ -29,7 +29,7 @@ class LogRL:
         
         is_success = False
         if hasattr(self, 'threshold_r'):
-            successvie_count_max, first_over_threshold_ep = self.check_success(self.ep, self.ep_reward)
+            successvie_count_max, first_over_threshold_ep = self.check_success(self.ep+1, self.ep_reward)
             if first_over_threshold_ep:
                 is_success = True
 

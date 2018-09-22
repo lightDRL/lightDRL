@@ -42,8 +42,13 @@ class Standalone(LogRL, ServerBase):
                     a = self.worker.add_action_noise(action, r)
                     # print('a  =', a)
 
-            if self.ep > self.cfg['misc']['max_ep'] or is_success: # loop 1 done
+            if self.ep > self.cfg['misc']['max_ep']: # loop 1 done
                 break 
+            elif is_success:
+                print('{} First success EP = {}, use_time = {}'.format(self.project_name, self.ep, time.time() - self.start_time) )
+                break 
+
+        print('Use tiem =',  time.time() - self.start_time)
 
     def set_ep_done_cb(self, cb):
         self.ep_done_cb = cb
