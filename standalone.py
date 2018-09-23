@@ -109,7 +109,7 @@ class StandaloneAsync(ServerBase):
 
         self.cfg = i_cfg
 
-        self.success_best_less_ep = 99999999
+        self.success_best_less_ep = 99999999999
         self.success_best_less_ep_thread_id = -1
 
 
@@ -179,6 +179,10 @@ class StandaloneAsync(ServerBase):
             self.threadLock.acquire()
             self.success_best_less_ep = s.ep
             self.success_best_less_ep_thread_id = thread_id
+            self.start_time = s.start_time 
+            self.use_time = time.time()-s.start_time 
+            self.all_ep_reward = s.all_ep_reward 
+            self.is_success = s.is_success 
             self.threadLock.release()
 
        

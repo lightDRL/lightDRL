@@ -65,14 +65,14 @@ if __name__ == '__main__':
             results = pool.starmap(gym_thread, product(rand_seed_list, [yaml_path]))
         # res = mp.Pool().map(gym_thread, rand_seed_list, yaml_path)
 
-        print(f'({start_seed} -> {end_seed}) : results = ' , results) 
+        # print(f'({start_seed} -> {end_seed}) : results = ' , results) 
 
         # for res in results:
         #     if res < 1000:
         #         find_success = True
         #         break
         for dic in results:
-            if dic['ep'] < 1000:
+            if dic['is_success']:
                 find_success = True
                 break
     

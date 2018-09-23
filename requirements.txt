@@ -9,3 +9,4 @@ scipy
 # for example
 opencv-python
 pygame
+gym
