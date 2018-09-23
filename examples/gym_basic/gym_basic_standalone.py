@@ -10,7 +10,7 @@ import numpy as np
 import gym
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
 from config import load_config_from_arg, get_yaml_name_from_arg
-from standalone import Standalone
+from standalone import Standalone, standalone_switch
 
 print('gym version:', gym.__version__)
 print('gym path = ', gym.__file__)
@@ -79,6 +79,9 @@ def gym_cfg(cfg):
 
 if __name__ == '__main__':
     cfg = gym_cfg( load_config_from_arg()  )
-    c = GymStandalone(cfg , project_name='gym-' + get_yaml_name_from_arg())
-    c.set_success(threshold_r = 200, threshold_successvie_count = 20)
-    c.run()
+    s = standalone_switch(GymStandalone, cfg, project_name='gym-' + get_yaml_name_from_arg())
+    s.run()
+    
+    # c = GymStandalone(cfg , project_name='gym-' + get_yaml_name_from_arg())
+    # c.set_success(threshold_r = 200, threshold_successvie_count = 20)
+    # c.run()

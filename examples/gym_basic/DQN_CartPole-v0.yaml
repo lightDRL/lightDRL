@@ -49,4 +49,6 @@ misc:
     render_after_ep: 100                # defualt: 0, render afet the ep 
     gym_env: 'CartPole-v0'
     gym_monitor_path: 'monitor/'        # will crate in data_pool/<project_name>/monitor/
-    gym_monitor_episode: 10             # record every 10 episode 
+    gym_monitor_episode: 10             # record every 10 episode
+    threshold_r: 200
+    threshold_successvie_count: 20 

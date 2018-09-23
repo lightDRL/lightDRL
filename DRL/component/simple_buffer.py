@@ -9,9 +9,10 @@ class SimpleBuffer(object):
         self.memory = deque()
         random.seed(random_seed)
 
-    def add(self, s, a, r, d, s2):
+    def add(self, s, a, r, d, s2, add_multiple = False):
         # print('type(s) = ', type(s))
-        if type(s) == np.ndarray and s.shape[0]>1:
+        # print('add_multiple =', add_multiple)
+        if add_multiple:
             assert s.shape[0] == a.shape[0] == r.shape[0] == d.shape[0] == s2.shape[0], 's, a, r, d, s2 not all length same'
             for ind in range(s.shape[0]):
                 transition = (s[ind], a[ind], r[ind], d[ind], s2[ind])

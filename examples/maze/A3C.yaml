@@ -12,6 +12,10 @@ RL:
     # train_multi_steps: 1       # default: 1, param: 'if_down', 'steps(int)'-> train if down or train after steps    
     # exploration: 300        # train after exploration step
     action_noise: 'epsilon-greedy'
+    state_discrete: yes
+    state_shape: [2,]
+    action_discrete: yes
+    action_shape: [4,]
 
 A3C:
     LR_A: 0.01  # learning rate for actor (1e-4)
@@ -23,18 +27,10 @@ A3C:
     batch_size: 120
 
 
-misc:
-    model_save_cycle: 30
-    gpu_memory_ratio: 0.3
-    # random_seed: 10             # t_82 get max reward = 114.10
-    max_ep:  2000                       # defualt:1000, over the ep will auto exit()
-    render: yes                        # defualt: false, render the env 
-    render_after_ep: 100                # defualt: 0, render afet the ep 
-    worker_nickname: 'w'               # heading of asyc thread of A3C
-
 epsilon-greedy:
     value: 1.0
     discount: 0.02    # each step discount it  
+
 
 actor_NN:
     actor_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
@@ -59,3 +55,14 @@ critic_NN:
         type: 'fc'
         size: 60
         bias_const: 0.01
+
+misc:
+    model_save_cycle: 30
+    gpu_memory_ratio: 0.3
+    random_seed: 10             # t_82 get max reward = 114.10
+    max_ep:  20                       # defualt:1000, over the ep will auto exit()
+    render: yes                        # defualt: false, render the env 
+    render_after_ep: 100                # defualt: 0, render afet the ep 
+    worker_nickname: 'w'               # heading of asyc thread of A3C
+    threshold_r: 1
+    threshold_successvie_count: 200

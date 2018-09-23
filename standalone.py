@@ -6,12 +6,27 @@ import time
 
 from client import LogRL
 from server import ServerBase
-    
+import threading
+import copy
+from worker import WorkerBase
+
+def standalone_switch( standalone_env_class, cfg , project_name):
+    if cfg['RL']['method']=='A3C':
+        s = StandaloneAsync(standalone_env_class, cfg, project_name=project_name)
+    else:
+        s = standalone_env_class(cfg, project_name=project_name)
+        s.set_success(threshold_r = cfg['misc']['threshold_r'], threshold_successvie_count = cfg['misc']['threshold_successvie_count'])
+        # s.run()
+
+    return s
 
 class Standalone(LogRL, ServerBase):
-    def __init__(self, i_cfg , project_name=None):
+    def __init__(self, i_cfg , project_name=None, worker = None):
         self.log_init(i_cfg , project_name)
-        self.build_worker(project_name, i_cfg)      # self.worker ready
+        if worker==None:
+            self.build_worker(project_name, i_cfg)      # self.worker ready
+        else:
+            self.worker = worker
 
     def run(self):
         self.env_init()
@@ -45,7 +60,7 @@ class Standalone(LogRL, ServerBase):
             if self.ep > self.cfg['misc']['max_ep']: # loop 1 done
                 break 
             elif is_success:
-                print('{} First success EP = {}, use_time = {}'.format(self.project_name, self.ep, time.time() - self.start_time) )
+                print('{} First success EP = {}, use_time = {:.2f}'.format(self.project_name, self.ep, time.time() - self.start_time) )
                 break 
 
         print('Use tiem =',  time.time() - self.start_time)
@@ -61,3 +76,153 @@ class Standalone(LogRL, ServerBase):
                 print('[I] env.env.close')
                 self.env.env.close()
         
+class StandaloneAsync(ServerBase):
+    def __init__(self, target_env_class, i_cfg ,  project_name=None):
+        self.prj_name = project_name
+        self.tf_graph, self.tf_sess = self.create_new_tf_graph_sess(i_cfg['misc']['gpu_memory_ratio'], i_cfg['misc']['random_seed'])
+        # build main_net
+        self.model_log_dir = self.create_model_log_dir(project_name, i_cfg['misc']['model_retrain'])
+        self.main_worker = self.build_worker( i_cfg, self.model_log_dir, self.tf_graph, self.tf_sess, i_cfg['A3C']['main_net_scope'])
+        
+        if i_cfg['misc']['redirect_stdout_2_file']:
+            import sys
+            sys.stdout = open(self.model_log_dir +'/_stdout.log', 'w')
+
+        # self.cond_main_wait_other_ready = threading.Condition()
+        self.worker_ready = 0   
+        self.cond = threading.Condition()  
+        
+        self.threadLock = threading.Lock()
+        self.all_thread =[]
+        # print("i_cfg['A3C']['worker_num'] = ", i_cfg['A3C']['worker_num'])
+        for i in range(i_cfg['A3C']['worker_num']):  #39, 118
+            
+            net_scope = 'net_%03d' % i
+            sync_model_log_dir = self.model_log_dir + '_%03d' % i
+            self.create_model_log_dir(sync_model_log_dir, recreate_dir = i_cfg['misc']['model_retrain'])
+            t = threading.Thread(target=self.asyc_thread, 
+                                args=(target_env_class,i_cfg, sync_model_log_dir, i, self.tf_graph, self.tf_sess, net_scope, self.cond, ),
+                                    name='t_'+ str(i))
+            # t.start()
+            t.daemon = True
+            self.all_thread.append(t)
+
+        self.cfg = i_cfg
+
+        self.success_best_less_ep = 99999999
+        self.success_best_less_ep_thread_id = -1
+
+
+    def run(self):
+        for t in self.all_thread:
+            t.start()
+
+        while True:
+            time.sleep(0.5)
+            print('main -> self.worker_ready = ', self.worker_ready)
+            if self.worker_ready>= self.cfg['A3C']['worker_num']:
+                break
+        # print_tf_var(graph = tf_graph)  
+        with self.tf_graph.as_default():          
+            self.main_worker.init_or_restore_model(self.tf_sess)
+        # run all asyc_thread
+        self.cond.acquire()
+        self.cond.notify_all()
+        self.cond.release()
+
+
+        while True:
+            time.sleep(1)
+            is_alive_list = [t.is_alive() for t in self.all_thread]
+            # print(is_alive_list)
+            if not all(is_alive_list):
+                break
+
+        self.threadLock.acquire()
+        self.main_worker.save_model(self.model_log_dir, self.success_best_less_ep)
+        self.threadLock.release()
+        print('success_thread_id = %d, success_best_less_ep=%d' % (self.success_best_less_ep_thread_id, self.success_best_less_ep))
+
+    def asyc_thread(self, env_class, cfg, model_log_dir,  thread_id, tf_graph, tf_sess, net_scope, cond):
+        self.threadLock.acquire()
+        
+        print('--------- in asyc_thread--------')
+
+        cfg_copy = self.modify_cfg(cfg, thread_id)
+        
+
+        print('in asyc_thread net_scope= ', net_scope)
+        #-----build async worker run with env----#
+        # print("cfg['RL']['method']=", cfg['RL']['method'])
+        worker = WorkerBase()
+        worker.base_init(cfg_copy, model_log_dir=model_log_dir, graph = tf_graph, sess = tf_sess, net_scope = net_scope)
+        worker.RL.set_thread_lock(self.threadLock)
+        self.worker_ready += 1
+        self.threadLock.release()
+        # worker = self.build_worker( cfg, model_log_dir, tf_graph, tf_sess, net_scope)
+        
+        # if cfg['misc']['redirect_stdout_2_file']:
+        #     sys.stdout = open(model_log_dir +'/_stdout.log', 'w')
+
+        s = env_class(cfg_copy , project_name=self.prj_name + '-asyc-%03d' % (thread_id), worker=worker)
+        s.set_success(threshold_r = cfg_copy['misc']['threshold_r'], threshold_successvie_count = cfg_copy['misc']['threshold_successvie_count'])
+
+        # start wait
+        cond.acquire()
+        cond.wait()         # block here, wait all graph build finish
+        cond.release()    
+        # go run
+        s.run()
+
+        # get less ep
+        if s.ep < self.success_best_less_ep:
+            self.threadLock.acquire()
+            self.success_best_less_ep = s.ep
+            self.success_best_less_ep_thread_id = thread_id
+            self.threadLock.release()
+
+       
+        # avg_r = c.env_space.worker.avg_ep_reward_show()
+        # self.threadLock.acquire()
+        # # self.asyc_best_reward = avg_r if avg_r > self.asyc_best_reward else self.asyc_best_reward
+        # self.best_avg_reward = avg_r if avg_r > self.best_avg_reward else self.best_avg_reward
+        # self.threadLock.release()
+
+    def modify_cfg(self, cfg, thread_id):
+        cfg_copy = copy.deepcopy(cfg) 
+        cfg_copy['misc']['worker_nickname'] += '-asyc-%03d' % (thread_id)
+        if cfg_copy['misc']['random_seed']!=None: # let use diff  seed
+            cfg_copy['misc']['random_seed'] += thread_id * 5
+
+        print("cfg_copy['misc']['random_seed'] = ", cfg_copy['misc']['random_seed'])       
+        if thread_id == 0:
+            # only output the thread id = 0 to monitor
+            if cfg_copy['misc']['gym_monitor_path']!=None:
+                from config import set_gym_monitor_path
+                cfg_copy['misc']['gym_monitor_path'] = set_gym_monitor_path(cfg['misc']['gym_monitor_path'])
+                cfg_copy['misc']['gym_monitor_path'] += '%03d' % thread_id
+                print('monitor path = ', cfg_copy['misc']['gym_monitor_path'])
+        else:
+            cfg_copy['misc']['gym_monitor_path'] = None
+            cfg_copy['misc']['render'] = False
+            
+        return cfg_copy
+        
+    def build_worker(self, cfg, model_log_dir, tf_graph = None, tf_sess = None, net_scope = None):
+        print('[I] Standalone Server in on_session()')
+
+        # create tf graph & tf session
+        if tf_graph == None or tf_sess == None:
+            # create new graph & new session
+            tf_graph, tf_sess = self.create_new_tf_graph_sess(cfg['misc']['gpu_memory_ratio'], cfg['misc']['random_seed'])
+             
+        worker = WorkerBase()
+        worker.base_init(cfg, model_log_dir=model_log_dir, graph = tf_graph, sess = tf_sess, net_scope = net_scope)
+        return worker
+
+
+    @property
+    def ep(self):
+        return self.success_best_less_ep
+    
+    

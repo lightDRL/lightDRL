@@ -47,4 +47,6 @@ misc:
     render: yes                        # defualt: false, render the env 
     render_after_ep: 200                # defualt: 0, render afet the ep 
     redirect_stdout_2_file: no
-    
+    # about define success
+    threshold_r: 1
+    threshold_successvie_count: 20

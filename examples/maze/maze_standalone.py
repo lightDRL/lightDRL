@@ -10,7 +10,7 @@ import numpy as np
 from maze_env import Maze
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
 from config import load_config_from_arg, get_yaml_name_from_arg
-from standalone import Standalone
+from standalone import Standalone, standalone_switch
 
 
 class MazeStandalone(Standalone):
@@ -31,6 +31,8 @@ class MazeStandalone(Standalone):
 
 
 if __name__ == '__main__':
-    c = MazeStandalone(load_config_from_arg(), project_name='maze-' + get_yaml_name_from_arg())
-    c.set_success(threshold_r = 1, threshold_successvie_count = 20)
-    c.run()
+    s = standalone_switch(MazeStandalone, load_config_from_arg(), project_name='maze-' + get_yaml_name_from_arg())
+    s.run()
+    # c = MazeStandalone(load_config_from_arg(), project_name='maze-' + get_yaml_name_from_arg())
+    # c.set_success(threshold_r = 1, threshold_successvie_count = 20)
+    # c.run()

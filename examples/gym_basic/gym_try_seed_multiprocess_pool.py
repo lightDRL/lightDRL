@@ -41,6 +41,7 @@ if __name__ == '__main__':
     print('Main thread yaml_paht = ', yaml_path)
     all_t =[]
 
+    
     rand_seed_list = range(0,30)
     seed_num  = len(rand_seed_list)
     yaml_path_list = [yaml_path  for _ in range(seed_num)]

@@ -219,7 +219,8 @@ class WorkerBase(object):
             self.ep_s_time = time.time()  # update episode start time
 
             if self.ep % self.model_save_cycle==0 and issubclass(self.method_class, DRL):
-                self.save_model(self.model_log_dir, self.ep)
+                if not self.method_class == A3C:
+                    self.save_model(self.model_log_dir, self.ep)
                
     def tf_summary_text(self, tag, text, ep):
         text_tensor = tf.make_tensor_proto(text, dtype=tf.string)

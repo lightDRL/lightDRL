@@ -16,7 +16,7 @@ RL:
     add_data_steps: 'if_down'     # dafault: 1 , param: 'if_down', 'steps(int)'    
     exploration: 300        # train after exploration step
     action_noise: 'Uhlenbeck'
-
+    
 DDPG:
     lr_actor:  0.0001  # learning rate for actor (1e-4)
     lr_critic:  0.001  # learning rate for critic
@@ -75,3 +75,5 @@ misc:
     gym_monitor_path: 'monitor/'        # will crate in data_pool/<project_name>/monitor/
     gym_monitor_episode: 50             # record every 10 episode 
     redirect_stdout_2_file: yes
+    threshold_r: 200
+    threshold_successvie_count: 10

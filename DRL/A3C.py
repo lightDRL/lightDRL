@@ -9,7 +9,7 @@ from .component.simple_buffer import SimpleBuffer
 from .component.NNcomponent import NNcomponent
 
 class A3C(DRL):
-    def __init__(self, cfg, model_log_dir, sess, scope, main_A3C = None):
+    def __init__(self, cfg, model_log_dir, sess, scope):
         super(A3C, self).rl_init(cfg, model_log_dir)
         super(A3C, self).drl_init(sess)
         self.OPT_A = tf.train.RMSPropOptimizer(cfg['A3C']['LR_A'], name='RMSPropA')
@@ -27,7 +27,7 @@ class A3C(DRL):
         self.cfg_actor_NN  = cfg['actor_NN']
         self.cfg_critic_NN = cfg['critic_NN']
         # print('self.a_bound = ', self.a_bound)
-        print('scope = ', scope)
+        print('Build scope %s ... ' % scope)
         self.net_scope = scope
         if scope == cfg['A3C']['main_net_scope']:   # get global network
             # self.OPT_A = tf.train.AdamOptimizer(cfg['A3C']['LR_A'], name='AdamOfActor')
@@ -47,9 +47,9 @@ class A3C(DRL):
 
             # print('[%s]'% scope, ' main_net_a_params = ', main_net_a_params)
             # print('[%s]'% scope, ' main_net_c_params = ', main_net_c_params)
-
+            
             with tf.variable_scope(scope):
-                self.s = tf.placeholder(tf.float32, [None, self.s_dim ], 'state')
+                self.s = tf.placeholder(tf.float32, [None, self.s_dim ],  name =  'state')
                 self.a_his = tf.placeholder(tf.float32, [None, self.a_dim], 'action')
                 self.v_target = tf.placeholder(tf.float32, [None, 1], 'v_target')
 
@@ -108,8 +108,8 @@ class A3C(DRL):
                 # print('[%s]'% scope, 'self.c_params = ', self.c_params)
                 # print('[%s]'% scope, 'self.c_grads = ', self.c_grads)
 
-            print('main_net_a_params = ', main_net_a_params)
-            print('main_net_c_params = ', main_net_c_params)
+            # print('main_net_a_params = ', main_net_a_params)
+            # print('main_net_c_params = ', main_net_c_params)
             with tf.variable_scope(tf.get_variable_scope(), reuse=tf.AUTO_REUSE) :
                 with tf.name_scope('sync'):
                     with tf.name_scope('pull'):
@@ -155,21 +155,33 @@ class A3C(DRL):
 
     def update_global(self, feed_dict):  # run by a local
         # print('update_global')
+        self.lock_acquire()
         _, _ = self.sess.run([self.update_a_op, self.update_c_op], feed_dict)  # local grads applies to global net
+        self.lock_release()
         #return 
 
     def pull_global(self):  # run by a local
         # print('pull_global')
+        self.lock_acquire()
         self.sess.run([self.pull_a_params_op, self.pull_c_params_op])
+        self.lock_release()
 
     def choose_action(self, s):  # run by a local
+        self.lock_acquire()
         s = s[np.newaxis, :]
         if self.a_discrete:
-            prob = self.sess.run(self.a_prob, feed_dict={self.s: s})[0]
-            #a_prob = np.random.choice(len(prob),p=prob)
-            return prob
+            a = self.sess.run(self.a_prob, feed_dict={self.s: s})[0]
         else:
-            return self.sess.run(self.A, {self.s: s})[0]
+            a = self.sess.run(self.A, {self.s: s})[0]
+        self.lock_release()
+        return a
+
+        # if self.a_discrete:
+        #     prob = self.sess.run(self.a_prob, feed_dict={self.s: s})[0]
+        #     #a_prob = np.random.choice(len(prob),p=prob)
+        #     return prob
+        # else:
+        #     return self.sess.run(self.A, {self.s: s})[0]
 
     def add_data(self, s, a, r, d, s_):
         ''' self, states, actions, rewards, done, next_state''' 
@@ -214,7 +226,9 @@ class A3C(DRL):
                 #v_s_ = self.sess.run(self.v, {self.s: s2_batch[np.newaxis, :]})[0, 0]
                 # run_one = self.sess.run(self.v, {self.s: last_s2})
                 # print('run_one = ', run_one)
+                self.lock_acquire()
                 v_s_ = self.sess.run(self.v, {self.s: last_s2})[0, 0]
+                self.lock_release()
             buffer_v_target = []
 
             
@@ -238,7 +252,9 @@ class A3C(DRL):
             }
 
             # self.update_global(feed_dict)
+            self.lock_acquire()
             td, v ,_,_ = self.sess.run([self.td, self.v, self.update_a_op, self.update_c_op], feed_dict)
+            self.lock_release()
             # if r_batch[len(r_batch)-1] > 0:
             #     print('s_batch = ', s_batch)
             #     print('last reward = ', r_batch[len(r_batch)-1])
@@ -266,3 +282,14 @@ class A3C(DRL):
 
     def notify_ep_done(self):
         pass
+
+    def set_thread_lock(self, i_lock):
+        self.lock = i_lock
+
+    def lock_acquire(self):
+        if self.lock!=None:  
+            self.lock.acquire()
+
+    def lock_release(self):
+        if self.lock!=None:  
+            self.lock.release()

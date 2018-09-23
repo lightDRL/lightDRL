@@ -18,21 +18,8 @@ A3C:
     gamma: 0.9  # reward discount
     ENTROPY_BETA: 0.001
     main_net_scope: 'main_net'
-    worker_num: *ref_server_worker_num # refer to server_worker_num
+    worker_num: 4 # refer to server_worker_num
     batch_size: 10
-
-
-misc:
-    model_save_cycle: 30
-    gpu_memory_ratio: 0.3
-    random_seed: 54             # t_82 get max reward = 114.10
-    max_ep:  500                       # defualt:1000, over the ep will auto exit()
-    render: yes                        # defualt: false, render the env 
-    render_after_ep: 100                # defualt: 0, render afet the ep 
-    gym_env: 'CartPole-v0'
-    # gym_monitor_path: 'monitor/'        # will crate in data_pool/<project_name>/monitor/
-    # gym_monitor_episode: 5             # record every 10 episode 
-    worker_nickname: 'w'               # heading of asyc thread of A3C
 
 
 actor_NN:
@@ -60,3 +47,19 @@ critic_NN:
         size: 300
         initializer: 'xavier'
         bias_const: 0.01
+
+
+misc:
+    model_save_cycle: 300
+    model_retrain: yes
+    gpu_memory_ratio: 0.05
+    random_seed: 54             # t_82 get max reward = 114.10
+    max_ep:  600                       # defualt:1000, over the ep will auto exit()
+    render: yes                        # defualt: false, render the env 
+    render_after_ep: 100                # defualt: 0, render afet the ep 
+    gym_env: 'CartPole-v0'
+    # gym_monitor_path: 'monitor/'        # will crate in data_pool/<project_name>/monitor/
+    # gym_monitor_episode: 5             # record every 10 episode 
+    worker_nickname: 'w'               # heading of asyc thread of A3C
+    threshold_r: 200
+    threshold_successvie_count: 10
