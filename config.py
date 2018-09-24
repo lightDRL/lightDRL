@@ -18,7 +18,7 @@ def set_none_if_not_exist(cfg):
     cfg['RL']['add_data_steps'] = cfg['RL']['add_data_steps'] if 'add_data_steps' in cfg['RL'] else 1
     cfg['RL']['reward_reverse'] = cfg['RL']['reward_reverse'] if 'reward_reverse' in cfg['RL'] else False
     cfg['RL']['exploration'] = cfg['RL']['exploration'] if 'exploration' in cfg['RL'] else 0
-    cfg['RL']['exploration_action_noise'] = cfg['RL']['exploration_action_noise'] if 'exploration_action_noise' in cfg['RL'] else None
+    
     cfg['RL']['action_epsilon'] = cfg['RL']['action_epsilon'] if 'action_epsilon' in cfg['RL'] else None
     cfg['RL']['action_epsilon_add'] = cfg['RL']['action_epsilon_add'] if 'action_epsilon_add' in cfg['RL'] else None
     cfg['RL']['method'] = 'Qlearning'   if cfg['RL']['method']=='Q-learning'  else cfg['RL']['method']    # for python variable rule

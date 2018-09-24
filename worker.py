@@ -92,9 +92,14 @@ class WorkerBase(object):
             self.reward_process = Reward(cfg['RL']['reward_factor'], cfg['RL']['reward_gamma'])
         # self.one_step_buf = {'s':None, 'a':None, 'r':None, 'd':None, 's_':None} 
 
-
+        
         self.exploration_step = cfg['RL']['exploration']
-        self.exploration_action_noise = cfg['RL']['exploration_action_noise']
+
+        if (self.exploration_step==None or self.exploration_step==0) and (self.method_class==DDPG or self.method_class==DQN):
+            if self.method_class==DDPG:
+                self.exploration_step = cfg['DDPG']['memory_train_min']
+            elif self.method_class==DQN:
+                self.exploration_step = cfg['DQN']['memory_train_min']
 
         self.action_epsilon = cfg['RL']['action_epsilon']
         self.action_epsilon_add = cfg['RL']['action_epsilon_add']
@@ -108,10 +113,17 @@ class WorkerBase(object):
                 self.noise = None
                 # print('--------in cofigure noise-----')
                 self.noise = Noise( cfg['Uhlenbeck']['delta'], cfg['Uhlenbeck']['sigma'], cfg['Uhlenbeck']['ou_a'], cfg['Uhlenbeck']['ou_mu'])
-                self.noise_max_ep= cfg['Uhlenbeck']['max_ep']
+                self.Uhlenbeck_max_ep= cfg['Uhlenbeck']['max_ep']
+                self.Uhlenbeck_use_ep = 0
                 self.ou_level = 0
-    # def tf_summary_init(self, model_log_dir )
-    #     self.tf_writer = tf.summary.FileWriter(model_log_dir)
+            elif self.action_noise =='Gaussian':
+                self.noise_Gaussian_sigma = 1.  if 'sigma' not in cfg['Gaussian'] else cfg['Gaussian']['sigma']
+                self.noise_Gaussian_sigma_decay = 0.01  if 'sigma_decay' not in cfg['Gaussian'] else cfg['Gaussian']['sigma_decay']
+            
+        if self.a_discrete == False:
+            self.action_bound_max =  cfg['RL']['action_bound']
+            self.action_bound_min = -cfg['RL']['action_bound']
+        
 
         self.none_over_pos_count = 0 
 
@@ -174,7 +186,9 @@ class WorkerBase(object):
             all_time_str = self.time_str(self.train_s_time)
             more_log = ''
             if self.action_noise =='epsilon-greedy':
-                more_log += ' | epsilon: %5.4f' % self.epsilon_greedy_value
+                more_log += ' | epsilon: %5.3f' % self.epsilon_greedy_value
+            elif self.action_noise =='Gaussian':
+                more_log += ' | sigma: %5.3f' % self.noise_Gaussian_sigma
             # print('more_log = ' ,more_log)
             log_str = '(%s) EP%5d | EP_Step: %5d | EP_Reward: %8.2f | MAX_R: %4.2f %s | EP_Time: %s | All_Time: %s ' % \
                     (self.worker_nickname, self.ep, self.ep_use_step, self.ep_reward, self.ep_max_reward, more_log, ep_time_str, all_time_str )
@@ -221,6 +235,16 @@ class WorkerBase(object):
             if self.ep % self.model_save_cycle==0 and issubclass(self.method_class, DRL):
                 if not self.method_class == A3C:
                     self.save_model(self.model_log_dir, self.ep)
+
+            # print('self.all_step=', self.all_step,', self.exploration_step=', self.exploration_step)
+            if self.action_noise != None and self.all_step >self.exploration_step :
+                if self.action_noise=='Gaussian':
+                    self.noise_Gaussian_sigma -= self.noise_Gaussian_sigma_decay 
+                if self.action_noise=='epsilon-greedy':
+                    if self.epsilon_greedy_discount > 0.0:
+                        self.epsilon_greedy_value -= self.epsilon_greedy_discount
+                if self.action_noise=='Uhlenbeck':
+                    self.Uhlenbeck_use_ep+=1
                
     def tf_summary_text(self, tag, text, ep):
         text_tensor = tf.make_tensor_proto(text, dtype=tf.string)
@@ -301,6 +325,9 @@ class WorkerBase(object):
     def add_action_noise(self, a, reward = None):
         # print('--------------%03d-%03d----------------' % ( self.ep, self.ep_use_step))
         # print('before a = ', a)
+        if self.action_noise == None or self.exploration_step==None or self.all_step <=self.exploration_step:
+            return a
+
         if self.a_discrete==True:
             a_dim = self.RL.a_discrete_n
             if self.action_noise=='epsilon-greedy':
@@ -310,12 +337,21 @@ class WorkerBase(object):
                     a[ np.random.randint(self.RL.a_discrete_n) ] =1
                     # print('self.RL.a_discrete_n = ', self.RL.a_discrete_n)
                 # print('self.epsilon_greedy_discount = ', self.epsilon_greedy_discount)
-                if self.epsilon_greedy_discount > 0.0:
-                # if self.epsilon_greedy_discount > 0.0 and reward > 0:  # maybe happen in done, and not return
-                    self.epsilon_greedy_value -= self.epsilon_greedy_discount
+                # if self.epsilon_greedy_discount > 0.0:
+                # # if self.epsilon_greedy_discount > 0.0 and reward > 0:  # maybe happen in done, and not return
+                #     self.epsilon_greedy_value -= self.epsilon_greedy_discount
+        else: #---continuous action---#
+            if self.action_noise=='Gaussian':
+                if self.noise_Gaussian_sigma <=0:
+                    return a
+                else:
+                    # print('self.noise_Gaussian_sigma = ', self.noise_Gaussian_sigma)
+                    a_after = np.clip(np.random.normal(a, self.noise_Gaussian_sigma), self.action_bound_min , self.action_bound_max )  
+                    # print(f'before_a = {a}, after_a = {a_after}')
+                    return a_after
 
 
-        if self.action_noise=='Uhlenbeck' and self.ep < self.noise_max_ep:
+        if self.action_noise=='Uhlenbeck' and self.Uhlenbeck_use_ep <= self.Uhlenbeck_max_ep:
             self.ou_level = self.noise.ornstein_uhlenbeck_level(self.ou_level)
             a = a + self.ou_level
             # print('in ornstein_uhlenbeck ou_level = ' , self.ou_level)

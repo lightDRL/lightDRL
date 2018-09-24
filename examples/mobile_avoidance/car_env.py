@@ -2,7 +2,7 @@
 """
 Created on Fri Feb 16 15:40:27 2018
 
-# Author:  allengun2000  <https://github.com/allengun2000/>
+@author: allengun2000  <https://github.com/allengun2000/>
 """
 
 
@@ -26,12 +26,13 @@ class CarEnv(object):
     point_bound =[30,370]
     v = 10
     goal_point=np.array([370,200])
-    o1_point=np.array([200,280])
-    o2_point=np.array([150,150])
+
     def __init__(self):
         self.car_info=np.zeros(2, dtype=[('a', np.float32), ('i', np.float32)])
         self.car_info['a']=(20,300) 
         self.car_info['i']=(10,20)  #R=20 V=10
+        self.o1_point=np.array([200,280])
+        self.o2_point=np.array([150,150])
         self.ran=math.pi
         self.obs_l=np.zeros(O_LC,dtype=np.float32)
         self.O_LC=O_LC
@@ -46,9 +47,9 @@ class CarEnv(object):
         
         # state
 
-
+        v_goal=(self.goal_point-self.car_info['a'])
         self.obs_l[:]=self.obs_line()
-        s=np.hstack((self.car_info['a']/400,self.obs_l/400))
+        s=np.hstack((v_goal/400,self.obs_l/400))
 #        s = self.car_info['a']/400
         # done and reward
         goal_car_dis=np.hypot(*(self.car_info['a']-self.goal_point)) 
@@ -56,7 +57,7 @@ class CarEnv(object):
         ob2_car_dis=np.hypot(*(self.car_info['a']-self.o2_point)) 
         r=-goal_car_dis/4000
         if goal_car_dis<25+car_r:
-#            done = True
+            # done = True
             r += 1.
         if ob1_car_dis<25+car_r:
 #            done = True
@@ -71,7 +72,6 @@ class CarEnv(object):
                 
             
         return s, r, done, None
-
     def obs_line(self,car_=None):
         obs_line=[]
         for i in np.linspace(-math.pi, math.pi,O_LC,endpoint=False):
@@ -88,8 +88,8 @@ class CarEnv(object):
                 ob1_car_dis=np.hypot(*(car_point-self.o1_point)) 
                 ob2_car_dis=np.hypot(*(car_point-self.o2_point)) 
                 if ob1_car_dis<25 or ob2_car_dis<25 \
-                    or car_point[0]==1 or car_point[0]==399 \
                     or car_point[1]==1 or car_point[1]==399:
+#                    or car_point[0]==1 or car_point[0]==399 \
                         break
             obs_line.append(j)
         
@@ -97,9 +97,15 @@ class CarEnv(object):
             
     def reset(self):
 #        self.car_info['a']=(30,300)
-        self.car_info['a']=np.random.rand(2)*(1,380)+30
+        self.o1_point[:]=np.random.rand(2)*(100,200)+(100,30)
+        self.o2_point[:]=np.random.rand(2)*(100,150)+(100,200)
+        self.car_info['a']=np.random.rand(2)*(1,340)+30
         self.obs_l[:]=self.obs_line()
         s=np.hstack((self.car_info['a']/400,self.obs_l/400))
+        v_goal=(self.goal_point-self.car_info['a'])
+        self.obs_l[:]=self.obs_line()
+        s=np.hstack((v_goal/400,self.obs_l/400))
+
         return s
     
     def render(self):
@@ -122,9 +128,11 @@ class Viewer(pyglet.window.Window):
         super(Viewer, self).__init__(width=400, height=400, resizable=True, caption='gooood_car', vsync=False)
         self.car_point_=car_point
         self.obs_line=obs_line
+        self.o1_point=o1_point
+        self.o2_point=o2_point
 
-        o1_v=np.hstack([o1_point-25,o1_point[0]-25,o1_point[1]+25,o1_point+25,o1_point[0]+25,o1_point[1]-25])
-        o2_v=np.hstack([o2_point-25,o2_point[0]-25,o2_point[1]+25,o2_point+25,o2_point[0]+25,o2_point[1]-25])
+        o1_v=np.hstack([self.o1_point-25,self.o1_point[0]-25,self.o1_point[1]+25,self.o1_point+25,self.o1_point[0]+25,self.o1_point[1]-25])
+        o2_v=np.hstack([self.o2_point-25,self.o2_point[0]-25,self.o2_point[1]+25,self.o2_point+25,self.o2_point[0]+25,self.o2_point[1]-25])
         goal_v=np.hstack([goal_point-25,goal_point[0]-25,goal_point[1]+25,goal_point+25,goal_point[0]+25,goal_point[1]-25])
         pyglet.gl.glClearColor(1, 1, 1, 1)
         #        GL_POINTS  GL_LINES GL_LINE_STRIP GL_LINE_LOOP GL_POINTS
@@ -187,7 +195,10 @@ class Viewer(pyglet.window.Window):
         self.car.vertices = car_dot 
         line_dot=self.linedot()
         self.o_line.vertices=line_dot
-    
+        o1_v=np.hstack([self.o1_point-25,self.o1_point[0]-25,self.o1_point[1]+25,self.o1_point+25,self.o1_point[0]+25,self.o1_point[1]-25])
+        o2_v=np.hstack([self.o2_point-25,self.o2_point[0]-25,self.o2_point[1]+25,self.o2_point+25,self.o2_point[0]+25,self.o2_point[1]-25])
+        self.obs_1.vertices=o1_v
+        self.obs_2.vertices=o2_v
     def on_close(self):
         self.close()
         
@@ -195,6 +206,9 @@ if __name__ == '__main__':
     env = CarEnv()
     s=env.reset()
     while True:
-        env.render()
-        env.step(env.sample_action())
+        s=env.reset()
+        for i in range(1000):
+            env.render()
+#            env.step(env.sample_action())
+
 #    pyglet.on_close()
