@@ -57,12 +57,12 @@ critic_NN:
         bias_const: 0.01
 
 misc:
-    model_save_cycle: 30
-    gpu_memory_ratio: 0.3
+    model_save_cycle: 300
+    gpu_memory_ratio: 0.05
     random_seed: 10             # t_82 get max reward = 114.10
-    max_ep:  20                       # defualt:1000, over the ep will auto exit()
+    max_ep:  1000                       # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
     render_after_ep: 100                # defualt: 0, render afet the ep 
     worker_nickname: 'w'               # heading of asyc thread of A3C
     threshold_r: 1
-    threshold_successvie_count: 200
+    threshold_successvie_count: 20

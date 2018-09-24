@@ -9,7 +9,7 @@
 
 import sys, os
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
-from gym_basic_standalone import GymStandalone, gym_cfg
+from maze_standalone import MazeStandalone
 from standalone import standalone_switch
 import gym
 import time
@@ -20,20 +20,20 @@ from itertools import product
 
 def gym_thread(seed, yaml_path):
     print('thread get path = ', yaml_path)
-    cfg_copy = gym_cfg( load_config(yaml_path)  )
+    cfg_copy =  load_config(yaml_path) 
     print('cfg_copy', cfg_copy)
     
     cfg_copy['misc']['random_seed'] = seed
     cfg_copy['misc']['render'] = False
     # cfg_copy['misc']['gpu_memory_ratio'] = 0.03     # all share same ratio
-    cfg_copy['misc']['max_ep'] = 500
+    cfg_copy['misc']['max_ep'] = 2000
     cfg_copy['misc']['worker_nickname'] = 'w_%03d' % (seed)
     cfg_copy['misc']['redirect_stdout_2_file'] = False
     cfg_copy['misc']['gym_monitor_path'] = None
     
     prj_name ='gym-%s_seed_%04d' % ( cfg_copy['RL']['method'], seed)
     
-    s = standalone_switch(GymStandalone, cfg_copy, prj_name)
+    s = standalone_switch(MazeStandalone, cfg_copy, prj_name)
     s.run()
 
     # ep = s.ep
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     find_success = False
     while not find_success:
         start_seed = end_seed
-        end_seed+= 10
+        end_seed+= 4
 
         rand_seed_list = range(start_seed,end_seed)
         seed_num  = len(rand_seed_list)

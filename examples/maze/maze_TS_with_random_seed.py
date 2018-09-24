@@ -1,6 +1,7 @@
 # python maze_TS_with_random_seed.py DQN.yaml
 # python maze_TS_with_random_seed.py DQN.yaml DDPG.yaml | tee  test-p2-r3.log
 # python maze_TS_with_random_seed.py DQN.yaml DDPG.yaml Q-learning.yaml | tee  test-p2-r3.log
+# python maze_TS_with_random_seed.py DQN.yaml DDPG.yaml Q-learning.yaml A3C.yaml | tee  test-p16-r3.log
 
 # Choose best agent Use Thompson Sampling (TS) from radom seed (0~14)
 from os.path import splitext

@@ -64,13 +64,13 @@ class AgentPlayEnv:
                 self.p_dic['ep'] = ep
                 self.p_dic['r'] = ep_reward
                 self.p_dic['sum_r'] = all_ep_sum_reward
-                
                 self.p_dic['successvie_count_max'] = successvie_count_max
                 self.p_dic['first_over_threshold_ep'] = first_over_threshold_ep
                 self.p_dic['from_start_time'] = time.time() - self.start_time
                 
                 self.p_ready.value = True
 
+        # important, block it
         self.p_conn.recv()          # block
 
 
