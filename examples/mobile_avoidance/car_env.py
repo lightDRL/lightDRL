@@ -68,7 +68,7 @@ class CarEnv(object):
             r += -1.
         if self.car_info['a'][0]==30 or self.car_info['a'][0]==370 \
              or self.car_info['a'][1]==30 or self.car_info['a'][1]==370:
-#                done = True
+                done = True
                 r += -1.
                 
             
