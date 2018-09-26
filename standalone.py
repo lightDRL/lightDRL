@@ -60,13 +60,18 @@ class Standalone(LogRL, ServerBase):
             if self.ep > self.cfg['misc']['max_ep']: # loop 1 done
                 break 
             elif is_success:
-                print('{} First success EP = {}, use_time = {:.2f}'.format(self.project_name, self.ep, time.time() - self.start_time) )
-                break 
+                if self.cfg['misc']['threshold_successvie_break']: 
+                    print('{} First success EP = {}, use_time = {:.2f}'.format(self.project_name, self.ep, time.time() - self.start_time) )
+                    break
+                # break 
 
         print('Use tiem =',  time.time() - self.start_time)
 
     def set_ep_done_cb(self, cb):
         self.ep_done_cb = cb
+
+    def get_success(self):
+        return self.check_success()
 
     def __del__(self):
         if hasattr(self, 'env') and hasattr(self.env, 'close') and callable(getattr(self.env, 'close')):

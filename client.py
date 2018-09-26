@@ -29,7 +29,7 @@ class LogRL:
         
         is_success = False
         if hasattr(self, 'threshold_r'):
-            successvie_count_max, first_over_threshold_ep = self.check_success(self.ep+1, self.ep_reward)
+            successvie_count_max, first_over_threshold_ep = self.check_success(self.ep_reward)
             if first_over_threshold_ep:
                 is_success = True
                 self.is_success = True
@@ -64,13 +64,17 @@ class LogRL:
         self.threshold_successvie_count = threshold_successvie_count
         self.reward_list=[]
         self.is_success = False
+        self.threshold_success_time = None
 
-    def check_success(self, ep, ep_reward):
+    def check_success(self, ep_reward = None):
         assert hasattr(self, 'reward_list'), 'LogRL Object no reward_list property'
         successvie_count = 0
         successvie_count_max = 0
         first_over_threshold_ep = -1
-        self.reward_list.append(ep_reward)
+        if ep_reward!=None:
+            self.reward_list.append(ep_reward)
+
+        
 
         # print(f'ep = {ep}, len(self.reward_list)={len(self.reward_list)}')
 
@@ -85,6 +89,8 @@ class LogRL:
             if successvie_count >= self.threshold_successvie_count and first_over_threshold_ep==-1:
                 first_over_threshold_ep = i
 
+        if self.threshold_success_time == None and first_over_threshold_ep>0:
+            self.threshold_success_time = time.time() - self.start_time
             
         if successvie_count_max >= self.threshold_successvie_count:
             return successvie_count_max, first_over_threshold_ep

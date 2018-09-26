@@ -10,36 +10,36 @@ conn:
 RL:
     method: 'DDPG'
     # train_multi_steps: 1       # default: 1, param: 'if_down', 'steps(int)'-> train if down or train after steps    
-    reward_gamma: 0.9
+    reward_gamma: 0.99
     reward_factor: 0.01            # default: 1
     reward_reverse: yes           # dafault: False
     add_data_steps: 'if_down'     # dafault: 1 , param: 'if_down', 'steps(int)'    
-    # exploration: 300        # train after exploration step
+    exploration: 300        # train after exploration step
     # action_noise: 'Uhlenbeck'
-    action_noise: 'Gaussian'
-    state_discrete: no
+    action_noise: 'epsilon-greedy'
+    state_discrete: yes
     state_shape: [22,]
     action_discrete: no
     action_shape: [1,]    
     action_bound: 3.14159
     
 DDPG:
-    lr_actor:   0.001  # learning rate for actor (1e-4)
-    lr_critic:  0.001  # learning rate for critic
+    lr_actor:   0.002  # learning rate for actor (1e-4)
+    lr_critic:  0.002  # learning rate for critic
     memory_capacity: 10000
-    memory_train_min: 5000 
-    batch_size: 128          
-    tau: 0.01              # the factor about update network with target network
+    memory_train_min: 1000 
+    batch_size: 32          
+    tau: 0.1              # the factor about update network with target network
     
 
-Gaussian:
-    sigma: 1.0
-    sigma_decay: 0.01    # each step discount it  
+epsilon-greedy:
+    value: 1.0
+    discount: 0.02    # each step discount it  
 
 actor_NN:
     actor_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
         type: 'fc'
-        size: 300
+        size: 200
         bias_const: 0.01
         initializer: 'xavier'
 
@@ -60,7 +60,7 @@ critic_action_NN:
         initializer: 'xavier'
         
 misc:
-    model_save_cycle: 100
+    model_save_cycle: 30
     model_retrain: yes
     gpu_memory_ratio: 0.03
     random_seed: 3             # t_82 get max reward = 114.10
@@ -68,6 +68,5 @@ misc:
     render: yes                        # defualt: false, render the env 
     render_after_ep: 100                # defualt: 0, render afet the ep 
     redirect_stdout_2_file: no
-    threshold_r: 1
+    threshold_r: 60
     threshold_successvie_count: 20
-    threshold_successvie_break: no

@@ -40,7 +40,7 @@ def set_none_if_not_exist(cfg):
     cfg['misc']['model_retrain'] = False  if 'model_retrain' not in cfg['misc'] else cfg['misc']['model_retrain']
     cfg['misc']['gpu_memory_ratio'] = None  if 'gpu_memory_ratio' not in cfg['misc'] else cfg['misc']['gpu_memory_ratio']
     cfg['misc']['redirect_stdout_2_file'] = False  if 'redirect_stdout_2_file' not in cfg['misc'] else cfg['misc']['redirect_stdout_2_file']
-
+    cfg['misc']['threshold_successvie_break'] = True if 'threshold_successvie_break' not in cfg['misc'] else cfg['misc']['threshold_successvie_break'] 
 
 def set_gym_monitor_path(gym_monitor_path, i_project_name = None):
     if gym_monitor_path==None:

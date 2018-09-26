@@ -36,8 +36,8 @@ class AvoidanceStandalone(Standalone):
         # print(f' r={reward}, d={done}')
         # print(f' s = {now_state}, r={reward}, d={done}, s_={next_state}')
         # print(f' r={reward}, d={done}')
-        if self.ep>=50:
-            self.env.render()
+        if self.cfg['misc']['render'] and self.ep>= self.cfg['misc']['render_after_ep'] :
+            self.env.render()   
         if self.ep_use_step >= (MAX_EP_STEPS-1): 
             done = True   
             # print('a_list = ', self.a_list)

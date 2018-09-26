@@ -26,7 +26,7 @@ DQN:
 
 epsilon-greedy:
     value: 1.0
-    discount: 0.005   # each step discount it  
+    discount: 0.1   # each step discount it  
 
 NN:
     fc_1: # use default op:'relu' and initializer: 'truncated_normal'
@@ -44,7 +44,7 @@ misc:
     model_retrain: yes
     gpu_memory_ratio: 0.02
     random_seed: 24             
-    max_ep:  600                       # defualt:1000, over the ep will auto exit()
+    max_ep:  1000                       # defualt:1000, over the ep will auto exit()
     render: no                        # defualt: false, render the env 
     render_after_ep: 100                # defualt: 0, render afet the ep 
     gym_env: 'CartPole-v0'
@@ -52,3 +52,4 @@ misc:
     gym_monitor_episode: 10             # record every 10 episode
     threshold_r: 200
     threshold_successvie_count: 20 
+    threshold_successvie_break: no

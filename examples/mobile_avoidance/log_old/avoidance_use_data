@@ -1,0 +1,20 @@
+~DDPG~
+[seed=0], is_success=True, ep=  415, all_ep_reward=12675.55, avg_reward= 30.47, use_time=590.88
+[seed=1], is_success=True, ep=  904, all_ep_reward=44495.18, avg_reward= 49.17, use_time=1220.72
+[seed=2], is_success=False, ep= 2000, all_ep_reward=101692.52, avg_reward= 50.82, use_time=2464.05
+
+
+~A3C~
+('W_2', 'Ep:', 1060, '| Ep_r: 60', '| Var:', array([ 4.63487244], dtype=float32), '| suc_count_max', 20, '| first_over_ep', 1060)
+('W_2', ' DONE', ', use_time=', 2720.159541130066)
+('W_0', 'Ep:', 1052, '| Ep_r: 61', '| Var:', array([ 1.37264633], dtype=float32), '| suc_count_max', 18, '| first_over_ep', 0)
+('W_0', 'Ep:', 1053, '| Ep_r: 61', '| Var:', array([ 0.87993926], dtype=float32), '| suc_count_max', 19, '| first_over_ep', 0)
+('W_0', 'Ep:', 1054, '| Ep_r: 60', '| Var:', array([ 0.71647674], dtype=float32), '| suc_count_max', 20, '| first_over_ep', 1054)
+('W_0', ' DONE', ', use_time=', 2722.5892050266266)
+
+
+~TS~
+[08-avoidance-TS-DDPG.yaml-008] ep=  144, sum_r= -568.03, successvie_count_max= 10, first_success_ep=  0, use_time=331.21
+[09-avoidance-TS-DDPG.yaml-009] ep=   55, sum_r=-3502.00, successvie_count_max=  0, first_success_ep=  0, use_time=167.09
+[10-avoidance-TS-DDPG.yaml-010] ep=  136, sum_r= -861.57, successvie_count_max=  7, first_success_ep=  0, use_time=338.40
+[11-avoidance-TS-DDPG.yaml-011] ep=  140, sum_r= -119.45, successvie_count_max= 20, first_success_ep=139, use_time=337.73

@@ -36,7 +36,7 @@ class MobileAvoidance(EnvSpace):
         self.state = next_state
     
         # print('self.env_name=',self.env_name)
-        if self.ep>=30 and RENDER:
+        if self.cfg['misc']['render'] and self.ep>= self.cfg['misc']['render_after_ep'] :
             self.env.render()   
         if done:
             self.state =  self.env.reset()
