@@ -1,0 +1,58 @@
+RL:
+    method: 'DQN'
+    # train_multi_steps: 1       # default: 1, param: 'if_down', 'steps(int)'-> train if down or train after steps    
+    reward_gamma: 0.99    
+    exploration: 50        # train after exploration step
+    state_discrete: yes
+    state_shape: [80,80,4,]
+    action_discrete: yes
+    action_shape: [5,]
+    action_noise: 'epsilon-greedy'
+
+DQN:
+    memory_capacity: 50000
+    memory_train_min: 512 
+    batch_size: 128
+    update_Q_target_times: 128
+    lr: 0.000001
+
+epsilon-greedy:
+    value: 0.8
+    discount: 0.01   # each step discount it  
+
+# from DQN of nature's Model architecture section: https://www.nature.com/articles/nature14236.pdf 
+NN:
+    1_conv: 
+        type: 'conv'
+        kernel_size: 8
+        out_channel: 32
+        stride: 4
+    2_maxpool:
+        type: 'maxpool'
+    3_conv: 
+        type: 'conv'
+        kernel_size: 4
+        out_channel: 64
+        stride: 2
+    4_conv: 
+        type: 'conv'
+        kernel_size: 3
+        out_channel: 64
+        stride: 1
+    5_flatten:
+        type: 'flatten'
+    6_fc:
+        type: 'fc'
+        size: 512
+    7_predict:
+        type: 'fc'
+        size: 5
+        op: 'none'
+
+misc:
+    model_save_cycle: 1000
+    gpu_memory_ratio: 0.1
+    random_seed: 79             # t_82 get max reward = 114.10                   
+    max_ep:  30000                     # defualt:1000, over the ep will auto exit()
+    render: yes                        # defualt: false, render the env 
+    render_after_ep: 200                # defualt: 0, render afet the ep
