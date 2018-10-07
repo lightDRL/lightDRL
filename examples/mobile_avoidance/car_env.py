@@ -55,20 +55,19 @@ class CarEnv(object):
         goal_car_dis=np.hypot(*(self.car_info['a']-self.goal_point)) 
         ob1_car_dis=np.hypot(*(self.car_info['a']-self.o1_point)) 
         ob2_car_dis=np.hypot(*(self.car_info['a']-self.o2_point)) 
-        r+=-0.001
-        # r=-goal_car_dis/4000
+        r=-goal_car_dis/4000
         if goal_car_dis<25+car_r:
-            done = True
-            r += 1.1
+            # done = True
+            r += 1.
         if ob1_car_dis<25+car_r:
-            done = True
+#            done = True
             r += -1.
         if ob2_car_dis<25+car_r:
-            done = True
+#            done = True
             r += -1.
         if self.car_info['a'][0]==30 or self.car_info['a'][0]==370 \
              or self.car_info['a'][1]==30 or self.car_info['a'][1]==370:
-                done = True
+#                done = True
                 r += -1.
                 
             

@@ -20,7 +20,7 @@ def process_func(p_index, yaml_name, conn, ready, dic, lock):
     prj_name = 'avoidance-TS-{}-{:03d}'.format( yaml_name ,p_index) 
     agent = AgentPlayEnv(prj_name)
     agent.set_process_switch(conn, ready, dic, lock)
-    agent.set_success(50, 20)
+    agent.set_success(1, 20)
     
     from avoidance_standalone import AvoidanceStandalone
     c = AvoidanceStandalone(cfg, project_name=prj_name)
@@ -30,6 +30,8 @@ def process_func(p_index, yaml_name, conn, ready, dic, lock):
     agent.mark_start_time()
     c.run()
 
+    print('---after run()-----')
+
 
 if __name__ == '__main__':
-    thompson_sample(process_func, p_num =12, pool_max = 4)
+    thompson_sample(process_func, p_num =8, pool_max = 4)

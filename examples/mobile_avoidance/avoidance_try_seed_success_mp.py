@@ -1,6 +1,6 @@
 # Run gym with different seed
 #   ex: 
-#       ython avoidance_try_seed_success_mp.py DDPG.yaml
+#       python avoidance_try_seed_success_mp.py DDPG.yaml
 # Author:  kbehouse  <https://github.com/kbehouse/>
 #          
 

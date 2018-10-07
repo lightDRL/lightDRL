@@ -183,7 +183,9 @@ class ActorNetwork(object):
         # print('type( self.s_dim = ', type( self.s_dim),'self.s_dim = ', self.s_dim)
         # print('self.a_dim = ' , self.a_dim)
        
-        inputs = tf.placeholder(tf.float32, [None, self.s_dim], name =  'state')
+        # inputs = tf.placeholder(tf.float32, [None, self.s_dim], name =  'state')
+        inputs = tf.placeholder("float",  np.concatenate( ([None], self.s_dim) ), name =  'state')
+
         # type 1
         # fc1 = FC(inputs, n_hidden_1, name_prefix = 'fc_1', op='relu', initializer = 'truncated_normal', bias_const=0.03)
         # fc2 = FC(fc1   , n_hidden_2, name_prefix = 'fc_2', op='relu', initializer = 'truncated_normal', bias_const=0.03)
@@ -278,7 +280,9 @@ class CriticNetwork(object):
 
     def create_critic_network(self):
         
-        state = tf.placeholder(tf.float32, [None, self.s_dim], name="state")
+        # state = tf.placeholder(tf.float32, [None, self.s_dim], name="state")
+        state = tf.placeholder("float",  np.concatenate( ([None], self.s_dim) ), name =  'state')
+
         action = tf.placeholder(tf.float32, [None, self.a_dim], name= "action")
 
         # n_hidden_1 = 200

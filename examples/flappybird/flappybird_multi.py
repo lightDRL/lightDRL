@@ -7,7 +7,7 @@ from os.path import basename, splitext
 
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
 from run_multiprocess import basic_multiprocess_from_arg
-from config_selfload import load_config
+from config import load_config
 
 # def process_func(p_index, yaml_path, check, step, lock):
 def process_func(p_index, yaml_path):
@@ -30,7 +30,7 @@ def process_func(p_index, yaml_path):
     print('yaml_name = ', yaml_name)
 
     from flappybird_standalone import FlappyBird   # for io problem
-    c = FlappyBird(cfg, project_name='flappy-' + yaml_name + '-' + str(p_index), redirect_stdout=True )
+    c = FlappyBird(cfg, project_name='flappy-' + yaml_name + '-' + str(p_index))
     c.run()
 
 

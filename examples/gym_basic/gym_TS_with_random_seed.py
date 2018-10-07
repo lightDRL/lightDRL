@@ -18,7 +18,8 @@ import time
 def process_func(p_index, yaml_name, conn, ready, dic, lock):
     conn.recv()
 
-    cfg = gym_cfg( load_config(yaml_name)  )
+    cfg = gym_cfg( read_yaml(yaml_name, p_index)  )
+
     # init AgentPlayEnv
     prj_name = 'gym-{}-{:03d}'.format( yaml_name ,p_index) 
     agent = AgentPlayEnv(prj_name)
@@ -34,4 +35,4 @@ def process_func(p_index, yaml_name, conn, ready, dic, lock):
 
 
 if __name__ == '__main__':
-    thompson_sample(process_func, p_num =16, pool_max = 4)
+    thompson_sample(process_func, p_num =12, pool_max = 4)

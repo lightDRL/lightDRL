@@ -58,7 +58,13 @@ class Standalone(LogRL, ServerBase):
                     # print('a  =', a)
 
             if self.ep > self.cfg['misc']['max_ep']: # loop 1 done
-                break 
+                
+                    # print(f'[] ep = {ep}, ep_reward = {ep_reward},  all_ep_sum_reward = {all_ep_sum_reward}')                  
+                if hasattr(self, 'ep_done_cb'):
+                    ep, ep_use_steps, ep_reward, all_ep_sum_reward, is_success = self.log_data_done()    # loop 2 done
+                    self.ep_done_cb(ep = ep, ep_reward = 0, all_ep_sum_reward =  all_ep_sum_reward)
+                break
+ 
             elif is_success:
                 if self.cfg['misc']['threshold_successvie_break']: 
                     print('{} First success EP = {}, use_time = {:.2f}'.format(self.project_name, self.ep, time.time() - self.start_time) )
@@ -179,8 +185,10 @@ class StandaloneAsync(ServerBase):
         # go run
         s.run()
 
+        successvie_count_max, first_over_threshold_ep = s.check_success()
+
         # get less ep
-        if s.ep < self.success_best_less_ep:
+        if first_over_threshold_ep < self.success_best_less_ep:
             self.threadLock.acquire()
             self.success_best_less_ep = s.ep
             self.success_best_less_ep_thread_id = thread_id
@@ -188,6 +196,12 @@ class StandaloneAsync(ServerBase):
             self.use_time = time.time()-s.start_time 
             self.all_ep_reward = s.all_ep_reward 
             self.is_success = s.is_success 
+
+            self.successvie_count_max = successvie_count_max
+            self.first_over_threshold_ep = first_over_threshold_ep
+            self.reward_list = s.reward_list
+            self.threshold_success_time = s.threshold_success_time
+            
             self.threadLock.release()
 
        
@@ -196,6 +210,9 @@ class StandaloneAsync(ServerBase):
         # # self.asyc_best_reward = avg_r if avg_r > self.asyc_best_reward else self.asyc_best_reward
         # self.best_avg_reward = avg_r if avg_r > self.best_avg_reward else self.best_avg_reward
         # self.threadLock.release()
+
+    def check_success(self):
+        return self.successvie_count_max, self.first_over_threshold_ep
 
     def modify_cfg(self, cfg, thread_id):
         cfg_copy = copy.deepcopy(cfg) 

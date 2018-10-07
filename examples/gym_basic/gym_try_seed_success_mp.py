@@ -43,7 +43,7 @@ def gym_thread(seed, yaml_path):
     successvie_count_max, first_over_threshold_ep = s.check_success()
     ret_dic = {'success_ep': first_over_threshold_ep, 'success_time': s.threshold_success_time,
                 'successvie_count_max': successvie_count_max, 
-                'half_avg_r': half_avg_r,'avg_r': avg_r, 'r_list':r_list}
+                'half_avg_r': half_avg_r,'avg_r': avg_r}
 
     return ret_dic
 
@@ -76,10 +76,11 @@ if __name__ == '__main__':
         #     if res < 1000:
         #         find_success = True
         #         break
-        for dic in results:
-            if dic['success_ep'] > 0:
-                find_success = True
-                break
+        # for dic in results:
+        #     if dic['success_ep'] > 0:
+        #         find_success = True
+        #         break
+        find_success = True
     
 
     max_seed_ep = -999999
@@ -96,17 +97,17 @@ if __name__ == '__main__':
     #         min_seed_ep  = ep 
 
     for i, dic  in enumerate(results):
-        if dic['success_ep']  > max_seed_ep :
+        if dic['success_ep']  > max_seed_ep and dic['success_ep']>0 :
             max_rand = rand_seed_list[i]
             max_seed_ep  = dic['success_ep'] 
 
-        if dic['success_ep']  < min_seed_ep :
+        if dic['success_ep']  < min_seed_ep and dic['success_ep']>0:
             min_rand = rand_seed_list[i]
             min_seed_ep  = dic['success_ep'] 
 
     for i, d  in enumerate(results):
         print(f"{rand_seed_list[i]}_seed_want=[{d['success_ep']},{d['success_time']} ,{d['half_avg_r']} , {d['avg_r']}]")
-        print(f"{rand_seed_list[i]}_seed_list={d['r_list']}")
+        # print(f"{rand_seed_list[i]}_seed_list={d['r_list']}")
 
     for i, d  in enumerate(results):
         show_s = f'[seed={rand_seed_list[i]}] '
@@ -121,7 +122,7 @@ if __name__ == '__main__':
         print(show_s)
         # print(f"[seed={rand_seed_list[i]}], is_success={d['is_success']}, ep={d['ep']:5d}, all_ep_reward={d['all_ep_reward']:8.2f}, avg_reward={d['avg_reward']:6.2f}, use_time={d['use_time']:6.2f}")
 
-    print('Use time = ', time.time() - s_time)
+    print('Use time = {:.2f}'.format(time.time() - s_time))
     print('%s get min ep  = %6.2f' % (min_rand, min_seed_ep ))   
     print('%s get max ep  = %6.2f' % (max_rand, max_seed_ep ))
     

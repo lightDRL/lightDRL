@@ -44,7 +44,7 @@ misc:
     model_retrain: yes
     gpu_memory_ratio: 0.02
     random_seed: 24             
-    max_ep:  1000                       # defualt:1000, over the ep will auto exit()
+    max_ep:  2500                       # defualt:1000, over the ep will auto exit()
     render: no                        # defualt: false, render the env 
     render_after_ep: 100                # defualt: 0, render afet the ep 
     gym_env: 'CartPole-v0'

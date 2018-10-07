@@ -68,7 +68,7 @@ misc:
     model_retrain: yes
     gpu_memory_ratio: 0.04
     random_seed: 60             # t_82 get max reward = 114.10
-    max_ep:  1000                       # defualt:1000, over the ep will auto exit()
+    max_ep:  3000                       # defualt:1000, over the ep will auto exit()
     render: no                        # defualt: false, render the env 
     render_after_ep: 10                # defualt: 0, render afet the ep 
     gym_env: 'CartPole-v0'

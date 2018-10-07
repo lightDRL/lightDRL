@@ -8,6 +8,7 @@ from config import load_config
 import  numpy as np
 import random
 
+MAX_EP = 2000
 
 class Thompson(object):
     def __init__(self):
@@ -49,6 +50,7 @@ class AgentPlayEnv:
         # set success threshold, update by set_success
         self.threshold_r = 1
         self.threshold_successvie_count = 20
+        self.threshold_success_time = None
 
     def mark_start_time(self):
         self.start_time = time.time()
@@ -56,7 +58,13 @@ class AgentPlayEnv:
     def ep_done_cb(self, ep, ep_reward, all_ep_sum_reward):
         print(f'[{self.prj_name}_{os.getpid()}] ep = {ep}, ep_reward = {ep_reward:.2f},  all_ep_sum_reward = {all_ep_sum_reward:.2f}')
         self.beta_update(ep_reward)
-        successvie_count_max, first_over_threshold_ep = self.check_success(ep, ep_reward)
+        successvie_count_max, first_over_threshold_ep = self.check_success(ep_reward)
+
+
+        if ep >=MAX_EP:
+            self.show_result()
+        if self.threshold_success_time ==None and first_over_threshold_ep>0:
+            self.threshold_success_time = time.time() - self.start_time
 
         if not self.p_ready.value:
             with self.p_lock:
@@ -69,6 +77,7 @@ class AgentPlayEnv:
                 self.p_dic['from_start_time'] = time.time() - self.start_time
                 
                 self.p_ready.value = True
+
 
         # important, block it
         self.p_conn.recv()          # block
@@ -89,11 +98,12 @@ class AgentPlayEnv:
         self.threshold_r = i_threshold_r
         self.threshold_successvie_count = i_threshold_successvie_count
 
-    def check_success(self, ep, ep_reward):
+    def check_success(self, ep_reward = None):
         successvie_count = 0
         successvie_count_max = 0
         first_over_threshold_ep = -1
-        self.reward_list.append(ep_reward)
+        if ep_reward!=None:
+            self.reward_list.append(ep_reward)
 
         # print(f'ep = {ep}, len(self.reward_list)={len(self.reward_list)}')
 
@@ -113,6 +123,17 @@ class AgentPlayEnv:
             return successvie_count_max, first_over_threshold_ep
         else:
             return successvie_count_max, 0
+
+    def show_result(self):
+        r_list = self.reward_list
+        r_list_half_len = int(len(r_list)*0.5)
+        half_avg_r = np.mean( r_list[: r_list_half_len])
+        avg_r =  np.mean( r_list)
+
+        successvie_count_max, success_ep = self.check_success()
+        print(f"[{self.prj_name}] -> success_ep={success_ep}, successvie_count_max={successvie_count_max}")
+        print(f"TS_data_{self.prj_name}=[{success_ep},{self.threshold_success_time} ,{half_avg_r} , {avg_r}]")
+        print(f"TS_r_{self.prj_name}={r_list}")
 
 
 def cmd_get_all_yaml():
@@ -159,7 +180,7 @@ def read_yaml(yaml_name, rand_seed):
     cfg = load_config(yaml_name)
     cfg['misc']['random_seed'] = rand_seed
     cfg['misc']['redirect_stdout_2_file'] = True
-
+    cfg['misc']['gym_monitor_path'] = None
     print('random_seed = ', cfg['misc']['random_seed'])
     
     return cfg
@@ -257,7 +278,8 @@ def thompson_sample(process_func, p_num = 100, pool_max = 4):
 
         log_one_ready( p_dict_list[any_one_ready], thompsons[any_one_ready])
 
-        if p_dict_list[any_one_ready]['first_over_threshold_ep'] > 0:
+        if p_dict_list[any_one_ready]['first_over_threshold_ep'] > 0 \
+                and p_dict_list[any_one_ready]['ep'] >= MAX_EP:  # the config need bigger than this
             print('='*10 + 'First Success' +'='*10)
             print('[{}] first succes, first_over_ep={}'.format(  \
                           any_one_ready  ,p_dict_list[any_one_ready]['first_over_threshold_ep']))

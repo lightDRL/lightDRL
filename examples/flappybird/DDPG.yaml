@@ -1,0 +1,100 @@
+conn: 
+    server_worker_num: &ref_server_worker_num 1
+    server_ip: 127.0.0.1
+    server_frontend_port: 5555
+    server_backend_port: 5556
+    client_num: 4
+    client_retries: 3
+    client_timeout: 2500   #ms
+
+RL:
+    method: 'DDPG'
+    # train_multi_steps: 1       # default: 1, param: 'if_down', 'steps(int)'-> train if down or train after steps    
+    reward_gamma: 0.99
+    reward_factor: 0.01            # default: 1
+    reward_reverse: yes           # dafault: False
+    add_data_steps: 'if_down'     # dafault: 1 , param: 'if_down', 'steps(int)'    
+    exploration: 300        # train after exploration step
+    action_noise: 'epsilon-greedy'
+    state_discrete: yes
+    state_shape: [80,80,4,]
+    action_discrete: yes
+    action_shape: [2,]
+    
+
+DDPG:
+    lr_actor:  0.001  # learning rate for actor (1e-4)
+    lr_critic: 0.001  # learning rate for critic
+    memory_capacity: 50000
+    memory_train_min: 512 
+    batch_size: 64          
+    tau: 0.001              # the factor about update network with target network
+
+epsilon-greedy:
+    value: 0.8
+    discount: 0.01   # each step discount it  
+
+actor_NN:
+    1_conv: 
+        type: 'conv'
+        kernel_size: 8
+        out_channel: 32
+        stride: 4
+    2_maxpool:
+        type: 'maxpool'
+    3_conv: 
+        type: 'conv'
+        kernel_size: 4
+        out_channel: 64
+        stride: 2
+    4_conv: 
+        type: 'conv'
+        kernel_size: 3
+        out_channel: 64
+        stride: 1
+    5_flatten:
+        type: 'flatten'
+    6_fc:
+        type: 'fc'
+        size: 512
+
+critic_state_NN:
+    1_conv: 
+        type: 'conv'
+        kernel_size: 8
+        out_channel: 32
+        stride: 4
+    2_maxpool:
+        type: 'maxpool'
+    3_conv: 
+        type: 'conv'
+        kernel_size: 4
+        out_channel: 64
+        stride: 2
+    4_conv: 
+        type: 'conv'
+        kernel_size: 3
+        out_channel: 64
+        stride: 1
+    5_flatten:
+        type: 'flatten'
+    6_fc:
+        type: 'fc'
+        size: 512
+
+
+critic_action_NN:
+    action_fc_1: # use default op:'relu' and initializer: 'truncated_normal'
+        type: 'fc'
+        size: 512
+        bias_const: 0.03
+        
+misc:
+    model_save_cycle: 50
+    model_retrain: yes
+    gpu_memory_ratio: 0.1
+    random_seed: 63             # t_82 get max reward = 114.10
+    max_ep:  5000                       # defualt:1000, over the ep will auto exit()
+    render: yes                        # defualt: false, render the env 
+    render_after_ep: 10                # defualt: 0, render afet the ep 
+    redirect_stdout_2_file: no
