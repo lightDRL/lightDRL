@@ -101,7 +101,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         obj_xy = object_pos[:2]
         
         arm_2_obj_xy = np.linalg.norm(pos_xy -obj_xy)
-        r = -0.01
+        r = -0.1
         if arm_2_obj_xy  < 0.075:
             max_dis = 0.075
             r =  (max_dis - arm_2_obj_xy ) / max_dis 

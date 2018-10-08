@@ -21,8 +21,8 @@ from fetch_cam import FetchDiscreteEnv
 
 # state preprocess to 80*80 gray image
 def state_preprocess(state):
-    state = cv2.cvtColor(cv2.resize(state, (80, 80)), cv2.COLOR_BGR2GRAY)
-    ret, state = cv2.threshold(state,1,255,cv2.THRESH_BINARY)
+    state = cv2.cvtColor(cv2.resize(state, (80, 80)), cv2.COLOR_RGB2GRAY)
+    # ret, state = cv2.threshold(state,1,255,cv2.THRESH_BINARY)
     return np.reshape(state,(80,80,1))
 
 
@@ -60,16 +60,16 @@ class Fetch_Cam_Standalone(Standalone):
         self.env.gripper_close(False)
 
         init_state = self.gripper_pic()
-        init_state = cv2.cvtColor(cv2.resize(init_state, (80, 80)), cv2.COLOR_RGB2GRAY)
-        ret, init_state = cv2.threshold(init_state,1,255,cv2.THRESH_BINARY)
-        self.state = np.stack((init_state, init_state, init_state, init_state), axis = 2)
-
+        gray_init_state = cv2.cvtColor(cv2.resize(init_state, (80, 80)), cv2.COLOR_RGB2GRAY)
+        # ret, gray_init_state = cv2.threshold(init_state,1,255,cv2.THRESH_BINARY)
+        self.state = np.stack((gray_init_state, gray_init_state, gray_init_state, gray_init_state), axis = 2)
 
         # self.save_dir = 'ep_pic/ep_%03d' % self.ep
         # create_dir(self.save_dir)
-        # cv2.imwrite(self.save_dir + '/%03d_r%3.2f.jpg' % (self.ep_use_step,0 ), cv2.cvtColor(self.gripper_pic(), cv2.COLOR_RGB2BGR))
-        # cv2.imwrite(self.save_dir + '/%03d_r%3.2f_gray.jpg' % (self.ep_use_step,0 ), np.squeeze(init_state) )
-    
+        # cv2.imwrite(self.save_dir + '/%03d_r%3.2f_init.jpg' % (self.ep_use_step,0 ), cv2.cvtColor(self.gripper_pic(), cv2.COLOR_RGB2BGR))
+        # cv2.imwrite(self.save_dir + '/%03d_r%3.2f_init_gray.jpg' % (self.ep_use_step,0 ), gray_init_state )
+        
+
         return self.state
 
     def on_action_response(self, action):
@@ -87,7 +87,7 @@ class Fetch_Cam_Standalone(Standalone):
         if self.ep %20 == 0:
             self.env.render()
         # cv2.imwrite(self.save_dir + '/%03d_r%3.2f.jpg' % (self.ep_use_step,0 ), cv2.cvtColor(pic, cv2.COLOR_RGB2BGR))
-        # cv2.imwrite(self.save_dir + '/%03d_r%3.2f_gray.jpg' % (self.ep_use_step,0 ), np.squeeze(next_state) )
+        # cv2.imwrite(self.save_dir + '/%03d_r%3.2f_gray.jpg' % (self.ep_use_step,0 ), next_state[:,:,0] )#np.squeeze(next_state) )
         
         # print('%03d: r=%.2f' % (self.ep, reward), ',done=', done)
         return now_state_4pic, reward, done, next_state_4pic
