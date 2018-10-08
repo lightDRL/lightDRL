@@ -101,10 +101,10 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         obj_xy = object_pos[:2]
         
         arm_2_obj_xy = np.linalg.norm(pos_xy -obj_xy)
-        r = -0.1
+        r = -0.01
         if arm_2_obj_xy  < 0.075:
             max_dis = 0.075
-            r =  (max_dis - arm_2_obj_xy ) / max_dis 
+            r =  (max_dis - arm_2_obj_xy ) / max_dis *0.01
             # print('r = %.2f' % r ,'pos_xy = ', pos_xy,', obj_xy = ', obj_xy,', arm_2_obj_xy = ', arm_2_obj_xy)
 
         return r
@@ -131,9 +131,9 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
             final_gripper_state = self.gripper_close()
             # print("final final_gripper_state = ", final_gripper_state)
             if final_gripper_state[0] > 0.01:
-                reward = 10
+                reward = 1
             else:
-                reward = -10
+                reward = -1
             # up
             self.go_diff_pos([0, 0, -dz])
 

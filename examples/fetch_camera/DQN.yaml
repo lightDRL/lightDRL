@@ -18,7 +18,7 @@ DQN:
 
 epsilon-greedy:
     value: 0.1
-    discount: 0.0001   # each step discount it  
+    discount: 0.00005   # each episode discount it  
 
 # from DQN of nature's Model architecture section: https://www.nature.com/articles/nature14236.pdf 
 NN:
