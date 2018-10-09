@@ -62,7 +62,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
 
             if this_action_use_step>10:
                 # use too much, maybe limit of arm
-                print('this_action_use_step >= 100, maybe limitation position of arm -> break')
+                # print('this_action_use_step >= 10, maybe limitation position of arm -> break')
                 return False
             
     def gripper_close(self, close = True):
@@ -101,20 +101,14 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         obj_xy = object_pos[:2]
         
         arm_2_obj_xy = np.linalg.norm(pos_xy -obj_xy)
-        r = -0.01
-        if arm_2_obj_xy  < 0.075:
-            max_dis = 0.075
+        r = -0.001
+        max_dis = 0.1000
+        if arm_2_obj_xy  < max_dis:
             r =  (max_dis - arm_2_obj_xy ) / max_dis *0.01
             # print('r = %.2f' % r ,'pos_xy = ', pos_xy,', obj_xy = ', obj_xy,', arm_2_obj_xy = ', arm_2_obj_xy)
 
         return r
-        # jacp = self.sim.data.get_geom_jacp(obj_name)
-        # jacr = self.sim.data.get_geom_jacr(obj_name)
-        # xvelp = self.sim.data.get_geom_xvelp(obj_name)
-        # xvelr = self.sim.data.get_geom_xvelr(obj_name)
-
-        # print('{} -> jacp={}, jacr={}, xvelp={}, xvelr={}'.format(obj_name, jacp, jacr, xvelp, xvelr))
-
+        
     # override robot_env:step()
     def step(self, action):
         reward = 0

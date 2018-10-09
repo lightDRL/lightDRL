@@ -14,6 +14,7 @@ log.txt
 Robot_*
 A3C_other
 useful/
+tmp/
 #============== ignore from github default (by selecting python)=======# 
 # Byte-compiled / optimized / DLL files
 __pycache__/
