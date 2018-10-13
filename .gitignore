@@ -15,6 +15,7 @@ Robot_*
 A3C_other
 useful/
 tmp/
+examples/fetch_cam_2_realrobot/
 #============== ignore from github default (by selecting python)=======# 
 # Byte-compiled / optimized / DLL files
 __pycache__/

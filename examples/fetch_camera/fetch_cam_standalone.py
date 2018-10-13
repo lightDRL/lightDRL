@@ -48,7 +48,7 @@ class Fetch_Cam_Standalone(Standalone):
         return rgb_gripper
 
     def env_init(self):
-        self.env = FetchDiscreteEnv(dis_tolerance = 0.001, step_ds=0.005)
+        self.env = FetchDiscreteEnv(dis_tolerance = 0.001, step_ds=0.005, is_render=False)
         self.env.render()
         # init_state = self.gripper_pic()
         # init_state = cv2.cvtColor(cv2.resize(init_state, (80, 80)), cv2.COLOR_RGB2GRAY)

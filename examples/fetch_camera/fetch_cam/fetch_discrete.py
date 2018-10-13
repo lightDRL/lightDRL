@@ -12,7 +12,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         [0, 0, 0, 0, 1]: gripper down and close gripper
 
     '''
-    def __init__(self, reward_type='sparse', dis_tolerance = 0.001, step_ds=0.005):
+    def __init__(self, reward_type='sparse', dis_tolerance = 0.001, step_ds=0.005, is_render=False):
         initial_qpos = {
             'robot0:slide0': 0.405,
             'robot0:slide1': 0.48,
@@ -28,6 +28,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
 
         self.dis_tolerance = dis_tolerance
         self.ds = step_ds     # each step run distance, [1,0,0,0] run dx = 0.01
+        self.is_render = is_render
 
     @property
     def pos(self):
@@ -43,10 +44,10 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         robot_qpos, robot_qvel = robot_get_obs(self.sim)
         return robot_qpos[-2:]
 
-    def go_diff_pos(self, diff_pos):
+    def go_diff_pos(self, diff_pos, gripper_state = 1):
         # diff_pos = [dx, dy, dz]
         this_action_use_step = 0
-        for_set_action =  np.array( [  diff_pos[0], diff_pos[1], diff_pos[2], 1 ]  )
+        for_set_action =  np.array( [  diff_pos[0], diff_pos[1], diff_pos[2], gripper_state ]  )
 
         want_pos = self.pos + diff_pos
         self._set_action(for_set_action)
@@ -54,6 +55,9 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
             self.sim.step()
             self._step_callback()
             this_action_use_step+=1
+
+            if self.is_render:
+                self.render()
 
             dis = np.linalg.norm(self.pos - want_pos)
             # print('dis = ',dis)
@@ -81,19 +85,22 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
             self.sim.step()
             self._step_callback()
 
+            if self.is_render:
+                self.render()
+
             # new grip state
             robot_qpos, robot_qvel = robot_get_obs(self.sim)
             gripper_state = robot_qpos[-2:]
 
             dis = np.linalg.norm(gripper_state - pre_gripper_state)
 
-            # print('gripper_state = ', gripper_state,', dis = ', dis)
-            if dis < self.dis_tolerance:
+            # print('gripper_state = ', gripper_state,', dis = ', dis,', num = ', num)
+            if dis < 0.0001 : #self.dis_tolerance  :
                 # gripper_result= 1. if (gripper_state >= 0.048).all() else -1.  ,
                 # print('gripper_state = ', gripper_state)
-                return gripper_state    
+                return gripper_state
 
-
+        
     def measure_obj_reward(self):
         obj_name = 'object0'
         object_pos = self.sim.data.get_site_xpos(obj_name)
@@ -124,14 +131,32 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
 
             final_gripper_state = self.gripper_close()
             # print("final final_gripper_state = ", final_gripper_state)
-            if final_gripper_state[0] > 0.01:
+            
+            # up
+            self.go_diff_pos([0, 0, -dz], gripper_state = -1)
+
+            if self.gripper_state[0] > 0.01:
                 reward = 1
             else:
                 reward = -1
-            # up
-            self.go_diff_pos([0, 0, -dz])
-
+            
             done = True
+
+            if self.is_render:
+                if final_gripper_state[0] > 0.01:
+                    grip_close_reward = 1
+                else:
+                    grip_close_reward = -1
+                diff_reward = 'DIFF' if grip_close_reward!=reward else 'SAME' 
+                print(f'grip_close_reward = {grip_close_reward}, reward={reward}, {diff_reward}')
+                import time
+                for i in range(1, 100):
+                    # print('in render 0.01, i = ', i)
+                    # time.sleep(0.01)
+                    # self.gripper_close()
+                    self.sim.step()
+                    self._step_callback()
+                    self.render()    
         else:
             
             dx = action[0] *  self.ds - action[2] * self.ds
