@@ -50,9 +50,9 @@ NN:
         op: 'none'
 
 misc:
-    model_save_cycle: 100
+    model_save_cycle: 1000
     gpu_memory_ratio: 0.1
     random_seed: 79             # t_82 get max reward = 114.10                   
-    max_ep:  60000                     # defualt:1000, over the ep will auto exit()
+    max_ep:  100000                     # defualt:1000, over the ep will auto exit()
     render: yes                        # defualt: false, render the env 
     render_after_ep: 200                # defualt: 0, render afet the ep
