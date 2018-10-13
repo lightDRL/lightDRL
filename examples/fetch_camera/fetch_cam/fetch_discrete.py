@@ -52,7 +52,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         want_pos = self.pos + diff_pos
         self._set_action(for_set_action)
         while True:
-            self.sim.step()
+            self.simis_render.step()
             self._step_callback()
             this_action_use_step+=1
 
@@ -169,7 +169,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
                 done = True
                 reward = -1
             else:
-                reward = self.measure_obj_reward()
+                reward = 0 # self.measure_obj_reward()
             
 
 
