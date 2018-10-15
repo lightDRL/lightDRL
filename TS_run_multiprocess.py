@@ -55,14 +55,14 @@ class AgentPlayEnv:
     def mark_start_time(self):
         self.start_time = time.time()
 
-    def ep_done_cb(self, ep, ep_reward, all_ep_sum_reward):
+    def ep_done_cb(self, ep_reward, ep = None,  all_ep_sum_reward = None):
         print(f'[{self.prj_name}_{os.getpid()}] ep = {ep}, ep_reward = {ep_reward:.2f},  all_ep_sum_reward = {all_ep_sum_reward:.2f}')
-        self.beta_update(ep_reward)
+        # self.beta_update(ep_reward)
         successvie_count_max, first_over_threshold_ep = self.check_success(ep_reward)
 
 
-        if ep >=MAX_EP:
-            self.show_result()
+        # if ep >=MAX_EP:
+        #     self.show_result()
         if self.threshold_success_time ==None and first_over_threshold_ep>0:
             self.threshold_success_time = time.time() - self.start_time
 
@@ -137,7 +137,7 @@ class AgentPlayEnv:
 
 
 def cmd_get_all_yaml():
-    '''get all *.yaml, *.yml files'''
+    '''get all *.yaml, *.yml files in command line'''
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -156,9 +156,11 @@ def cmd_get_all_yaml():
     return cmd_parse.files
 
 def duplicate_cmd_yaml_2_p_num(p_num):
-    # ex: 
-    #    python xx.py DQN.yaml DDPG.yaml, 
-    #       if p_num=5, return ['DQN.yaml', 'DQN.yaml', 'DQN.yaml', 'DDPG.yaml', 'DDPG.yaml']
+    '''
+        python xx.py DQN.yaml DDPG.yaml, 
+           if p_num=5, return ['DQN.yaml', 'DQN.yaml', 'DQN.yaml', 'DDPG.yaml', 'DDPG.yaml']
+           if p_num=4, return ['DQN.yaml', 'DQN.yaml', 'DDPG.yaml', 'DDPG.yaml']
+    '''
 
     cmd_fname_list = cmd_get_all_yaml()
     duplicate = p_num // len(cmd_fname_list)  # // get int, ex: 5//2=2
