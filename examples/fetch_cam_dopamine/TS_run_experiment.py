@@ -88,7 +88,9 @@ class Runner(object):
                num_iterations=200,
                training_steps=250000,
                evaluation_steps=125000,
-               max_steps_per_episode=27000):
+               max_steps_per_episode=27000,
+               gpu_ratio = 0.2,
+               redirect_output = True):
     """Initialize the Runner object in charge of running a full experiment.
 
     Args:
@@ -131,7 +133,7 @@ class Runner(object):
     self._environment = create_environment_fn()
     # Set up a session and initialize variables.
     config = tf.ConfigProto(allow_soft_placement=True)
-    config.gpu_options.per_process_gpu_memory_fraction = 0.2
+    config.gpu_options.per_process_gpu_memory_fraction = gpu_ratio
     self._sess = tf.Session('',
                             config=config) #tf.ConfigProto(allow_soft_placement=True))
     self._agent = create_agent_fn(self._sess, self._environment,
@@ -143,6 +145,9 @@ class Runner(object):
     self.ep_done_cb = None
     self.sum_episodes_train = 0
     self.train_s_time = time.time()
+    self.all_ep_sum_reward = 0
+    if redirect_output:
+      sys.stdout = open(base_dir +'/_stdout.log', 'w')
 
   def _create_directories(self):
     """Create necessary sub-directories."""
@@ -298,9 +303,10 @@ class Runner(object):
       # train pahse
       if self._agent.eval_mode==False:
         # only log in train mode
-        # self.tf_summary(ep, ep_r, ep_max_r, ep_use_step, ep_s_time, log_dict):
-        self.tf_summary(ep = num_episodes, ep_r = episode_return, ep_use_steps = episode_length, ep_s_time = ep_s_time, log_dict = None )
-
+        self.all_ep_sum_reward += episode_return
+        ep = self.sum_episodes_train  + num_episodes
+        self.tf_summary(ep = ep, ep_r = episode_return, ep_use_steps = episode_length, ep_s_time = ep_s_time, log_dict = None )
+        self.ep_done_cb(ep = ep, ep_reward = episode_return, all_ep_sum_reward =  self.all_ep_sum_reward)
 
     return step_count, sum_returns, num_episodes
 
@@ -380,8 +386,6 @@ class Runner(object):
     return statistics.data_lists
 
   def tf_summary(self, ep, ep_r, ep_use_steps, ep_s_time, log_dict):
-    ep = self.sum_episodes_train  + ep
-    print('now ep = ', ep,'  ')
     summary = tf.Summary()
     summary.value.add(tag='EP Reward', simple_value=int(ep_r))
     # summary.value.add(tag='EP Max_Reward', simple_value=int(ep_max_r))

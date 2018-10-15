@@ -23,7 +23,9 @@ from dopamine.agents.rainbow import rainbow_agent
 
 import TS_run_experiment
 import tensorflow as tf
-
+import sys, os
+sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)),'../../'))
+from TS_run_multiprocess import thompson_sample, AgentPlayEnv, read_yaml
 
 
 def create_agent(sess, environment, summary_writer=None):
@@ -47,21 +49,26 @@ def create_agent(sess, environment, summary_writer=None):
         summary_writer=summary_writer)
 
 
-def main():
-  base_dir = '../../data_pool/TS_fetch_cam_rainbow'
-  gin_list = ['TS_rainbow.gin']
+def process_func(p_index, conn, ready, dic, lock):
+    conn.recv()
 
-  tf.logging.set_verbosity(tf.logging.INFO)
-  TS_run_experiment.load_gin_configs(gin_list, [])
-  runner =  TS_run_experiment.Runner(base_dir, create_agent)
+    # init AgentPlayEnv
+    prj_name = 'fetch_cam_rainbow-{:03d}'.format(p_index) 
+    agent = AgentPlayEnv(prj_name)
+    agent.set_process_switch(conn, ready, dic, lock)
+    agent.set_success(1.0, 50)
+    agent.mark_start_time()
 
-  
-  runner.run_experiment()
+    # set runner
+    base_dir = '../../data_pool/TS_fetch_cam_rainbow_%03d' % p_index
+    gin_list = ['TS_rainbow.gin']
 
+    tf.logging.set_verbosity(tf.logging.INFO)
+    TS_run_experiment.load_gin_configs(gin_list, [])
+    runner =  TS_run_experiment.Runner(base_dir, create_agent, gpu_ratio=0.1)
+    runner.set_ep_done_cb(agent.ep_done_cb)
+    runner.run_experiment()
+     
+    
 if __name__ == '__main__':
-  # flags.mark_flag_as_required('agent_name')
-  # flags.mark_flag_as_required('base_dir')
-  main()
-
-
-
+  thompson_sample(process_func, p_num =4, pool_max = 1, parse_yaml = False)

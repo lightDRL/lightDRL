@@ -30,12 +30,26 @@ class Thompson(object):
         return self.a/(self.a + self.b)
     
     def update(self, x):
-        self.a += x
-        self.b += 1 - x
-        self.n += 1 
+        x = np.clip(x, -1, 1)
 
-        self.a = 1 if self.a <1 else self.a
-        self.b = 1 if self.b <1 else self.b
+        if x >= 0:
+            self.a += x
+            self.b += 1 - x
+        else:
+            # self.a += x
+            self.b += 1 -x
+
+        self.n += 1     
+        # self.a = 1 if self.a <1 else self.a
+        # self.b = 1 if self.b <1 else self.b
+
+
+        # self.a += x
+        # self.b += 1 - x
+        # self.n += 1 
+
+        # self.a = 1 if self.a <1 else self.a
+        # self.b = 1 if self.b <1 else self.b
 
 
 class AgentPlayEnv:
@@ -56,7 +70,7 @@ class AgentPlayEnv:
         self.start_time = time.time()
 
     def ep_done_cb(self, ep_reward, ep = None,  all_ep_sum_reward = None):
-        print(f'[{self.prj_name}_{os.getpid()}] ep = {ep}, ep_reward = {ep_reward:.2f},  all_ep_sum_reward = {all_ep_sum_reward:.2f}')
+        # print(f'[{self.prj_name}_{os.getpid()}] ep = {ep}, ep_reward = {ep_reward:.2f},  all_ep_sum_reward = {all_ep_sum_reward:.2f}')
         # self.beta_update(ep_reward)
         successvie_count_max, first_over_threshold_ep = self.check_success(ep_reward)
 
@@ -187,6 +201,9 @@ def read_yaml(yaml_name, rand_seed):
     
     return cfg
 
+def sec_2_hms(t):
+    hms = '%02dh%02dm%02ds' % (t/3600, t/60 % 60  , t%60)
+    return hms
 
 def log_one_ready(l, ts):#p_dic_list, any_one_ready):
     # l = p_dic_list[any_one_ready]
@@ -194,11 +211,12 @@ def log_one_ready(l, ts):#p_dic_list, any_one_ready):
     ep = l['ep']
     ep_r = l['r']
     successvie_count_max = l['successvie_count_max']
-    use_time = l['successvie_count_max']
-                
-    print(f"[{name:>20}] a={ts.a:6.2f}, b={ts.b:6.2f}, n={ts.n:5d}, ep={ep:5d}, ep_r={ep_r:8.2f}, suc_max={successvie_count_max:3d}, all_time={use_time:6.2f}")
+    use_time = sec_2_hms(l['from_start_time'])
+    
 
-def thompson_sample(process_func, p_num = 100, pool_max = 4):
+    print(f"[{name:>20}] a={ts.a:9.1f}, b={ts.b:9.1f}, n={ts.n:8d}, ep={ep:8d}, ep_r={ep_r:4.2f}, suc_max={successvie_count_max:5d}, time={use_time}")
+
+def thompson_sample(process_func, p_num = 100, pool_max = 4, parse_yaml = True):
     np.random.seed(3)
     threads = []
     p_ready_list = []
@@ -227,9 +245,13 @@ def thompson_sample(process_func, p_num = 100, pool_max = 4):
         p_dict_list.append(manager.dict())
         p_lock_list.append(manager.Lock())
 
-    yaml_fname_list = duplicate_cmd_yaml_2_p_num(p_num)
+    if parse_yaml:
+        yaml_fname_list = duplicate_cmd_yaml_2_p_num(p_num)
     for i in range(p_num):
-        t = Process(target=process_func, args=(i,yaml_fname_list[i], p_child_conn_list[i], p_ready_list[i], p_dict_list[i], p_lock_list[i] ))
+        if parse_yaml:
+            t = Process(target=process_func, args=(i,yaml_fname_list[i], p_child_conn_list[i], p_ready_list[i], p_dict_list[i], p_lock_list[i] ))
+        else:
+            t = Process(target=process_func, args=(i,p_child_conn_list[i], p_ready_list[i], p_dict_list[i], p_lock_list[i] ))
         t.daemon = True
         threads.append(t)
 
@@ -280,14 +302,14 @@ def thompson_sample(process_func, p_num = 100, pool_max = 4):
 
         log_one_ready( p_dict_list[any_one_ready], thompsons[any_one_ready])
 
-        if p_dict_list[any_one_ready]['first_over_threshold_ep'] > 0 \
-                and p_dict_list[any_one_ready]['ep'] >= MAX_EP:  # the config need bigger than this
-            print('='*10 + 'First Success' +'='*10)
-            print('[{}] first succes, first_over_ep={}'.format(  \
-                          any_one_ready  ,p_dict_list[any_one_ready]['first_over_threshold_ep']))
-            print('='*10 + '=============' +'='*10)
+        # if p_dict_list[any_one_ready]['first_over_threshold_ep'] > 0 \
+        #         and p_dict_list[any_one_ready]['ep'] >= MAX_EP:  # the config need bigger than this
+        #     print('='*10 + 'First Success' +'='*10)
+        #     print('[{}] first succes, first_over_ep={}'.format(  \
+        #                   any_one_ready  ,p_dict_list[any_one_ready]['first_over_threshold_ep']))
+        #     print('='*10 + '=============' +'='*10)
 
-            break       # -------break the while loop
+        #     break       # -------break the while loop
 
     # wait all finish
     while len(now_play_list) > 0:
