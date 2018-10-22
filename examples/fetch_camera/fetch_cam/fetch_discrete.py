@@ -2,6 +2,9 @@ from gym import utils
 from fetch_cam import fetch_env
 import numpy as np 
 from fetch_cam.utils import robot_get_obs
+from mujoco_py.modder import TextureModder
+from matplotlib.colors import hsv_to_rgb, rgb_to_hsv
+import random
 
 class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
     '''
@@ -38,6 +41,10 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
     @property
     def obj_pos(self):
         return self.sim.data.get_site_xpos('object0')
+
+    def get_obj_pos(self, obj_id ):
+        obj_name  = 'object%d' % obj_id
+        return self.sim.data.get_site_xpos(obj_name)
 
     @property
     def gripper_state(self):
@@ -124,7 +131,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         
         if action[4]==1:
             
-            object_pos = self.sim.data.get_site_xpos('object0')
+            object_pos = self.sim.data.get_site_xpos('object0').copy()
             dz = object_pos[2] - self.pos[2]
             self.go_diff_pos([0, 0, dz])
             # print('DOWN object_pos = ', object_pos,'self.pos = ', self.pos, ',dz = ', dz)
@@ -134,9 +141,19 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
             
             # up
             self.go_diff_pos([0, 0, -dz], gripper_state = -1)
-
-            if self.gripper_state[0] > 0.01:
+            new_object_pos = self.sim.data.get_site_xpos('object0')
+            if self.gripper_state[0] > 0.01 and (new_object_pos[2]-object_pos[2])>=0.2: # need to higher than 20cm    
                 reward = 1
+                ori_xy = object_pos[:2]
+                new_xy = new_object_pos[:2]
+                
+                diff_xy = np.linalg.norm(new_xy -ori_xy)    
+                diff_xy = diff_xy / 0.01  # to cm
+
+                # print('diff_xy = ', diff_xy)
+
+                reward-= diff_xy * 0.1
+
             else:
                 reward = -1
             
@@ -148,9 +165,9 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
                 else:
                     grip_close_reward = -1
                 diff_reward = 'DIFF' if grip_close_reward!=reward else 'SAME' 
-                print(f'grip_close_reward = {grip_close_reward}, reward={reward}, {diff_reward}')
+                # print(f'grip_close_reward = {grip_close_reward}, reward={reward}, {diff_reward}')
                 import time
-                for i in range(1, 100):
+                for i in range(1, 10):
                     # print('in render 0.01, i = ', i)
                     # time.sleep(0.01)
                     # self.gripper_close()
@@ -169,10 +186,168 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
                 done = True
                 reward = -1
             else:
-                reward = self.measure_obj_reward() # 0
+                reward = 0 # self.measure_obj_reward() # 0
             
 
 
         obs = self._get_obs()
 
         return obs, reward, done, None
+
+    # ------------------------for siamese network------------------------
+    def rand_obj0_hide_obj1_obj2(self):
+        # self.sim.set_state(self.initial_state)
+        # self.gripper_to_init()
+        # self.env.rand_objs_color()
+        # rand obj1 pose
+        self.backup_objs_xpos = []
+        for i in range(3):
+            obj_joint_name = 'object%d' % i
+            pos = self.sim.data.get_site_xpos(obj_joint_name).copy()
+            # print('[%d] pos = ' % i , pos)
+            self.backup_objs_xpos.append(pos)
+        
+        object_xpos = self.initial_gripper_xpos[:2] + self.np_random.uniform(-self.obj_range*0.5, self.obj_range*0.5, size=2)
+        object_qpos = self.sim.data.get_joint_qpos('object0:joint')
+        assert object_qpos.shape == (7,)
+        object_qpos[:2] = object_xpos
+        self.sim.data.set_joint_qpos('object0:joint', object_qpos)
+        
+        # print('object_qpos = ', object_qpos)
+        # hide obj1, obj2
+        obj_z =  object_qpos[2]
+        obj_hide_z = obj_z - 0.15
+
+        # print('obj0 z ', obj_z)
+        for i in range(1,3):
+            obj_joint_name = 'object%d:joint' % i
+            # print("modify ", obj_joint_name)
+            object_qpos = self.sim.data.get_joint_qpos(obj_joint_name)
+            assert object_qpos.shape == (7,)
+            object_qpos[2] = obj_hide_z
+
+            self.sim.data.set_joint_qpos(obj_joint_name, object_qpos)
+
+        self.sim.forward()
+        self._step_callback()
+
+        # self.render()
+        # self.gripper_to_init()
+
+    def hide_obj1_obj2(self):
+       
+        # hide obj1, obj2
+        obj_z =  self.obj_pos[2]
+        obj_hide_z = obj_z - 0.15
+
+        for i in range(1,3):
+            obj_joint_name = 'object%d:joint' % i
+            # print("modify ", obj_joint_name)
+            object_qpos = self.sim.data.get_joint_qpos(obj_joint_name)
+            assert object_qpos.shape == (7,)
+            object_qpos[2] = obj_hide_z
+
+            self.sim.data.set_joint_qpos(obj_joint_name, object_qpos)
+
+        self.sim.forward()
+        self._step_callback()
+
+        # self.render()
+        # self.gripper_to_init()
+
+    # def rand_objs_color(self):
+    #     for i in range(3):
+    #         obj_name = 'object%d' % i
+    #         # it will fail in first time
+    #         try:
+    #             modder = TextureModder(self.sim)
+    #             # color = np.array([0, 0,255 ]
+    #             color = np.array(np.random.uniform(size=3) * 255, dtype=np.uint8) 
+    #             modder.set_rgb(obj_name, color )
+
+                
+    #         except Exception as e :
+    #             pass
+    #             # print('[E] fail to set color to ' , obj_name,', becase e -> ', e )
+
+    #     self.sim.forward()
+
+    def set_obj_color(self, geom_name, rgba):
+        geom_id = self.sim.model.geom_name2id(geom_name)
+        mat_id = self.sim.model.geom_matid[geom_id]
+        # print('mat_id = ', mat_id)
+        # print('self.model.mat_rgba = ' , self.sim.model.mat_rgba)
+        # self.model.mat_rgba[mat_id, :] = 1.0
+        self.sim.model.mat_rgba[mat_id] = rgba # [0., 1., 0.,1.]
+
+
+
+    def rand_objs_color(self, exclude_obj0 = False):
+        start_obj = 0 if exclude_obj0==False else 1
+        for i in range(start_obj, 3):
+            obj_name = 'object%d' % i
+            # it will fail in first time
+            try:
+                color =  np.random.rand(4)
+                color[3] = 1.0
+                # print('!!color = ', color) 
+                self.set_obj_color(obj_name, color)
+
+            except Exception as e :
+                # pass
+                print('[E] fail to set color to ' , obj_name,', becase e -> ', e )
+
+        self.sim.forward()
+
+
+    def rand_objs_hsv(self):
+        
+        if not hasattr(self, 'color_space'):
+            # only catch 3603 colors
+            self.color_space = []
+            HUE_MAX = 180
+            for h in np.linspace(0,1,HUE_MAX,endpoint=False):
+                for s in np.linspace(0.1, 1.0, 10,endpoint=True):
+                    for v in [0.5,1.0]:
+                        self.color_space.append([h, s, v])
+            self.color_space.append([0,0,  0])
+            self.color_space.append([0,0,0.5])
+            self.color_space.append([0,0,1.0])
+
+        try:
+            hsv_3 = random.sample(self.color_space, 3)
+
+            for i in range(3):
+                obj_name = 'object%d' % i
+                '''
+                rgb = hsv_to_rgb( hsv_3[i] )* 255.0
+                rgb = rgb.astype(int)
+                # print('hsv = ', hsv_3[i], ', rgb=', rgb)
+                
+                modder = TextureModder(self.sim)
+                modder.set_rgb(obj_name, rgb )
+                '''
+                rgb = hsv_to_rgb( hsv_3[i] )
+                rgba = [rgb[0], rgb[1], rgb[2], 1.0]
+                self.set_obj_color(obj_name, rgba)
+        except Exception as e :
+            # pass
+            print('[E] fail to set color to ' , obj_name,', becase e -> ', e )
+
+
+                
+    def recover_obj0_obj1_obj2_pos(self):
+        # print('len(self.backup_objs_xpos) = ', len(self.backup_objs_xpos))
+
+        for i in range(len(self.backup_objs_xpos)):
+            obj_joint_name = 'object%d:joint' % i
+            object_qpos = self.sim.data.get_joint_qpos(obj_joint_name)
+            assert object_qpos.shape == (7,)
+            object_qpos[:3] = self.backup_objs_xpos[i]
+            # print('self.backup_objs_xpos[%d] = ' % i , self.backup_objs_xpos[i])
+            self.sim.data.set_joint_qpos(obj_joint_name, object_qpos)
+
+        self.sim.forward()
+        self._step_callback()
+
+            

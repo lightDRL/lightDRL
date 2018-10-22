@@ -39,17 +39,28 @@ class Standalone(LogRL, ServerBase):
                 # self.log_time('before step')
                 s, r, d, s_ = self.on_action_response(step_action) 
                 # self.log_time('step')
+                # print('43, self.ep_use_step = ', self.ep_use_step)
                 # self.log_time('before dic')
-                dic ={'s': s, 'a': a, 'r': r, 'd': d, 's_': s_}
-                # self.log_time('after dic')
-                self.worker.train_process(dic)
+                if not self.cfg['misc']['evaluation']:
+                    dic ={'s': s, 'a': a, 'r': r, 'd': d, 's_': s_}
+                    # self.log_time('after dic')
+                    self.worker.train_process(dic)
+                
                 self.log_data_step(r)
+                    
                 # self.log_time('train')
                 if d:
                     ep, ep_use_steps, ep_reward, all_ep_sum_reward, is_success = self.log_data_done()    # loop 2 done
                     # print(f'[] ep = {ep}, ep_reward = {ep_reward},  all_ep_sum_reward = {all_ep_sum_reward}')                  
                     if hasattr(self, 'ep_done_cb'):
                         self.ep_done_cb(ep = ep, ep_reward = ep_reward, all_ep_sum_reward =  all_ep_sum_reward)
+                    
+                    if self.cfg['misc']['evaluation']:
+                        if not hasattr(self, 'evaluation_ep'):
+                            self.evaluation_ep = 0
+                        
+                        self.evaluation_ep +=1
+                        self.evaluation_done_cb(ep = self.evaluation_ep, terminal_reward = r, ep_use_steps = ep_use_steps)
                     break
                 else:
                     action = self.worker.predict(s_)
@@ -69,6 +80,10 @@ class Standalone(LogRL, ServerBase):
                 if self.cfg['misc']['threshold_successvie_break']: 
                     print('{} First success EP = {}, use_time = {:.2f}'.format(self.project_name, self.ep, time.time() - self.start_time) )
                     break
+            elif self.cfg['misc']['evaluation']:
+                if self.evaluation_ep >=self.cfg['misc']['evaluation_ep']:
+                    break
+
                 # break 
 
         print('Use tiem =',  time.time() - self.start_time)

@@ -160,6 +160,33 @@ class FetchEnv(robot_env.RobotEnv):
         # self.sim.model.site_pos[site_id] = self.goal - sites_offset[0]
         self.sim.forward()
 
+
+    def check_dis_any_small_threshold(self, pos_ary, pos_check, threshold):
+        '''
+            if any element in ary < threshold, return True
+            else return False
+        '''
+        for pos in pos_ary:
+            obj_2_obj_dis = np.linalg.norm(pos - pos_check)
+            if obj_2_obj_dis < threshold:
+                return True
+        return False
+
+    def generate_3_obj_pos(self):
+        assert self.has_object == True, 'self.has_object != True'
+        
+        obj_pos_ary =[]
+        for i in range(3):
+            obj_gripper_dis = 0
+            object_xpos = self.initial_gripper_xpos[:2]
+            while  obj_gripper_dis < 0.1 or self.check_dis_any_small_threshold(obj_pos_ary, object_xpos , 0.1) :
+                object_xpos = self.initial_gripper_xpos[:2] + self.np_random.uniform(-self.obj_range, self.obj_range, size=2)
+                obj_gripper_dis = np.linalg.norm(object_xpos - self.initial_gripper_xpos[:2])
+
+            obj_pos_ary.append(object_xpos)
+
+        return obj_pos_ary
+
     def _reset_sim(self):
         # self._env_setup(initial_qpos=self.initial_qpos)
         # print('in _reset_sim')
@@ -167,17 +194,37 @@ class FetchEnv(robot_env.RobotEnv):
         # print("self.initial_state =", self.initial_state)
         # Randomize start position of object.
         if self.has_object:
-            object_xpos = self.initial_gripper_xpos[:2]
-            while np.linalg.norm(object_xpos - self.initial_gripper_xpos[:2]) < 0.1:
-                object_xpos = self.initial_gripper_xpos[:2] + self.np_random.uniform(-self.obj_range, self.obj_range, size=2)
-            object_qpos = self.sim.data.get_joint_qpos('object0:joint')
-            assert object_qpos.shape == (7,)
-            object_qpos[:2] = object_xpos
-            self.sim.data.set_joint_qpos('object0:joint', object_qpos)
+            # object_xpos = self.initial_gripper_xpos[:2]
+            # while np.linalg.norm(object_xpos - self.initial_gripper_xpos[:2]) < 0.1:
+            #     object_xpos = self.initial_gripper_xpos[:2] + self.np_random.uniform(-self.obj_range, self.obj_range, size=2)
+            # object_qpos = self.sim.data.get_joint_qpos('object0:joint')
+            # assert object_qpos.shape == (7,)
+            # object_qpos[:2] = object_xpos
+            # self.sim.data.set_joint_qpos('object0:joint', object_qpos)
 
+            obj_pos_ary = self.generate_3_obj_pos()
+            obj_z = self.sim.data.get_joint_qpos('object0:joint')[2]
+            # print(obj_pos_ary)
+            for i in range(len(obj_pos_ary)):
+                obj_joint_name = 'object%d:joint' % i
+                try:
+                    object_qpos = self.sim.data.get_joint_qpos(obj_joint_name)
+                    assert object_qpos.shape == (7,)
+                    object_qpos[:2] = obj_pos_ary[i]
+                    object_qpos[2] = obj_z if i>=1 else  object_qpos[2]
+                        
+                    self.sim.data.set_joint_qpos(obj_joint_name, object_qpos)
+                except Exception as e :
+                    # print('e -> ', e )
+                    # continue
+                    pass 
+
+        
         self.sim.forward()
-
         self.gripper_to_init()
+
+        
+        # modder.rand_rgb('object0')
 
         return True
 
@@ -218,10 +265,16 @@ class FetchEnv(robot_env.RobotEnv):
 
     def gripper_to_init(self):
         # Move end effector into position.
-        gripper_target = np.array([1.34194353, 0.74910047, 0.53471723])
+        # gripper_target = np.array([1.34194353, 0.74910047, 0.53471723])
+        gripper_target = np.array([1.34194353, 0.74910047, 0.55])
         gripper_rotation = np.array([1., 0., 1., 0.])
         self.sim.data.set_mocap_pos('robot0:mocap', gripper_target)
         self.sim.data.set_mocap_quat('robot0:mocap', gripper_rotation)
+
+        # open gripper
+        open_gripper =  np.array( [ 0, 0, 0, 1 ]  )
+        self._set_action(open_gripper)
+
         for _ in range(10):
             self.sim.step()
 
@@ -229,3 +282,22 @@ class FetchEnv(robot_env.RobotEnv):
         self.initial_gripper_xpos = self.sim.data.get_site_xpos('robot0:grip').copy()
         if self.has_object:
             self.height_offset = self.sim.data.get_site_xpos('object0')[2]
+
+
+
+        # gripper_ctrl = np.array([gripper_ctrl, gripper_ctrl])
+        # assert gripper_ctrl.shape == (2,)
+        # if self.block_gripper:
+        #     gripper_ctrl = np.zeros_like(gripper_ctrl)
+        # action = np.concatenate([pos_ctrl, rot_ctrl, gripper_ctrl])
+
+        # # print('self.has_object = ', self.has_object)
+        # # print('pos_ctrl = ', pos_ctrl)
+        # # print('gripper_ctrl = ', gripper_ctrl)
+        
+        # # Apply action to simulation.
+        # utils.ctrl_set_action(self.sim, action)
+        # utils.mocap_set_action(self.sim, action)
+
+
+    
