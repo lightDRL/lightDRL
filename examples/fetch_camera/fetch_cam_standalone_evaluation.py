@@ -1,4 +1,5 @@
 #   python fetch_cam_standalone_evaluation.py DQN.yaml
+#   python fetch_cam_standalone_evaluation.py DQN.yaml -p fetch_cam-DQN_r0r1
 #   python maze.py Q-learning.yaml
 #   
 # Author:  kbehouse  <https://github.com/kbehouse/>
@@ -15,7 +16,7 @@ from standalone import Standalone
 from config import load_config_from_arg, get_yaml_name_from_arg
 sys.path.append("fetch_cam/")
 from fetch_cam import FetchDiscreteEnv
-
+import argparse
 
 # print('FetchDiscreteEnv.__file__=', FetchDiscreteEnv.__file__)
 
@@ -125,9 +126,19 @@ class Fetch_Cam_Standalone(Standalone):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("YAML",   help="YAML")
+    parser.add_argument("-p", "--project",  help="input project name ")
+    args = parser.parse_args()
+
+    project_name='fetch_cam-' + get_yaml_name_from_arg()
+    if args.project:
+        project_name = args.project
+    print("Use the project: {}!".format(project_name))
 
     cfg = load_config_from_arg()
     cfg['misc']['evaluation'] = True
     cfg['misc']['evaluation_ep'] = 10000
     # print(cfg)
-    Fetch_Cam_Standalone(cfg, project_name='fetch_cam-' + get_yaml_name_from_arg()).run()
+
+    Fetch_Cam_Standalone(cfg, project_name=project_name).run()

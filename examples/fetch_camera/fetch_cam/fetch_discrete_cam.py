@@ -7,10 +7,11 @@ import numpy as np
 IMG_W_H = 84
 # because thread bloack the image catch (maybe), so create the shell class 
 class FetchDiscreteCamEnv:
-    def __init__(self, dis_tolerance = 0.001, step_ds=0.005, gray_img = True, is_render = False):
+    def __init__(self, dis_tolerance = 0.001, step_ds=0.005, gray_img = True, is_render = False, only_show_obj0=False):
         self.env = FetchDiscreteEnv(dis_tolerance = 0.001, step_ds=0.005, is_render = is_render)
         self.gray_img = gray_img
         self.is_render = is_render
+        self.only_show_obj0 = only_show_obj0
 
 
     def state_preprocess(self, img):
@@ -32,7 +33,13 @@ class FetchDiscreteCamEnv:
             mode='offscreen', device_id=-1)
 
         if self.is_render:
-            self.render_gripper_img(rgb_gripper)
+            if self.gray_img:
+                # resize_img = cv2.resize(rgb_gripper, (256, 256), interpolation=cv2.INTER_AREA)
+                gray_img = cv2.cvtColor(rgb_gripper, cv2.COLOR_RGB2GRAY)
+                cv2.imshow('Gripper Image',gray_img)
+                cv2.waitKey(50)
+            else: 
+                self.render_gripper_img(rgb_gripper)
 
         # s = self.state_preprocess(rgb_gripper)
         if self.gray_img:
@@ -59,7 +66,8 @@ class FetchDiscreteCamEnv:
     def reset(self):
         self.env.rand_objs_color(exclude_obj0 = True)
         self.env.reset()
-        # self.env.hide_obj1_obj2()
+        if self.only_show_obj0:
+            self.env.hide_obj1_obj2()
         self.env.render()
         rgb_external = self.env.sim.render(width=256, height=256, camera_name="external_camera_0", depth=False,
                     mode='offscreen', device_id=-1)

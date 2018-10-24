@@ -71,4 +71,4 @@ def process_func(p_index, conn, ready, dic, lock):
      
     
 if __name__ == '__main__':
-  thompson_sample(process_func, p_num =4, pool_max = 1, parse_yaml = False)
+  thompson_sample(process_func, p_num =3, pool_max = 1, parse_yaml = False)

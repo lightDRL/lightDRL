@@ -70,6 +70,7 @@ class ServerBase(object):
             yaml.dump(cfg, outfile, default_flow_style=False)
 
         self.worker = WorkerBase()
+        print('model_log_dir = ', model_log_dir)
         print("cfg['RL']['method']=", cfg['RL']['method'])
         if cfg['RL']['method'] =='Q-learning' or cfg['RL']['method'] =='Qlearning' :
             print("-----------cfg['RL']['method'] =='Q-learning'--------")

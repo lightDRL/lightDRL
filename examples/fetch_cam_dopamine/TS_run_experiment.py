@@ -50,8 +50,8 @@ def load_gin_configs(gin_files, gin_bindings):
                                       skip_unknown=False)
 
 
-def create_fetch_cam_environment():
-  env = FetchDiscreteCamEnv(dis_tolerance = 0.001, step_ds=0.005)
+def create_fetch_cam_environment(is_render):
+  env = FetchDiscreteCamEnv(dis_tolerance = 0.001, step_ds=0.005, gray_img = True, only_show_obj0=False, is_render=is_render)
   return env
 
 
@@ -81,6 +81,7 @@ class Runner(object):
                base_dir,
                create_agent_fn,
                create_environment_fn=create_fetch_cam_environment,
+               is_render = False,
                game_name=None,
                checkpoint_file_prefix='ckpt',
                logging_file_prefix='log',
@@ -90,7 +91,10 @@ class Runner(object):
                evaluation_steps=125000,
                max_steps_per_episode=27000,
                gpu_ratio = 0.2,
-               redirect_output = True):
+               redirect_output = True, 
+               only_evaluation = False,
+               evaluation_done_cb = None,
+               evaluation_max_ep = None):
     """Initialize the Runner object in charge of running a full experiment.
 
     Args:
@@ -130,7 +134,7 @@ class Runner(object):
     self._create_directories()
     self._summary_writer = tf.summary.FileWriter(self._base_dir)
 
-    self._environment = create_environment_fn()
+    self._environment = create_environment_fn(is_render)
     # Set up a session and initialize variables.
     config = tf.ConfigProto(allow_soft_placement=True)
     config.gpu_options.per_process_gpu_memory_fraction = gpu_ratio
@@ -148,6 +152,13 @@ class Runner(object):
     self.all_ep_sum_reward = 0
     if redirect_output:
       sys.stdout = open(base_dir +'/_stdout.log', 'w')
+
+    self.only_evaluation = only_evaluation
+    if only_evaluation:
+      assert evaluation_done_cb!=None, 'You should set evaluation_done_cb when only_evaluation= True!'
+      assert evaluation_max_ep!=None, 'You should set evaluation_max_ep when only_evaluation= True!'
+      self.evaluation_done_cb = evaluation_done_cb
+      self.evaluation_max_ep = evaluation_max_ep
 
   def _create_directories(self):
     """Create necessary sub-directories."""
@@ -207,7 +218,7 @@ class Runner(object):
     """Executes a single step in the environment.
 
     Args:
-      action: int, the action to perform in the environment.
+      action: int, thecreate_fetch_cam_environment action to perform in the environment.
 
     Returns:
       The observation, reward, and is_terminal values returned from the
@@ -306,7 +317,19 @@ class Runner(object):
         self.all_ep_sum_reward += episode_return
         ep = self.sum_episodes_train  + num_episodes
         self.tf_summary(ep = ep, ep_r = episode_return, ep_use_steps = episode_length, ep_s_time = ep_s_time, log_dict = None )
-        self.ep_done_cb(ep = ep, ep_reward = episode_return, all_ep_sum_reward =  self.all_ep_sum_reward)
+        
+        if hasattr(self, 'ep_done_cb'):
+          self.ep_done_cb(ep = ep, ep_reward = episode_return, all_ep_sum_reward =  self.all_ep_sum_reward)
+      else:
+        # print('ininni self._agent.eval_mode==True!!!!!!!!!!!!')
+        if self.only_evaluation:
+          if not hasattr(self, 'evaluation_ep'):
+            self.evaluation_ep = 0
+            
+          self.evaluation_ep +=1
+          self.evaluation_done_cb(ep = self.evaluation_ep, terminal_reward = episode_return, ep_use_steps = None)
+          if self.evaluation_ep>=self.evaluation_max_ep:
+            break
 
     return step_count, sum_returns, num_episodes
 
@@ -372,17 +395,25 @@ class Runner(object):
       A dict containing summary statistics for this iteration.
     """
     statistics = iteration_statistics.IterationStatistics()
-    tf.logging.info('Starting iteration %d', iteration)
-    num_episodes_train, average_reward_train = self._run_train_phase(
-        statistics)
+    # tf.logging.info('Starting iteration %d!!!!!!!!!!!', iteration)
+    if not self.only_evaluation:
+      # tf.logging.info('in run train phase !!!!')
+      num_episodes_train, average_reward_train = self._run_train_phase(
+          statistics)
+      self.sum_episodes_train += num_episodes_train
+      
+    # tf.logging.info('before run eval phase !!!!')
     num_episodes_eval, average_reward_eval = self._run_eval_phase(
         statistics)
 
-    self.sum_episodes_train += num_episodes_train
-
-    self._save_tensorboard_summaries(iteration, num_episodes_train,
+    if not self.only_evaluation:
+      self._save_tensorboard_summaries(iteration, num_episodes_train,
                                      average_reward_train, num_episodes_eval,
                                      average_reward_eval)
+
+
+    
+    
     return statistics.data_lists
 
   def tf_summary(self, ep, ep_r, ep_use_steps, ep_s_time, log_dict):

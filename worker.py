@@ -413,6 +413,7 @@ class WorkerBase(object):
             model_dir = self.model_log_dir
         assert model_dir != None, 'init_or_restore_model model_dir = None'
         model_file = tf.train.latest_checkpoint(model_dir)
+        print('[I] model_dir = ', model_dir)
         print(f'model_file = {model_file}')
         start_ep = 1
         if model_file is None or self.model_retrain:

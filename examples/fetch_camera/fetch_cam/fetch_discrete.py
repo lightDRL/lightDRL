@@ -154,6 +154,10 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
 
                 reward-= diff_xy * 0.1
 
+                reward = 1
+
+                
+
             else:
                 reward = -1
             
@@ -245,8 +249,9 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
             # print("modify ", obj_joint_name)
             object_qpos = self.sim.data.get_joint_qpos(obj_joint_name)
             assert object_qpos.shape == (7,)
-            object_qpos[2] = obj_hide_z
-
+            object_qpos[:3] = [1.3, 0.6, obj_hide_z]
+            # object_qpos[2] = obj_hide_z
+            print('object_qpos = ', object_qpos)
             self.sim.data.set_joint_qpos(obj_joint_name, object_qpos)
 
         self.sim.forward()
