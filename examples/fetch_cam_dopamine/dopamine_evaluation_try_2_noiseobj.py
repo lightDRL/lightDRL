@@ -1,4 +1,4 @@
-# py dopamine_evaluation.py -p TS_fetch_cam_rainbow_001_r_measure
+# py dopamine_evaluation_try_2_noiseobj.py -p TS_r_measure
 # py dopamine_evaluation.py -p fetch_cam_rainbow_r0_r1 
 
 from __future__ import absolute_import
@@ -7,7 +7,7 @@ from __future__ import print_function
 
 from dopamine.agents.dqn import dqn_agent
 from dopamine.agents.implicit_quantile import implicit_quantile_agent
-from dopamine.agents.rainbow import rainbow_rgb_agent
+from dopamine.agents.rainbow import rainbow_agent
 
 import TS_run_experiment
 import tensorflow as tf
@@ -18,13 +18,13 @@ sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__) )+ '/../f
 from fetch_cam import FetchDiscreteCamEnv
 
 def create_agent(sess, environment, summary_writer=None):
-  return rainbow_rgb_agent.RainbowRGBAgent(
+  return rainbow_agent.RainbowAgent(
         sess, num_actions=5,
         summary_writer=summary_writer)
 
 
 def create_fetch_cam_environment(is_render):
-  env = FetchDiscreteCamEnv(dis_tolerance = 0.001, step_ds=0.005, gray_img = False, only_show_obj0=False, is_render=False)
+  env = FetchDiscreteCamEnv(dis_tolerance = 0.001, step_ds=0.005, gray_img = True, only_show_obj0=False, is_render=True)
   return env
 
 class EvalClass:
@@ -67,8 +67,8 @@ args = parser.parse_args()
 print('parser.project = ', args.project)
 
 # set runner
-base_dir = '../../data_pool/%s' % args.project
-gin_list = ['rgb.gin']
+base_dir = '../../experiment/pick_1obj_gray/%s' % args.project
+gin_list = ['TS_rainbow.gin']
 
 tf.logging.set_verbosity(tf.logging.INFO)
 TS_run_experiment.load_gin_configs(gin_list, [])

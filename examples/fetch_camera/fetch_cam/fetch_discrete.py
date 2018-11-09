@@ -154,7 +154,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
 
                 reward-= diff_xy * 0.1
 
-                reward = 1
+                # reward = 1
 
                 
 

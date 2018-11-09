@@ -1,4 +1,4 @@
-# py dopamine_evaluation.py -p TS_fetch_cam_rainbow_001_r_measure
+# py dopamine_evaluation_rgb_3obj.py -p fetch_cam_rainbow_rgb_84_3obj_white
 # py dopamine_evaluation.py -p fetch_cam_rainbow_r0_r1 
 
 from __future__ import absolute_import
@@ -24,7 +24,7 @@ def create_agent(sess, environment, summary_writer=None):
 
 
 def create_fetch_cam_environment(is_render):
-  env = FetchDiscreteCamEnv(dis_tolerance = 0.001, step_ds=0.005, gray_img = False, only_show_obj0=False, is_render=False)
+  env = FetchDiscreteCamEnv(dis_tolerance = 0.001, step_ds=0.005, gray_img = False, only_show_obj0=False, is_render=True)
   return env
 
 class EvalClass:
@@ -67,7 +67,7 @@ args = parser.parse_args()
 print('parser.project = ', args.project)
 
 # set runner
-base_dir = '../../data_pool/%s' % args.project
+base_dir = '../../experiment/pick_3obj_rgb/%s' % args.project
 gin_list = ['rgb.gin']
 
 tf.logging.set_verbosity(tf.logging.INFO)
