@@ -73,7 +73,7 @@ class FetchDiscreteCamEnv:
 
     def reset(self):
         # self.env.rand_objs_color(exclude_obj0 = True)
-        self.env.rand_red_or_not(obj_name='object0', use_red_color=True)
+        # self.env.rand_red_or_not(obj_name='object0', use_red_color=True)
         self.env.rand_red_or_not(obj_name='object1', use_red_color=False)
         self.env.rand_red_or_not(obj_name='object2', use_red_color=False)
         self.env.reset()

@@ -4,7 +4,7 @@
         <texture name="texture_block" file="block.png" gridsize="3 4" gridlayout=".U..LFRB.D.."></texture>
 
         <material name="floor_mat" specular="0" shininess="0.5" reflectance="0" rgba="0.2 0.2 0.2 1"></material>
-        <material name="table_mat" specular="0" shininess="0.5" reflectance="0" rgba="0.93 0.93 0.93 1"></material>
+        <material name="table_mat_ori" specular="0" shininess="0.5" reflectance="0" rgba="0.93 0.93 0.93 1"></material>
         <material name="table_mat_black" specular="0" shininess="0.5" reflectance="0" rgba="0.1 0.1 0.1 1"></material>
         <material name="table_mat_white" specular="0" shininess="0.5" reflectance="0" rgba="1.0 1.0 1.0 1"></material>
         
@@ -13,7 +13,13 @@
         <material name="green_mat" specular="0" shininess="0.5" reflectance="0" rgba="0.0 0.5 0.0 1"></material>
         <material name="blue_mat" specular="0" shininess="0.5" reflectance="0" rgba="0.0 0.0 0.5 1"></material>
          
+        <texture  name="object0_tex" file="redtexture.png"   ></texture>
+        <material name="object0_mat" texture="object0_tex" > </material>
+
+        <texture  name="table_tex" file="table.png"   ></texture>
+        <material name="table_mat" texture="table_tex" > </material>
          <!--
+         <material name="opeanai_mat" texture="texture_block">
         <texture  name="object0_tex" width="32" height="32" type="2d" builtin="flat" rgb1="0.5 0.0 0.0"/>
         <material name="object0_mat" texture="object0_tex"  specular="0" shininess="0.5" reflectance="0"/>
         <texture  name="object1_tex" width="32" height="32" type="2d" builtin="flat" rgb1="0.0 0.5 0.0"/>

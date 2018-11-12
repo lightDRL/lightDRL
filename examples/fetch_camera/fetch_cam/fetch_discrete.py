@@ -372,7 +372,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         if use_red_color:
             h = np.random.randint(174,179)
             s = np.random.randint(211,255)
-            v = np.random.randint(40 ,255)
+            v = np.random.randint(150 ,255)
         else:
             h = np.random.randint(0,150)
             s = np.random.randint(0,255)
