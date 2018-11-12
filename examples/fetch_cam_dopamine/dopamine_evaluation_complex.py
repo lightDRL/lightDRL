@@ -1,9 +1,4 @@
-# py dopamine_evaluation_rgb_3obj.py -p fetch_cam_rainbow_rgb_84_3obj_white
-# py dopamine_evaluation_rgb_3obj.py -p fetch_cam_rainbow_r0_r1 
-# py dopamine_evaluation_rgb_3obj.py -p rainbow_rgb_84_3obj_range_red_color_r_measure
-# py dopamine_evaluation_rgb_3obj.py -p rainbow_r_0_spatialmax_rgb_84_3obj_color_texture_iter6_0.81
-# py dopamine_evaluation_rgb_3obj.py -p rainbow_r_0_spatialmax_rgb_84_realbot_texture
-
+# py dopamine_evaluation_complex.py -p rainbow_orinetwork_rgb_84_3obj_complex_obj_r_measure
 
 from __future__ import absolute_import
 from __future__ import division
@@ -31,7 +26,7 @@ def create_fetch_cam_environment(is_render, real_bot=True):
   if not real_bot:
     sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__) )+ '/../fetch_camera/'))
     from fetch_cam import FetchDiscreteCamEnv
-    env = FetchDiscreteCamEnv(dis_tolerance = 0.001, use_tray = False, step_ds=0.005, gray_img = True, only_show_obj0=False, is_render=True)
+    env = FetchDiscreteCamEnv(dis_tolerance = 0.001, use_tray = False, step_ds=0.005, gray_img = False, only_show_obj0=False, is_render=True)
     return env
   else:
     from wrs_env import WRSEnv
@@ -82,7 +77,7 @@ print('parser.project = ', args.project)
 
 # set runner
 # base_dir = '../../experiment/pick_3obj_rgb/%s' % args.project
-base_dir = '../../experiment/pick_red_texture/%s' % args.project
+base_dir = '../../experiment/pick_complex/%s' % args.project
 gin_list = ['rgb.gin']
 
 tf.logging.set_verbosity(tf.logging.INFO)

@@ -1,7 +1,7 @@
 # Hyperparameters follow Hessel et al. (2018), except for sticky_actions,
 # which was False (not using sticky actions) in the original paper.
 import dopamine.agents.rainbow.rainbow_agent
-import run_experiment
+import eval_run_experiment
 import dopamine.replay_memory.prioritized_replay_buffer
 import gin.tf.external_configurables
 
@@ -25,10 +25,10 @@ tf.train.AdamOptimizer.epsilon = 0.00015
 
 
 # Sticky actions with probability 0.25, as suggested by (Machado et al., 2017).
-Runner.num_iterations = 200
-Runner.training_steps = 100000  # agent steps
-Runner.evaluation_steps = 5000  # agent steps
-Runner.max_steps_per_episode = 27000  # agent steps
+# Runner.num_iterations = 200
+# Runner.training_steps = 100000  # agent steps
+# Runner.evaluation_steps = 5000  # agent steps
+# Runner.max_steps_per_episode = 27000  # agent steps
 
 WrappedPrioritizedReplayBuffer.replay_capacity = 1000000
 WrappedPrioritizedReplayBuffer.batch_size = 32

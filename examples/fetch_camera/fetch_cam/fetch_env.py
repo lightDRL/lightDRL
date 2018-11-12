@@ -172,20 +172,7 @@ class FetchEnv(robot_env.RobotEnv):
                 return True
         return False
 
-    def generate_3_obj_pos(self):
-        assert self.has_object == True, 'self.has_object != True'
-        
-        obj_pos_ary =[]
-        for i in range(3):
-            obj_gripper_dis = 0
-            object_xpos = self.initial_gripper_xpos[:2]
-            while  obj_gripper_dis < 0.1 or self.check_dis_any_small_threshold(obj_pos_ary, object_xpos , 0.1) :
-                object_xpos = self.initial_gripper_xpos[:2] + self.np_random.uniform(-self.obj_range, self.obj_range, size=2)
-                obj_gripper_dis = np.linalg.norm(object_xpos - self.initial_gripper_xpos[:2])
-
-            obj_pos_ary.append(object_xpos)
-
-        return obj_pos_ary
+    
 
     def _reset_sim(self):
         # self._env_setup(initial_qpos=self.initial_qpos)

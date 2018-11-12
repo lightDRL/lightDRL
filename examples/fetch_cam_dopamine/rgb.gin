@@ -25,10 +25,10 @@ tf.train.AdamOptimizer.epsilon = 0.00015
 
 
 # Sticky actions with probability 0.25, as suggested by (Machado et al., 2017).
-Runner.num_iterations = 200
-Runner.training_steps = 100000 #100000  # agent steps
-Runner.evaluation_steps = 1000000  # agent steps
-Runner.max_steps_per_episode = 27000  # agent steps
+#Runner.num_iterations = 200
+#Runner.training_steps = 100000 #100000  # agent steps
+#Runner.evaluation_steps = 1000000  # agent steps
+#Runner.max_steps_per_episode = 27000  # agent steps
 
 WrappedPrioritizedReplayBuffer.replay_capacity = 100000
 WrappedPrioritizedReplayBuffer.batch_size = 32

@@ -7,8 +7,8 @@ import numpy as np
 IMG_W_H = 84
 # because thread bloack the image catch (maybe), so create the shell class 
 class FetchDiscreteCamEnv:
-    def __init__(self, dis_tolerance = 0.001, step_ds=0.005, gray_img = True, is_render = False, only_show_obj0=False):
-        self.env = FetchDiscreteEnv(dis_tolerance = 0.001, step_ds=0.005, is_render = is_render)
+    def __init__(self, dis_tolerance = 0.001, step_ds=0.005, gray_img = True, use_tray = True, is_render = False, only_show_obj0=False):
+        self.env = FetchDiscreteEnv(dis_tolerance = 0.001, step_ds=0.005, use_tray=use_tray, is_render = is_render)
         self.gray_img = gray_img
         self.is_render = is_render
         self.only_show_obj0 = only_show_obj0
@@ -22,7 +22,7 @@ class FetchDiscreteCamEnv:
 
     def step(self,action):
         # print('i action = ', action)
-        a_one_hot = np.zeros(5)
+        a_one_hot = np.zeros(6)
         a_one_hot[action] = 1
         s, r, d, _ = self.env.step(a_one_hot)
 
@@ -60,11 +60,22 @@ class FetchDiscreteCamEnv:
         return self.env.obj_pos
 
     @property
+    def red_tray_pos(self):
+        return self.env.red_tray_pos
+
+    @property
     def gripper_state(self):
         return self.env.gripper_state
 
+    @property
+    def is_gripper_close(self):
+        return self.env.is_gripper_close
+
     def reset(self):
-        self.env.rand_objs_color(exclude_obj0 = True)
+        # self.env.rand_objs_color(exclude_obj0 = True)
+        self.env.rand_red_or_not(obj_name='object0', use_red_color=True)
+        self.env.rand_red_or_not(obj_name='object1', use_red_color=False)
+        self.env.rand_red_or_not(obj_name='object2', use_red_color=False)
         self.env.reset()
         if self.only_show_obj0:
             self.env.hide_obj1_obj2()
