@@ -1,4 +1,4 @@
-from predict_onepic import SegnetLabel
+from segnet_label import SegnetLabel
 # Tompson Sampling (TS) with multiprocessing
 from multiprocessing import Process, Value, Lock, Manager, Pipe
 import sys, os

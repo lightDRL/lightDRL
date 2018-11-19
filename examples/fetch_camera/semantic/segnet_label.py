@@ -1,6 +1,6 @@
 import argparse
 
-from VGGSegnet import VGGSegnet
+from .VGGSegnet import VGGSegnet
 
 from keras.models import load_model
 import glob

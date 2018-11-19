@@ -126,14 +126,16 @@ class Runner(object):
       action: int, the initial action chosen by the agent.
     """
     initial_observation = self._environment.reset()
+    initial_observation = np.reshape(initial_observation,(initial_observation.shape[0],initial_observation.shape[1],1))
     return self._agent.begin_episode(initial_observation)
 
-  def _run_one_step(self, action):
-    observation, reward, is_terminal, _ = self._environment.step(action)
-    return observation, reward, is_terminal
+  # def _run_one_step(self, action):
+  #   observation, reward, is_terminal, _ = self._environment.step(action)
+  #   return observation, reward, is_terminal
 
   def _run_one_step(self, action):
     observation, reward, is_terminal, _ = self._environment.step(action)
+    observation = np.reshape(observation,(observation.shape[0],observation.shape[1],1))
     return observation, reward, is_terminal
 
   def _end_episode(self, reward):

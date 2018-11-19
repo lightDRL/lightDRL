@@ -1,6 +1,5 @@
-# gray img
-# py dopamine_evaluation_gray.py -p fetch_cam_rainbow_reward_0
-# py dopamine_evaluation_gray.py -p fetch_cam_rainbow_r_measure_maybe
+# binary img
+# py dopamine_evaluation_semantic.py -p rainbow_bin_r_measure
 
 from __future__ import absolute_import
 from __future__ import division
@@ -77,7 +76,7 @@ print('parser.project = ', args.project)
 
 # set runner
 # base_dir = '../../experiment/pick_3obj_rgb/%s' % args.project
-base_dir = '../../experiment/pick_1obj_gray/%s' % args.project
+base_dir = '../../experiment/semantic/%s' % args.project
 gin_list = ['rainbow.gin']
 
 tf.logging.set_verbosity(tf.logging.INFO)

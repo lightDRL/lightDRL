@@ -18,7 +18,7 @@ class FetchDiscreteCamEnv:
         self.img_type = img_type
         self.is_render = is_render
         self.only_show_obj0 = only_show_obj0
-        
+ 
     def state_preprocess(self, rgb_gripper):
         rgb_gripper =  cv2.cvtColor(rgb_gripper, cv2.COLOR_BGR2RGB)
 
@@ -37,6 +37,8 @@ class FetchDiscreteCamEnv:
             # res = cv2.bitwise_and(rgb_gripper,rgb_gripper, mask= mask)
             # print(res)
             process_img = mask
+        elif self.img_type== IMG_TYPE.SEMANTIC:
+            pass
         else:
             print("FetchDiscreteCamEnv step() image process say STRANGE img_type ")
 
