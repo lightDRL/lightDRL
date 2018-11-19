@@ -9,6 +9,17 @@ python visualizeDataset.py \
  --images="red_cube/" \
  --annotations="red_cube_label/" \
  --n_classes=2 
+
+ python visualizeDataset.py \
+ --images="sim_cube/" \
+ --annotations="sim_cube_label/" \
+ --n_classes=2 
+
+
+  python visualizeDataset.py \
+ --images="train/" \
+ --annotations="trainannot/" \
+ --n_classes=2 
 '''
 def imageSegmentationGenerator( images_path , segs_path ,  n_classes ):
 

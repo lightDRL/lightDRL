@@ -95,7 +95,7 @@ while(1):
     lower_hsv = np.array([h,s,v])
     upper_hsv = np.array([h_u,s_u,v_u])
 
-    img_prefix = 'cube_shadow'
+    img_prefix = 'sim_cube_2' #'cube_shadow'
     img_suffix = '.png'
     frame1  = cv2.imread(img_prefix+img_suffix) # real
  
