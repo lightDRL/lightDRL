@@ -25,11 +25,11 @@ def create_fetch_cam_environment(is_render, real_bot=False):
   if not real_bot:
     sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__) )+ '/../fetch_camera/'))
     from fetch_cam.fetch_discrete_cam import FetchDiscreteCamEnv, IMG_TYPE
-    env = FetchDiscreteCamEnv(dis_tolerance = 0.001, use_tray = False, step_ds=0.005, img_type = IMG_TYPE.BIN, only_show_obj0=True, is_render=True)
+    env = FetchDiscreteCamEnv(dis_tolerance = 0.001, use_tray = False, step_ds=0.005, img_type = IMG_TYPE.SEMANTIC, only_show_obj0=True, is_render=True)
     return env
   else:
-    from wrs_env import WRSEnv
-    env = WRSEnv()
+    from wrs_env import WRSEnv, IMG_TYPE
+    env = WRSEnv(img_type = IMG_TYPE.SEMANTIC)
 
     return env
   # env = FetchDiscreteCamEnv(dis_tolerance = 0.001, use_tray = False, step_ds=0.005, gray_img = False, only_show_obj0=False, is_render=True)

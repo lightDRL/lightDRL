@@ -12,9 +12,12 @@ def process_func(child_conn, d):
     suffix = time.strftime("%y%b%d_%H%M%S")
     predict_dir = 'semantic_annotate_' + suffix
     predict_dir  = os.path.abspath(predict_dir)
-    os.makedirs(predict_dir)
+    if os.path.exists(predict_dir):
+        import shutil
+        shutil.rmtree(predict_dir)
     print("Make dir: " + predict_dir)
-
+    os.makedirs(predict_dir)
+    
     img_predict_id = 0
 
     child_conn.send('ready')

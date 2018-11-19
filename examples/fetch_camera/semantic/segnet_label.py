@@ -38,17 +38,18 @@ class SegnetLabel:
 		config.gpu_options.per_process_gpu_memory_fraction = 0.4
 		set_session(tf.Session(config=config))
 
-	def predict(self, inName):
-		X = self.getImageArr(inName , self.input_width  , self.input_height , ordering='None' )
+	def predict(self, inName, img = None):
+		X = self.getImageArr(inName , self.input_width  , self.input_height , ordering='None', img=img )
 		pr = self.m.predict( np.array([X]) )[0]
 		pr = pr.reshape(( self.m.outputHeight ,  self.m.outputWidth , self.n_classes ) ).argmax( axis=2 )
 		return pr
 
-	def getImageArr(self, path , width , height , imgNorm="sub_mean" , ordering='channels_first' ):
+	def getImageArr(self, path , width , height , imgNorm="sub_mean" , ordering='channels_first', img=None):
 
 		try:
-			img = cv2.imread(path, 1)
-
+			if img==None:
+				img = cv2.imread(path, 1)
+			
 			if imgNorm == "sub_and_divide":
 				img = np.float32(cv2.resize(img, ( width , height ))) / 127.5 - 1
 			elif imgNorm == "sub_mean":
