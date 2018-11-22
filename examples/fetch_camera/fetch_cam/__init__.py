@@ -1,8 +1,8 @@
-print('in fetch_cam __init__')
-
 from fetch_cam.fetch_pick_place_camera import FetchCameraEnv
 from fetch_cam.fetch_discrete 	  import FetchDiscreteEnv
 from fetch_cam.fetch_discrete_cam import FetchDiscreteCamEnv
+from fetch_cam.img_process import IMG_TYPE
+
 
 import gym
 from gym.envs.registration import registry, make, spec

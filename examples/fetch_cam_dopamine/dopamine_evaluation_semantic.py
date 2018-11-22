@@ -21,17 +21,27 @@ def create_agent(sess, summary_writer=None):
         summary_writer=summary_writer)
 
 
-def create_fetch_cam_environment(is_render, real_bot=False):
-  if not real_bot:
+def create_fetch_cam_environment(is_render, env_type ='real'):
+  if env_type=='sim':
     sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__) )+ '/../fetch_camera/'))
-    from fetch_cam.fetch_discrete_cam import FetchDiscreteCamEnv, IMG_TYPE
+    from fetch_cam import FetchDiscreteCamEnv, IMG_TYPE
+    
     env = FetchDiscreteCamEnv(dis_tolerance = 0.001, use_tray = False, step_ds=0.005, img_type = IMG_TYPE.SEMANTIC, only_show_obj0=True, is_render=True)
     return env
-  else:
+  elif env_type=='feed':
+    sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__) )+ '/../fetch_camera/'))
+    from feed_img_env.feed_img_env import FeedImgEnv
+    from fetch_cam import IMG_TYPE
+
+    env = FeedImgEnv(img_type = IMG_TYPE.SEMANTIC)
+    return env
+  elif env_type=='real':
     from wrs_env import WRSEnv, IMG_TYPE
     env = WRSEnv(img_type = IMG_TYPE.SEMANTIC)
 
     return env
+  else:
+    assert False, 'Fase Env Name'
   # env = FetchDiscreteCamEnv(dis_tolerance = 0.001, use_tray = False, step_ds=0.005, gray_img = False, only_show_obj0=False, is_render=True)
   # return env
 

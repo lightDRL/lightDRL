@@ -68,7 +68,7 @@ class Runner(object):
                is_render = False,
                checkpoint_file_prefix='ckpt',
                log_every_n=1,
-               max_steps_per_episode=100,
+               max_steps_per_episode=500,
                gpu_ratio = 0.2,
                evaluation_done_cb = None,
                evaluation_max_ep = None):
@@ -77,6 +77,7 @@ class Runner(object):
     self._base_dir = base_dir
     self._create_directories()
     self._environment = create_environment_fn(is_render)
+    print('self._environment = ', self._environment)
     # Set up a session and initialize variables.
     config = tf.ConfigProto(allow_soft_placement=True)
     config.gpu_options.per_process_gpu_memory_fraction = gpu_ratio
@@ -110,7 +111,7 @@ class Runner(object):
     if latest_checkpoint_version >= 0:
       experiment_data = self._checkpointer.load_checkpoint(
           latest_checkpoint_version)
-      if self._agent.unbundle(
+      if self._agent.unbundle_only_graph_dict(
           self._checkpoint_dir, latest_checkpoint_version, experiment_data):
         assert 'logs' in experiment_data
         assert 'current_iteration' in experiment_data
@@ -125,8 +126,12 @@ class Runner(object):
     Returns:
       action: int, the initial action chosen by the agent.
     """
+    # print('self._environment = ', self._environment)
+    
     initial_observation = self._environment.reset()
-    initial_observation = np.reshape(initial_observation,(initial_observation.shape[0],initial_observation.shape[1],1))
+    print('len(initial_observation.shape) = ',len(initial_observation.shape) )
+    if len(initial_observation.shape) < 3:
+      initial_observation = np.reshape(initial_observation,(initial_observation.shape[0],initial_observation.shape[1],1))
     return self._agent.begin_episode(initial_observation)
 
   # def _run_one_step(self, action):
@@ -134,8 +139,10 @@ class Runner(object):
   #   return observation, reward, is_terminal
 
   def _run_one_step(self, action):
+    print('Use action: ', action)
     observation, reward, is_terminal, _ = self._environment.step(action)
-    observation = np.reshape(observation,(observation.shape[0],observation.shape[1],1))
+    if len(observation.shape) < 3:
+      observation = np.reshape(observation,(observation.shape[0],observation.shape[1],1))
     return observation, reward, is_terminal
 
   def _end_episode(self, reward):

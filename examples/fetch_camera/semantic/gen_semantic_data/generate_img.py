@@ -75,7 +75,7 @@ class AugmentationImage:
         self.label = self.table_label.copy()
         self.label[cube_img_x:cube_img_x+(paste_h-paste_low_h), cube_img_y:cube_img_y + (paste_w-paste_low_w), :]  = cube_label_new[paste_low_h:paste_h,paste_low_w:paste_w,:] #self.cube[:,:,:] 
 
-        if self.state.shape[0]!=IMG_W_H or self.state.shape[0]!=IMG_W_H:
+        if self.state.shape[0]!=IMG_W_H or self.state.shape[1]!=IMG_W_H:
             self.state = cv2.resize(self.state, (IMG_W_H, IMG_W_H), interpolation=cv2.INTER_AREA)
             self.label = cv2.resize(self.label, (IMG_W_H, IMG_W_H), interpolation=cv2.INTER_AREA)
 

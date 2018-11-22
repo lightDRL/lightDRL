@@ -487,6 +487,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
 
                 obj_pos_ary.append(object_xpos)
 
+        obj_pos_ary[0] = [1.34139569, 0.82388215]
         return obj_pos_ary
 
             

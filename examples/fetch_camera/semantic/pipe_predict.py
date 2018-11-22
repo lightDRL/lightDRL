@@ -31,7 +31,7 @@ def process_func(child_conn, d):
         seg_img = output*255.0
         output_prefix = '{}/{:03d}'.format(predict_dir, img_predict_id)
         output_path = output_prefix + '.png' 
-        print('Annotate finish, save to ' + output_path)
+        # print('Annotate finish, save to ' + output_path)
 
         cv2.imwrite( output_prefix + '.png' , output )
         cv2.imwrite( output_prefix + '_show.jpg' , seg_img )

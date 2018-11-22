@@ -9,14 +9,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import sys, os, time
 from dopamine.agents.dqn import dqn_agent
 from dopamine.agents.implicit_quantile import implicit_quantile_agent
 from dopamine.agents.rainbow import rainbow_rgb_agent
+sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__) )+ '/../fetch_camera/'))
+from fetch_cam import IMG_TYPE
 
 # import TS_run_experiment
 import eval_run_experiment
 import tensorflow as tf
-import sys, os, time
+
 import argparse
 
 
@@ -31,11 +34,11 @@ def create_fetch_cam_environment(is_render, real_bot=True):
   if not real_bot:
     sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__) )+ '/../fetch_camera/'))
     from fetch_cam import FetchDiscreteCamEnv
-    env = FetchDiscreteCamEnv(dis_tolerance = 0.001, use_tray = False, step_ds=0.005, gray_img = True, only_show_obj0=False, is_render=True)
+    env = FetchDiscreteCamEnv(dis_tolerance = 0.001, use_tray = False, step_ds=0.005, img_type = IMG_TYPE.RGB, only_show_obj0=False, is_render=True)
     return env
   else:
     from wrs_env import WRSEnv
-    env = WRSEnv()
+    env = WRSEnv(img_type = IMG_TYPE.RGB)
 
     return env
   # env = FetchDiscreteCamEnv(dis_tolerance = 0.001, use_tray = False, step_ds=0.005, gray_img = False, only_show_obj0=False, is_render=True)
