@@ -1,6 +1,6 @@
 # Run with DDPG
 #   python ../../server.py
-#   python gym_basic_conn.py DDPG.yaml
+#   python gym_basic_conn.py DDPG_CartPole-v0.yaml
 #   
 # Author:  kbehouse  <https://github.com/kbehouse/>
 #          
@@ -12,7 +12,6 @@ import gym
 import time
 from config import load_config_from_arg
 import numpy as np
-import threading
 # from gym_basic import gym_cfg
 
 class GymClient(Client):
@@ -22,6 +21,7 @@ class GymClient(Client):
 
     def env_reset(self):
         self.state = self.env.reset()
+        # print('self.state = ', self.state)
         return self.state
 
     def on_action_response(self, action):

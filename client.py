@@ -102,13 +102,14 @@ class LogRL:
 class Client(LogRL):
     def __init__(self, i_cfg , project_name=None):
         self.log_init(i_cfg , project_name)
+        self.env_init()
 
     async def loop_step(self):
         async with websockets.connect('ws://localhost:8765') as websocket:
             print('[I] Client Init finish')
             await self.create_session(websocket)
             while True:
-                state = self.env_init()
+                state = self.env_reset()
                 a = await self.send_state_get_action(websocket, state)
 
                 while True:
@@ -117,7 +118,8 @@ class Client(LogRL):
                     a = await self.send_train_get_action(websocket, s, a, r, d, s_)
                     self.log_data_step(r)
                     if d:
-                        self.log_data_done()
+                        ep, ep_use_steps, ep_reward, all_ep_sum_reward, is_success = self.log_data_done() 
+                        print(f'EP = {ep}, EP_R = {ep_reward},  EP_STEPS = {ep_use_steps}')        
                         break
 
                 if self.ep > self.cfg['misc']['max_ep']:
