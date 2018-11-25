@@ -221,7 +221,7 @@ class FetchEnv(robot_env.RobotEnv):
                     degree = np.random.randint(0,90)
                     euler = [0, 0, np.deg2rad(degree)]
                     quat = self.euler2quat(euler)
-                    object_qpos[3:] = quat
+                    # object_qpos[3:] = quat
                     # print('degree={}, quat = {}'.format(degree, quat))
                     # object_qpos[3:] =  [0.258819, 0, 0, 0.9659258]#[0.7071068, 0, 0, 0.7071068]
                     
@@ -277,10 +277,10 @@ class FetchEnv(robot_env.RobotEnv):
 
     def gripper_to_init(self):
         # Move end effector into position.
-        # gripper_target = np.array([1.34194353, 0.74910047, 0.53471723])
-        gripper_z = np.random.uniform(0.5,0.6)
+        gripper_target = np.array([1.34194353, 0.74910047, 0.53471723])
+        # gripper_z = np.random.uniform(0.5,0.6)
         # print('gripper_z = ', gripper_z)
-        gripper_target = np.array([1.34194353, 0.74910047, gripper_z]) #0.45])
+        # gripper_target = np.array([1.34194353, 0.74910047, gripper_z]) #0.45])
         gripper_rotation = np.array([1., 0., 1., 0.])
         self.sim.data.set_mocap_pos('robot0:mocap', gripper_target)
         self.sim.data.set_mocap_quat('robot0:mocap', gripper_rotation)

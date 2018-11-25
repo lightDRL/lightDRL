@@ -4,6 +4,7 @@
 #       python gym_try_seed_success_multiprocess_pool.py DQN_CartPole-v0.yaml
 #       python gym_try_seed_success_mp.py DQN_CartPole-v0.yaml | tee log/DQN_ep1000.log
 #       python gym_try_seed_success_mp.py A3C_CartPole-v0.yaml | tee log/A3C_ep2000.log
+#       python gym_try_seed_success_mp.py DDPG_MountainCarContinuous-v0.yaml | tee log/A3C_ep2000.log
 # Author:  kbehouse  <https://github.com/kbehouse/>
 #          
 

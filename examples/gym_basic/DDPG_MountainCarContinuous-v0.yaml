@@ -43,7 +43,8 @@ misc:
     gym_env: 'MountainCarContinuous-v0'
     gym_monitor_path: 'monitor/'        # will crate in data_pool/<project_name>/monitor/
     gym_monitor_episode: 10             # record every 10 episode 
-
+    threshold_r: 1.0
+    threshold_successvie_count: 10
 
 actor_NN:
     actor_fc_1: # use default op:'relu' and initializer: 'truncated_normal'

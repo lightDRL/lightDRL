@@ -24,7 +24,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
             'object0:joint': [1.25, 0.53, 0.4, 1., 0., 0., 0.],
         }
 
-        env_xml_name = 'fetch/pick_and_place_tray.xml' if use_tray else 'fetch/pick_and_place.xml'
+        env_xml_name = 'fetch/pick_and_place_tray.xml' if use_tray else 'fetch/pick_and_place_ori.xml'
 
         fetch_env.FetchEnv.__init__(
             # self, 'fetch/pick_and_place.xml', has_object=True, block_gripper=False, n_substeps=20,
@@ -158,6 +158,20 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
             # print('r = %.2f' % r ,'pos_xy = ', pos_xy,', obj_xy = ', obj_xy,', arm_2_obj_xy = ', arm_2_obj_xy)
 
         return r
+
+    def measure_no_down_reward(self):
+        obj_name = 'object0'
+        object_pos = self.sim.data.get_site_xpos(obj_name)
+        pos_xy = self.pos[:2]
+        obj_xy = object_pos[:2]
+        
+        arm_2_obj_xy = np.linalg.norm(pos_xy -obj_xy)
+
+        max_dis = 0.015
+        r = 1 if (arm_2_obj_xy  < max_dis) else 0
+        # print('r = %.2f' % r ,'pos_xy = ', pos_xy,', obj_xy = ', obj_xy,', arm_2_obj_xy = ', arm_2_obj_xy)
+
+        return r
         
 
 
@@ -190,6 +204,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         
         
         if pick:
+            
             if  self.gripper_state[0] > 0.01 and (new_object_pos[2]-object_pos[2])>=0.2: # need to higher than 20cm    
                 reward = 0.5 if self.use_tray else 1.0  #0.5
                 # ori_xy = object_pos[:2]
@@ -204,6 +219,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
 
             else:
                 reward = -1
+            
         else:
             assert self.use_tray==True,'Strange!' 
             # diff_tray_xy = np.linalg.norm( new_object_pos[:2] - self.red_tray_pos[:2]) 
@@ -238,8 +254,8 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         done = True  if self.use_step >= 100 else False
         
         if action[4]==1:
-            reward = self.pick_place(True)
-            # self.hold_gripper_close = True
+            # reward = self.pick_place(True)
+            reward = self.measure_no_down_reward()
             if reward == -1 or not self.use_tray:
                 done = True
             
@@ -487,7 +503,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
 
                 obj_pos_ary.append(object_xpos)
 
-        obj_pos_ary[0] = [1.34139569, 0.82388215]
+        obj_pos_ary[0] = [1.24139569, 0.82388215]
         return obj_pos_ary
 
             
