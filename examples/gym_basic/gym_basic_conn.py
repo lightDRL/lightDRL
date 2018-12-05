@@ -1,7 +1,7 @@
 # Run with DDPG
 #   python ../../server.py
 #   python gym_basic_conn.py DDPG_CartPole-v0.yaml
-#   
+#   python gym_basic_conn.py DDPG_MountainCarContinuous-v0.yaml
 # Author:  kbehouse  <https://github.com/kbehouse/>
 #          
 
@@ -21,17 +21,22 @@ class GymClient(Client):
 
     def env_reset(self):
         self.state = self.env.reset()
-        # print('self.state = ', self.state)
+        print('[%03d] ' % self.ep, 's_%d: [%4.2f,%4.2f,%4.2f,%4.2f]' % (self.ep_use_step, self.state[0], self.state[1],self.state[2],self.state[3]) )
         return self.state
 
     def on_action_response(self, action):
 
+        print('[%03d] ' % self.ep,'a_%d: ' % self.ep_use_step, action)
         next_state, reward, done, _ = self.env.step(action)
         now_state = self.state
         self.state = next_state
         if self.cfg['misc']['render'] and self.ep > self.cfg['misc']['render_after_ep']:
             self.env.render()   
 
+        print('[%03d] ' % self.ep, 's_%d: [%4.2f,%4.2f,%4.2f,%4.2f]' % (self.ep_use_step, now_state[0], now_state[1],now_state[2],now_state[3]),
+            ', r_%d:' % self.ep_use_step , reward,  
+            ', d_%d:' % self.ep_use_step , done, 
+            ', s_%d [%4.2f,%4.2f,%4.2f,%4.2f]' % (self.ep_use_step+1, next_state[0], next_state[1],next_state[2], next_state[3]) )
         return now_state, reward, done, next_state
 
 
@@ -52,6 +57,8 @@ def gym_cfg(cfg):
     else:
         cfg['RL']['state_shape'] = env.observation_space.shape
     
+    print("cfg['RL']['state_shape'] = ", cfg['RL']['state_shape'])
+
     # action
     cfg['RL']['action_discrete'] = True if type(env.action_space) == gym.spaces.discrete.Discrete else False
     
@@ -66,10 +73,15 @@ def gym_cfg(cfg):
         cfg['RL']['action_bound'] = env.action_space.high 
         cfg['RL']['action_shape'] = env.action_space.shape
     env.close()
+    
+    print("cfg['RL']['action_shape']= ", cfg['RL']['action_shape'])
+
+    
     print('{} close! Because get parameter done.'.format( cfg['misc']['gym_env']))
     return cfg
 
 if __name__ == '__main__':
     cfg = gym_cfg( load_config_from_arg()  )
     c = GymClient(i_cfg = cfg , project_name='gym-'+ cfg['misc']['gym_env'])
+    c.set_success(cfg['misc']['threshold_r'], cfg['misc']['threshold_successvie_count'])
     c.run()
