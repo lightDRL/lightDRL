@@ -209,27 +209,30 @@ class FetchEnv(robot_env.RobotEnv):
 
             obj_pos_ary = self.generate_3_obj_pos()
             obj_z = self.sim.data.get_joint_qpos('object0:joint')[2]
-            # print(obj_pos_ary)
+            # print('obj_z = ', obj_z)
             for i in range(len(obj_pos_ary)):
                 obj_joint_name = 'object%d:joint' % i
                 try:
                     object_qpos = self.sim.data.get_joint_qpos(obj_joint_name)
                     assert object_qpos.shape == (7,)
                     object_qpos[:2] = obj_pos_ary[i]
-                    object_qpos[2] = obj_z if i>=1 else  object_qpos[2]
+                    object_qpos[2] = object_qpos[2]
+                    # object_qpos[2] = obj_z if i>=1 else  object_qpos[2]
 
-                    degree = np.random.randint(0,90)
+                    # object_qpos[3:] = [0.7071068, 0, 0, 0.7071068]
+                    # print('obj_joint_name-> ', obj_joint_name, ',object_qpos = ', object_qpos)
+
+                    # degree = np.random.randint(0,90)
+                    degree = np.random.randint(-90,0)
+                    # print("obj_joint_name=%s, degree = %d" % (obj_joint_name, degree) )
                     euler = [0, 0, np.deg2rad(degree)]
                     quat = self.euler2quat(euler)
-                    # object_qpos[3:] = quat
-                    # print('degree={}, quat = {}'.format(degree, quat))
-                    # object_qpos[3:] =  [0.258819, 0, 0, 0.9659258]#[0.7071068, 0, 0, 0.7071068]
-                    
+                    object_qpos[3:] = quat
+
                     self.sim.data.set_joint_qpos(obj_joint_name, object_qpos)
                 except Exception as e :
-                    # print('e -> ', e )
-                    # continue
-                    pass 
+                    print('e -> ', e )
+                    continue
 
         
         self.sim.forward()
@@ -277,10 +280,10 @@ class FetchEnv(robot_env.RobotEnv):
 
     def gripper_to_init(self):
         # Move end effector into position.
-        gripper_target = np.array([1.34194353, 0.74910047, 0.53471723])
-        # gripper_z = np.random.uniform(0.5,0.6)
+        # gripper_target = np.array([1.34194353, 0.74910047, 0.53471723])
+        gripper_z = np.random.uniform(0.5,0.6) # 0.85 
         # print('gripper_z = ', gripper_z)
-        # gripper_target = np.array([1.34194353, 0.74910047, gripper_z]) #0.45])
+        gripper_target = np.array([1.34194353, 0.74910047, gripper_z]) #0.45])
         gripper_rotation = np.array([1., 0., 1., 0.])
         self.sim.data.set_mocap_pos('robot0:mocap', gripper_target)
         self.sim.data.set_mocap_quat('robot0:mocap', gripper_rotation)

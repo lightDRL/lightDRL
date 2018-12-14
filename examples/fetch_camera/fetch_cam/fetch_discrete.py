@@ -7,6 +7,11 @@ from matplotlib.colors import hsv_to_rgb, rgb_to_hsv
 import random
 import cv2 
 
+class EnvType:
+    RedCube = 0
+    ThreeObj = 1 # 3obj
+    RedTray = 5
+
 class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
     '''
         [1, 0, 0, 0, 0]: (+step_ds,        0)
@@ -16,7 +21,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         [0, 0, 0, 0, 1]: gripper down and close gripper
 
     '''
-    def __init__(self, reward_type='sparse', dis_tolerance = 0.001, step_ds=0.005, use_tray=True,  is_render=False):
+    def __init__(self, reward_type='sparse', dis_tolerance = 0.001, step_ds=0.005, env_type=True,  is_render=False):
         initial_qpos = {
             'robot0:slide0': 0.405,
             'robot0:slide1': 0.48,
@@ -24,7 +29,14 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
             'object0:joint': [1.25, 0.53, 0.4, 1., 0., 0., 0.],
         }
 
-        env_xml_name = 'fetch/pick_and_place_tray.xml' if use_tray else 'fetch/pick_and_place_ori.xml'
+        if env_type == EnvType.RedCube:
+            env_xml_name = 'fetch/pick_and_place_red_cube.xml'
+        elif env_type == EnvType.ThreeObj:
+            env_xml_name = 'fetch/pick_and_place_3obj.xml'
+        elif env_type == EnvType.RedTray:
+            env_xml_name = 'fetch/pick_and_place_tray.xml'
+        else:
+            env_xml_name = 'fetch/pick_and_place_red_cube.xml'
 
         fetch_env.FetchEnv.__init__(
             # self, 'fetch/pick_and_place.xml', has_object=True, block_gripper=False, n_substeps=20,
@@ -37,7 +49,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         self.dis_tolerance = dis_tolerance
         self.ds = step_ds     # each step run distance, [1,0,0,0] run dx = 0.01
         self.is_render = is_render
-        self.use_tray = use_tray
+        self.env_type = env_type
 
         # self.hold_gripper_close = False
 
@@ -93,9 +105,9 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
             if dis < self.dis_tolerance:
                 return True    
 
-            if this_action_use_step>10:
+            if this_action_use_step>50:
                 # use too much, maybe limit of arm
-                # print('this_action_use_step >= 10, maybe limitation position of arm -> break')
+                print('this_action_use_step >= 50, maybe limitation position of arm -> break')
                 return False
             
     def gripper_close(self, close = True):
@@ -140,7 +152,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         r = -0.001
         max_dis = 0.1000
         if arm_2_obj_xy  < max_dis:
-            r =  (max_dis - arm_2_obj_xy ) / max_dis *0.001
+            r =  (max_dis - arm_2_obj_xy ) / max_dis *0.01
             # print('r = %.2f' % r ,'pos_xy = ', pos_xy,', obj_xy = ', obj_xy,', arm_2_obj_xy = ', arm_2_obj_xy)
 
         return r
@@ -167,7 +179,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         
         arm_2_obj_xy = np.linalg.norm(pos_xy -obj_xy)
 
-        max_dis = 0.015
+        max_dis = 0.030
         r = 1 if (arm_2_obj_xy  < max_dis) else 0
         # print('r = %.2f' % r ,'pos_xy = ', pos_xy,', obj_xy = ', obj_xy,', arm_2_obj_xy = ', arm_2_obj_xy)
 
@@ -206,7 +218,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         if pick:
             
             if  self.gripper_state[0] > 0.01 and (new_object_pos[2]-object_pos[2])>=0.2: # need to higher than 20cm    
-                reward = 0.5 if self.use_tray else 1.0  #0.5
+                reward = 0.5 if self.env_type==EnvType.RedTray else 1.0  #0.5
                 # ori_xy = object_pos[:2]
                 # new_xy = new_object_pos[:2]
                 
@@ -221,7 +233,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
                 reward = -1
             
         else:
-            assert self.use_tray==True,'Strange!' 
+            assert self.env_type==EnvType.RedTray, 'Strange!' 
             # diff_tray_xy = np.linalg.norm( new_object_pos[:2] - self.red_tray_pos[:2]) 
             diff_tray_xy = np.linalg.norm( self.pos[:2] - self.red_tray_pos[:2]) 
             # print('diff_tray_xy = ', diff_tray_xy)   
@@ -256,11 +268,11 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         if action[4]==1:
             # reward = self.pick_place(True)
             reward = self.measure_no_down_reward()
-            if reward == -1 or not self.use_tray:
+            if reward == -1 or self.env_type!=EnvType.RedTray:
                 done = True
             
         elif action[5]==1:
-            assert self.use_tray==True,'Strange!' 
+            assert self.env_type==EnvType.RedTray,'Strange!' 
             if self.is_gripper_close:
                 reward = self.pick_place(False)
             else:
@@ -280,7 +292,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
                 done = True
                 reward = -1
             else:
-                if self.use_tray and self.is_gripper_close:
+                if self.env_type==EnvType.RedTray and self.is_gripper_close:
                     reward = self.measure_tray_reward() # 0
                 else:
                     reward = self.measure_obj_reward() # 0
@@ -342,6 +354,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
             # print("modify ", obj_joint_name)
             object_qpos = self.sim.data.get_joint_qpos(obj_joint_name)
             assert object_qpos.shape == (7,)
+            object_qpos[0] = self.obj_pos[0] + 15
             object_qpos[2] = obj_hide_z
 
             self.sim.data.set_joint_qpos(obj_joint_name, object_qpos)
@@ -479,7 +492,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
         
 
         obj_pos_ary =[]
-        if self.use_tray:
+        if self.env_type==EnvType.RedTray:
             red_tray_pos = self.sim.data.get_body_xpos('red_tray')
 
             
@@ -487,7 +500,7 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
                 obj_gripper_dis = 0
                 object_xpos = self.initial_gripper_xpos[:2]
 
-                while  obj_gripper_dis < 0.1 or self.check_dis_any_small_threshold(obj_pos_ary, object_xpos , 0.1) or obj_tray_dis < 0.05 :
+                while  obj_gripper_dis < 0.15 or self.check_dis_any_small_threshold(obj_pos_ary, object_xpos , 0.1) or obj_tray_dis < 0.15: #0.05 :
                     object_xpos = self.initial_gripper_xpos[:2] + self.np_random.uniform(-self.obj_range, self.obj_range, size=2)
                     obj_gripper_dis = np.linalg.norm(object_xpos - self.initial_gripper_xpos[:2])
                     obj_tray_dis = np.linalg.norm(object_xpos -red_tray_pos[:2])
@@ -497,13 +510,14 @@ class FetchDiscreteEnv(fetch_env.FetchEnv, utils.EzPickle):
             for i in range(3):
                 obj_gripper_dis = 0
                 object_xpos = self.initial_gripper_xpos[:2]
-                while  obj_gripper_dis < 0.1 or self.check_dis_any_small_threshold(obj_pos_ary, object_xpos , 0.1) :
+                #while  obj_gripper_dis < 0.1 or self.check_dis_any_small_threshold(obj_pos_ary, object_xpos , 0.1) :
+                while  obj_gripper_dis < 0.15 or self.check_dis_any_small_threshold(obj_pos_ary, object_xpos , 0.15) :
                     object_xpos = self.initial_gripper_xpos[:2] + self.np_random.uniform(-self.obj_range, self.obj_range, size=2)
                     obj_gripper_dis = np.linalg.norm(object_xpos - self.initial_gripper_xpos[:2])
 
                 obj_pos_ary.append(object_xpos)
 
-        obj_pos_ary[0] = [1.24139569, 0.82388215]
+        # obj_pos_ary[0] = [1.24139569, 0.83388215]
         return obj_pos_ary
 
             

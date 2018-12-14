@@ -10,10 +10,12 @@ USE_TIEM_SUFFIX_DIR =  False
 
 def semantic_process_func(child_conn, d):
     abs_dir = os.path.abspath(os.path.dirname(__file__))
-    weight_path = os.path.abspath( abs_dir + '/../semantic/weights/ex1')
-    print('weight_path  ->', weight_path)
-    s = SegnetLabel( n_classes=2, input_height=224, input_width=224, save_weights_path=weight_path, epoch_number=10 )
+    weight_path = os.path.abspath( abs_dir + '/../semantic/weights/3obj')
+    print('Load weight_path  ->', weight_path)
+    # s = SegnetLabel( n_classes=2, input_height=224, input_width=224, save_weights_path=weight_path, epoch_number=10 )
+    s = SegnetLabel( n_classes=4, input_height=224, input_width=224, save_weights_path=weight_path, epoch_number=5 )
     
+
     suffix = '_' + time.strftime("%y%b%d_%H%M%S") if USE_TIEM_SUFFIX_DIR else ''
     predict_dir = 'semantic_annotate' + suffix
     predict_dir  = os.path.abspath(predict_dir)

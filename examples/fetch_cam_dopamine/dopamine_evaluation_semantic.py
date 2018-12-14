@@ -1,5 +1,6 @@
 # binary img
 # py dopamine_evaluation_semantic.py -p rainbow_bin_r_measure
+# py dopamine_evaluation_semantic.py -p segnet_CHO_r_0_3cm
 
 from __future__ import absolute_import
 from __future__ import division
@@ -21,12 +22,12 @@ def create_agent(sess, summary_writer=None):
         summary_writer=summary_writer)
 
 
-def create_fetch_cam_environment(is_render, env_type ='real'):
+def create_fetch_cam_environment(is_render, env_type ='sim'):
   if env_type=='sim':
     sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__) )+ '/../fetch_camera/'))
-    from fetch_cam import FetchDiscreteCamEnv, IMG_TYPE
+    from fetch_cam.fetch_discrete_cam import FetchDiscreteCamEnv, IMG_TYPE, EnvType
     
-    env = FetchDiscreteCamEnv(dis_tolerance = 0.001, use_tray = False, step_ds=0.005, img_type = IMG_TYPE.SEMANTIC, only_show_obj0=True, is_render=True)
+    env = FetchDiscreteCamEnv(env_type=EnvType.ThreeObj,dis_tolerance = 0.001, step_ds=0.005, img_type = IMG_TYPE.SEMANTIC, only_show_obj0=True, is_render=True)
     return env
   elif env_type=='feed':
     sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__) )+ '/../fetch_camera/'))

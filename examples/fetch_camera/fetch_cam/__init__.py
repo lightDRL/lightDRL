@@ -1,6 +1,6 @@
-from fetch_cam.fetch_pick_place_camera import FetchCameraEnv
-from fetch_cam.fetch_discrete 	  import FetchDiscreteEnv
-from fetch_cam.fetch_discrete_cam import FetchDiscreteCamEnv
+# from fetch_cam.fetch_pick_place_camera import FetchCameraEnv
+# from fetch_cam.fetch_discrete 	  import FetchDiscreteEnv
+# from fetch_cam.fetch_discrete_cam import FetchDiscreteCamEnv
 from fetch_cam.img_process import IMG_TYPE
 
 

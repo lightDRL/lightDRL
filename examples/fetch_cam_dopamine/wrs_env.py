@@ -12,6 +12,24 @@ import os, sys
 
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__) )+ '/../fetch_camera/'))
 from fetch_cam.img_process import ImgProcess, IMG_TYPE, IMG_SHOW
+import time
+
+def cut_2_same_wh(img):
+    # print('img.shape=', img.shape) 
+    shape = np.shape(img)
+    print('shape =', shape)
+    print('img.shape[0] = ', shape[0], ', img.shape[1] = ', shape[1] )
+    if shape[0] > shape[1]:
+        left = (shape[0] - shape[1])/2
+        right= left + (shape[0] - shape[1]) 
+        return img[ left:right,:,: ]
+    elif shape[0] < shape[1]:
+        left = int(  (shape[1] - shape[0])/2 )
+        right= left +  shape[0]
+        # print('left = ', left, ', right = ', right)
+        return img[:,left:right,: ]
+    else:
+        return img
 
 # because thread bloack the image catch (maybe), so create the shell class 
 class WRSEnv:
@@ -36,7 +54,7 @@ class WRSEnv:
         SuctionTask.switch_mode(True)
         self.suck = SuctionTask(_name='left')
 
-        self.imp = ImgProcess(img_type)
+        self.imp = ImgProcess(img_type, flip=False)
         self.imp.show_type = IMG_SHOW.RAW_PROCESS
 
     def get_img(self):
@@ -48,7 +66,10 @@ class WRSEnv:
         if ret==False:
             return None
 
-        process_img = self.imp.preprocess(rgb_gripper)
+
+        cut_img  = cut_2_same_wh(rgb_gripper)
+        
+        process_img = self.imp.preprocess(cut_img)
         
         return process_img
 
@@ -72,14 +93,16 @@ class WRSEnv:
         elif action==4:
             self.suck.gripper_vaccum_on()
             # rospy.sleep(5)
-            self.arm.relative_move_pose('line', [0, 0,-0.315] )
+            self.arm.relative_move_pose('line', [0, 0,-0.335] )
+            # self.arm.relative_move('line', euler=[90, 0,0], pos = [0, 0,-0.335])
             self.arm.wait_busy()
             rospy.sleep(1)
 
             is_suck = self.suck.gripped 
             print('Is sucked: {}'.format(is_suck))
 
-            self.arm.relative_move_pose('line', [0, 0, 0.315] )
+            # self.arm.relative_move('line', euler=[90, 0,0], pos = [0, 0,0.335])
+            self.arm.relative_move_pose('line', [0, 0, 0.335] )
             self.arm.wait_busy()
             rospy.sleep(1)
             done = True
@@ -94,8 +117,11 @@ class WRSEnv:
         self.suck.gripper_vaccum_off()
         # self.arm.back_home()
         # self.arm.ikMove('p2p', (0.4, 0.1, -0.2), (0, 0, 0), 30) 
-        self.arm.ikMove('p2p', (0.3, 0.1, -0.26), (0, 0, 0), 30) 
+        print('reset before robot move')
+        self.arm.ikMove('p2p', (0.3, 0.1, -0.26), (90, 0, 0), 30) 
+        print('reset after robot move')
         self.arm.wait_busy()
+        print('reset after robot move wait busy')
         
         return self.get_img()
 
@@ -103,9 +129,14 @@ class WRSEnv:
         pass
 
 if __name__ == '__main__':
-    env = WRSEnv()
+    env = WRSEnv(img_type = IMG_TYPE.RAW)
 
     env.reset()
     # env.step(4) # suck
     # for i in range(20):
     #     env.step(1)
+
+    # show img
+    while True:
+        time.sleep(0.5)
+        env.get_img()

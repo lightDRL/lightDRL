@@ -9,7 +9,7 @@
         <material name="table_mat_white" specular="0" shininess="0.5" reflectance="0" rgba="1.0 1.0 1.0 1"></material>
         
         <material name="block_mat" specular="0" shininess="0.5" reflectance="0" rgba="0.2 0.2 0.2 1"></material>
-        <material name="red_mat" specular="0" shininess="0.5" reflectance="0" rgba="1.0 0.0 0.0 1"></material>
+        <material name="red_mat" specular="0" shininess="0.5" reflectance="0" rgba="0.5 0.0 0.0 1"></material>
         <material name="green_mat" specular="0" shininess="0.5" reflectance="0" rgba="0.0 0.5 0.0 1"></material>
         <material name="blue_mat" specular="0" shininess="0.5" reflectance="0" rgba="0.0 0.0 0.5 1"></material>
          
@@ -18,6 +18,16 @@
 
         <texture  name="table_tex" file="table.png"   ></texture>
         <material name="table_mat" texture="table_tex" > </material>
+
+
+        <texture  name="CHO_tex" file="CHO_OK.png" gridsize="3 4" gridlayout=".U..LFRB.D.."></texture>
+        <material name="CHO_mat" texture="CHO_tex" > </material>
+
+        <texture  name="fu_tex" file="fu_OK.png" gridsize="3 4" gridlayout=".U..LFRB.D.."></texture>
+        <material name="fu_mat" texture="fu_tex" > </material>
+
+        <texture  name="iphone_tex" file="iphone_OK.png" gridsize="3 4" gridlayout=".U..LFRB.D.."></texture>
+        <material name="iphone_mat" texture="iphone_tex" > </material>
          <!--
          <material name="opeanai_mat" texture="texture_block">
         <texture  name="object0_tex" width="32" height="32" type="2d" builtin="flat" rgb1="0.5 0.0 0.0"/>

@@ -66,10 +66,8 @@ class ImgProcess:
         if self.flip:
             rgb_gripper = cv2.flip(rgb_gripper,0)
         if show_type==IMG_SHOW.RAW or show_type==IMG_SHOW.RAW_PROCESS:
-            show_img = rgb_gripper
             # show_img = cv2.flip(rgb_gripper,0)
-            
-            cv2.imshow('Raw Image',show_img)
+            cv2.imshow('Raw Image',rgb_gripper)
             cv2.waitKey(10)
 
         
@@ -92,8 +90,10 @@ class ImgProcess:
             img_path = '{}/{:04d}.png'.format(self.semantic_img_dir, self.semantic_img_id)
             cv2.imwrite(img_path, rgb_gripper)
             self.parent_conn.send(img_path)
+            # print('img_process img_raw = ', img_path)
             # NOTE: block here
             get_annot_path = self.parent_conn.recv()
+            # print('img_process get_annot_path = ', img_path)
 
             self.semantic_img_id = self.semantic_img_id + 1  if self.semantic_img_id < 1000 else 0
             process_img = cv2.imread(get_annot_path, 1)
@@ -112,7 +112,7 @@ class ImgProcess:
                 show_img = process_img*255.0
             else:
                 show_img = process_img
-            show_img = cv2.flip(show_img,0)
+            # show_img = cv2.flip(show_img,0)
             cv2.imshow('Process Image',show_img)
             cv2.waitKey(10)
         
