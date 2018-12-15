@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np 
+import time
 
 DEFALUT_IMG_W_H = 84
 
@@ -121,3 +122,133 @@ class ImgProcess:
             return rgb_gripper
         else:
             return process_img
+
+
+BoarderSize = 3
+BoarderColor = [200., 200., 200.]  # [B, G, R]
+
+class MergeImage:
+    def __init__(self, height, width):
+        self.tar_img = np.zeros((height,width,3), np.uint8)
+        self.tar_img[:,:] = BoarderColor    # set background
+
+        # video
+        video_name = time.strftime("%y%b%d_%H%M%S") + '.avi'
+        print("Save to video: ", video_name)
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        self.out = cv2.VideoWriter(video_name,fourcc, 20.0, (width,height))
+
+        # img 5
+        self.img_5 = np.zeros((200,200,3), np.uint8)
+        self.img_5[:,:] = [255, 255,255]    # set background
+        self.pre_load_arrow_pic()
+
+
+    def place_img(self,src_img, x, y, resize_h, resize_w, board_h = BoarderSize, board_w = BoarderSize):
+        # print('src_img.shape = ', src_img.shape)
+        tar_img = self.tar_img
+        if len(src_img.shape) < 3:
+            # brocast to 3 channles
+            place_img = cv2.cvtColor(src_img, cv2.COLOR_GRAY2BGR)        
+        else:
+            place_img = src_img
+        resize_img = cv2.resize(place_img,  (resize_h, resize_w), interpolation=cv2.INTER_AREA)       
+        x_end = x+resize_h
+        y_end = y+resize_w
+
+        tar_img[x:x_end, y:y_end] = resize_img
+
+        # set boarder line
+        tar_img[x:x+board_h        ,y:y_end] = BoarderColor
+        tar_img[x_end-board_h:x_end,y:y_end] = BoarderColor            
+        tar_img[x:x_end,y:y+board_w]         = BoarderColor
+        tar_img[x:x_end,y_end-board_w:y_end] = BoarderColor 
+    
+    def merge(self, img_1, img_2,img_3, img_4, img_5 = None):
+        self.place_img(img_1, 0  , 0   , 300,300  )
+        self.place_img(img_2, 300, 0   , 300,300  )
+        self.place_img(img_3, 0  , 350 , 200,200)
+        self.place_img(img_4, 200, 350 , 200,200)
+
+        if img_5==None:
+            self.img_5[:,:] = [255, 255,255] 
+            img_5 = self.img_5
+        
+        self.place_img(img_5, 400, 350 , 200,200)
+
+    def show(self, wait_time = 20):
+        cv2.imshow('MergeWindow', self.tar_img)
+        cv2.waitKey(wait_time)
+
+    def save_2_video(self):
+        self.out.write(self.tar_img)
+
+    def release(self):
+        self.out.release()
+
+    def pre_load_arrow_pic(self):
+        arrow_pic_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'arrow_pic')
+        self.arrow_up   = cv2.imread(arrow_pic_dir + '/up.png')
+        self.arrow_left = cv2.imread(arrow_pic_dir + '/left.png')
+        self.arrow_down = cv2.imread(arrow_pic_dir + '/down.png')
+        self.arrow_right= cv2.imread(arrow_pic_dir + '/right.png')
+        self.arrow_pick = cv2.imread(arrow_pic_dir + '/pick.png')
+
+
+    def show_arrow(self, action, wait_time=20):
+        if action==0:
+            img_5 = self.arrow_up
+        elif action==1:
+            img_5 = self.arrow_left
+        elif action==2:
+            img_5 = self.arrow_down
+        elif action==3:
+            img_5 = self.arrow_right
+        elif action==4:
+            img_5 = self.arrow_pick
+
+        self.place_img(img_5, 400, 350 , 200,200)
+        
+        self.show(wait_time)
+
+    
+# merge_img = MergeImage(height = 600, width = 600)
+
+if __name__ == '__main__':
+    cap0 = cv2.VideoCapture(0)
+    cap1 = cv2.VideoCapture(1)
+
+    merge_img = MergeImage(height = 600, width = 600)
+
+    while(True):
+
+        
+        ret, frame1 = cap1.read()
+        ret, frame0 = cap0.read()
+
+        img_1 = frame0
+        img_2 = frame1
+        img_3 = cv2.cvtColor(frame0, cv2.COLOR_RGB2GRAY)  # gray
+        img_4 = cv2.cvtColor(frame1, cv2.COLOR_RGB2GRAY)  # gray
+        # img_5 = cv2.cvtColor(frame1, cv2.COLOR_RGB2GRAY)  # gray
+
+        
+        merge_img.merge(img_1, img_2, img_3, img_4)
+        merge_img.save_2_video()
+        merge_img.show(10)
+
+        keycode = cv2.waitKey(10)
+
+        randint = np.random.randint(0,5)
+        merge_img.show_arrow(randint)
+        # print(keycode)
+        # char = getch.getch() 
+
+        if keycode== ord('q'):
+            break
+
+    # Release everything if job is finished
+    merge_img.release()
+    cap0.release()
+    cap1.release()
+    cv2.destroyAllWindows()

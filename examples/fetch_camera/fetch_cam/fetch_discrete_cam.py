@@ -1,6 +1,6 @@
 
 from fetch_cam.fetch_discrete import FetchDiscreteEnv, EnvType
-from fetch_cam.img_process import ImgProcess, IMG_TYPE, IMG_SHOW
+from fetch_cam.img_process import ImgProcess, IMG_TYPE, IMG_SHOW, MergeImage
 import cv2
 import numpy as np
 import os
@@ -18,8 +18,15 @@ class FetchDiscreteCamEnv:
         self.imp = ImgProcess(img_type, flip=True)
         self.imp.show_type = img_show_type
 
+        if self.is_render:
+            self.merge_img = MergeImage(height = 600, width = 600)
+
+    
+
     def step(self,action):
         # print('i action = ', action)
+        if self.is_render:
+            self.merge_img.show_arrow(action)
         a_one_hot = np.zeros(6)
         a_one_hot[action] = 1
         s, r, d, _ = self.env.step(a_one_hot)
@@ -34,6 +41,14 @@ class FetchDiscreteCamEnv:
         process_img = self.imp.preprocess(rgb_gripper)
         # RESIZE
         # resize_img = cv2.resize(process_img, (IMG_W_H, IMG_W_H), interpolation=cv2.INTER_AREA)
+
+        if self.is_render:
+            # show merge
+            show_process = process_img*255 if self.img_type == IMG_TYPE.SEMANTIC else process_img
+
+            self.merge_img.merge(rgb_gripper, rgb_external, rgb_gripper, show_process)
+            self.merge_img.save_2_video()
+            self.merge_img.show()
 
         return process_img, r, d, cv2.cvtColor(rgb_gripper, cv2.COLOR_BGR2RGB)
 
@@ -74,6 +89,14 @@ class FetchDiscreteCamEnv:
     
         rgb_gripper =  cv2.cvtColor(rgb_gripper, cv2.COLOR_BGR2RGB)
         process_img = self.imp.preprocess(rgb_gripper)
+
+        if self.is_render:
+            # show merge
+            show_process = process_img*255 if self.img_type == IMG_TYPE.SEMANTIC else process_img
+
+            self.merge_img.merge(rgb_gripper, rgb_external, rgb_gripper, show_process)
+            self.merge_img.save_2_video()
+            self.merge_img.show()
 
         return process_img
 
